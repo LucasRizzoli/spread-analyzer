@@ -6,6 +6,7 @@ import {
   getZspreadByRating,
   getLastSyncLog,
   getSyncLogs,
+  getMatchQualityReport,
 } from "../db";
 import { getSyncState, runFullSync } from "../services/syncService";
 import { sortRatings } from "../services/spreadCalculatorService";
@@ -93,6 +94,22 @@ export const spreadRouter = router({
     .query(async ({ input }) => {
       return getSyncLogs(input?.limit || 10);
     }),
+
+  /**
+   * Retorna relatório de qualidade dos matches para verificação manual.
+   * Inclui todos os campos de rastreabilidade: emissor ANBIMA, emissor Moody's,
+   * número de emissão SND, instrumento Moody's, score de similaridade e outlier.
+   */
+  getMatchReport: publicProcedure.query(async () => {
+    const data = await getMatchQualityReport();
+    return data.map((row) => ({
+      ...row,
+      scoreMatch: row.scoreMatch ? Number(row.scoreMatch) : null,
+      durationAnos: row.durationAnos ? Number(row.durationAnos) : null,
+      taxaIndicativa: row.taxaIndicativa ? Number(row.taxaIndicativa) : null,
+      zspread: row.zspread ? Number(row.zspread) : null,
+    }));
+  }),
 
   /**
    * Dispara sincronização com os dois arquivos em base64 (via tRPC)

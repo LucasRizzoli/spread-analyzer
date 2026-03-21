@@ -135,6 +135,14 @@ export const spreadAnalysis = mysqlTable(
     ntnbDuration: decimal("ntnbDuration", { precision: 8, scale: 4 }),
     // Z-spread calculado (em pontos percentuais)
     zspread: decimal("zspread", { precision: 10, scale: 6 }),
+    // Qualidade do match e outlier
+    scoreMatch: decimal("scoreMatch", { precision: 5, scale: 4 }),
+    isOutlier: boolean("isOutlier").default(false),
+    // Informações de enriquecimento SND
+    emissorMoodys: varchar("emissorMoodys", { length: 256 }),
+    numeroEmissaoSnd: int("numeroEmissaoSnd"),
+    numeroEmissaoMoodys: varchar("numeroEmissaoMoodys", { length: 16 }),
+    instrumentoMoodys: varchar("instrumentoMoodys", { length: 256 }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },

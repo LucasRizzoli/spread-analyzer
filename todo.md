@@ -67,3 +67,13 @@
 - [x] Remover matches por emissor genérico e sem_match (apenas tipoMatch="emissao" persiste)
 - [x] Atualizar frontend: remover filtro "Qualidade do Match", exibir apenas emissões confirmadas
 - [x] Atualizar testes: 28 testes passando (inclui testes de matching emissão-a-emissão)
+
+## v1.4 — Outliers e Relatório de Qualidade (CONCLUÍDO)
+- [x] Implementar remoção de outliers: por rating, quando ≥5 emissões, remover 10% superior e 10% inferior de Z-spread
+- [x] Persistir flag `isOutlier` no banco (spreadAnalysis) para rastreabilidade
+- [x] Migração SQL: campos scoreMatch, isOutlier, emissorMoodys, numeroEmissaoSnd, instrumentoMoodys
+- [x] Frontend: toggle "Outliers" no header (ocultos por padrão), botão "Relatório de Qualidade"
+- [x] Modal de relatório com tabela completa de rastreabilidade + filtro por outliers + busca
+- [x] Download CSV com BOM UTF-8 (compatível com Excel) com todos os campos de auditoria
+- [x] Legenda de scores de similaridade (Excelente/Bom/Limiar mínimo)
+- [x] 28 testes passando após todas as mudanças

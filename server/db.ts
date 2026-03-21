@@ -200,3 +200,43 @@ export async function getSyncLogs(limit = 10) {
   if (!db) return [];
   return db.select().from(syncLog).orderBy(desc(syncLog.iniciadoEm)).limit(limit);
 }
+
+/**
+ * Retorna todos os dados de spread com campos de rastreabilidade para
+ * o relatório de qualidade dos matches (verificação manual).
+ * Inclui: emissor ANBIMA, emissor Moody's, número de emissão SND,
+ * instrumento Moody's, score de similaridade e flag de outlier.
+ */
+export async function getMatchQualityReport() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select({
+      id: spreadAnalysis.id,
+      codigoCetip: spreadAnalysis.codigoCetip,
+      isin: spreadAnalysis.isin,
+      tipo: spreadAnalysis.tipo,
+      dataReferencia: spreadAnalysis.dataReferencia,
+      // Emissor ANBIMA
+      emissorAnbima: spreadAnalysis.emissorNome,
+      // Dados do match Moody's
+      emissorMoodys: spreadAnalysis.emissorMoodys,
+      numeroEmissaoSnd: spreadAnalysis.numeroEmissaoSnd,
+      numeroEmissaoMoodys: spreadAnalysis.numeroEmissaoMoodys,
+      instrumentoMoodys: spreadAnalysis.instrumentoMoodys,
+      rating: spreadAnalysis.rating,
+      setor: spreadAnalysis.setor,
+      scoreMatch: spreadAnalysis.scoreMatch,
+      // Dados financeiros
+      indexador: spreadAnalysis.indexador,
+      incentivado: spreadAnalysis.incentivado,
+      durationAnos: spreadAnalysis.durationAnos,
+      taxaIndicativa: spreadAnalysis.taxaIndicativa,
+      zspread: spreadAnalysis.zspread,
+      // Outlier
+      isOutlier: spreadAnalysis.isOutlier,
+    })
+    .from(spreadAnalysis)
+    .orderBy(asc(spreadAnalysis.rating), asc(spreadAnalysis.emissorNome));
+}

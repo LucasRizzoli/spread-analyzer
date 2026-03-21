@@ -15,6 +15,13 @@
       "when": 1774127076075,
       "tag": "0001_strange_bromley",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1774135265682,
+      "tag": "0002_early_power_man",
+      "breakpoints": true
     }
   ]
 }

@@ -12,7 +12,6 @@ import {
   TrendingUp,
   BarChart3,
   Table2,
-  Filter,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -21,6 +20,11 @@ import {
   Loader2,
   Upload,
   ExternalLink,
+  FileDown,
+  Eye,
+  EyeOff,
+  X,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   ScatterChart,
@@ -72,10 +76,6 @@ function getRatingColor(rating: string | null | undefined): string {
   if (!rating) return "#6b7280";
   return RATING_COLORS[rating] || "#6b7280";
 }
-
-const TIPO_MATCH_LABELS: Record<string, { label: string; color: string }> = {
-  emissao: { label: "Rating de Emissão", color: "text-emerald-400" },
-};
 
 // ─── Componente de filtros ────────────────────────────────────────────────────
 
@@ -150,12 +150,304 @@ function CheckItem({
   );
 }
 
+// ─── Modal de Relatório de Qualidade ─────────────────────────────────────────
+
+type MatchReportRow = {
+  id: number;
+  codigoCetip: string;
+  isin: string | null;
+  tipo: "DEB" | "CRI" | "CRA" | null;
+  dataReferencia: string | null;
+  emissorAnbima: string | null;
+  emissorMoodys: string | null;
+  numeroEmissaoSnd: number | null;
+  numeroEmissaoMoodys: string | null;
+  instrumentoMoodys: string | null;
+  rating: string | null;
+  setor: string | null;
+  scoreMatch: number | null;
+  indexador: string | null;
+  incentivado: boolean | null;
+  durationAnos: number | null;
+  taxaIndicativa: number | null;
+  zspread: number | null;
+  isOutlier: boolean | null;
+};
+
+function downloadCsv(rows: MatchReportRow[]) {
+  const headers = [
+    "Código CETIP",
+    "ISIN",
+    "Tipo",
+    "Data Referência",
+    "Emissor ANBIMA",
+    "Emissor Moody's",
+    "Nº Emissão (SND)",
+    "Nº Emissão (Moody's)",
+    "Instrumento Moody's",
+    "Rating",
+    "Setor",
+    "Score Match",
+    "Indexador",
+    "Incentivado",
+    "Duration (anos)",
+    "Taxa Indicativa",
+    "Z-spread (bps)",
+    "Outlier",
+  ];
+
+  const escape = (v: string | number | boolean | null | undefined) => {
+    if (v == null) return "";
+    const s = String(v);
+    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  };
+
+  const lines = [
+    headers.join(","),
+    ...rows.map((r) =>
+      [
+        escape(r.codigoCetip),
+        escape(r.isin),
+        escape(r.tipo),
+        escape(r.dataReferencia),
+        escape(r.emissorAnbima),
+        escape(r.emissorMoodys),
+        escape(r.numeroEmissaoSnd),
+        escape(r.numeroEmissaoMoodys),
+        escape(r.instrumentoMoodys),
+        escape(r.rating),
+        escape(r.setor),
+        escape(r.scoreMatch != null ? r.scoreMatch.toFixed(4) : null),
+        escape(r.indexador),
+        escape(r.incentivado ? "Sim" : "Não"),
+        escape(r.durationAnos != null ? r.durationAnos.toFixed(2) : null),
+        escape(r.taxaIndicativa != null ? (r.taxaIndicativa * 100).toFixed(4) : null),
+        escape(r.zspread != null ? Math.round(r.zspread * 10000) : null),
+        escape(r.isOutlier ? "Sim" : "Não"),
+      ].join(",")
+    ),
+  ];
+
+  const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `relatorio-qualidade-matches-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function MatchReportModal({ onClose }: { onClose: () => void }) {
+  const [search, setSearch] = useState("");
+  const [showOutliersOnly, setShowOutliersOnly] = useState(false);
+  const reportQuery = trpc.spread.getMatchReport.useQuery();
+  const data = reportQuery.data || [];
+
+  const filtered = useMemo(() => {
+    let rows = data;
+    if (showOutliersOnly) rows = rows.filter((r) => r.isOutlier);
+    if (search) {
+      const q = search.toLowerCase();
+      rows = rows.filter(
+        (r) =>
+          r.codigoCetip?.toLowerCase().includes(q) ||
+          r.emissorAnbima?.toLowerCase().includes(q) ||
+          r.emissorMoodys?.toLowerCase().includes(q) ||
+          r.rating?.toLowerCase().includes(q) ||
+          r.instrumentoMoodys?.toLowerCase().includes(q)
+      );
+    }
+    return rows;
+  }, [data, search, showOutliersOnly]);
+
+  const outlierCount = useMemo(() => data.filter((r) => r.isOutlier).length, [data]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-card border border-border rounded-xl shadow-2xl w-[95vw] max-w-7xl h-[90vh] flex flex-col">
+        {/* Header do modal */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <ClipboardCheck className="h-5 w-5 text-primary" />
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Relatório de Qualidade dos Matches</h2>
+              <p className="text-xs text-muted-foreground">
+                {data.length} emissões com match confirmado · {outlierCount} outliers marcados
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => downloadCsv(filtered as MatchReportRow[])}
+              className="text-xs h-7 gap-1.5"
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              Exportar CSV ({filtered.length})
+            </Button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Controles */}
+        <div className="flex items-center gap-3 px-6 py-3 border-b border-border flex-shrink-0">
+          <input
+            type="text"
+            placeholder="Buscar por código, emissor, instrumento ou rating..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 h-8 px-3 text-xs bg-input border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <button
+            onClick={() => setShowOutliersOnly(!showOutliersOnly)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+              showOutliersOnly
+                ? "border-yellow-500/50 text-yellow-400 bg-yellow-500/10"
+                : "border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {showOutliersOnly ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            {showOutliersOnly ? "Apenas outliers" : "Todos"}
+          </button>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {filtered.length} registros
+          </span>
+        </div>
+
+        {/* Tabela */}
+        <div className="flex-1 overflow-auto">
+          {reportQuery.isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-card border-b border-border z-10">
+                <tr>
+                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">Código CETIP</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">Emissor ANBIMA</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">Emissor Moody's</th>
+                  <th className="px-3 py-2.5 text-center font-semibold text-muted-foreground whitespace-nowrap">Nº Emissão SND</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">Instrumento Moody's</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">Rating</th>
+                  <th className="px-3 py-2.5 text-center font-semibold text-muted-foreground whitespace-nowrap">Score</th>
+                  <th className="px-3 py-2.5 text-right font-semibold text-muted-foreground whitespace-nowrap">Z-spread</th>
+                  <th className="px-3 py-2.5 text-right font-semibold text-muted-foreground whitespace-nowrap">Duration</th>
+                  <th className="px-3 py-2.5 text-center font-semibold text-muted-foreground whitespace-nowrap">Outlier</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((row, i) => {
+                  const zspreadBps = row.zspread != null ? Math.round(row.zspread * 10000) : null;
+                  const scoreColor =
+                    row.scoreMatch == null
+                      ? "text-muted-foreground"
+                      : row.scoreMatch >= 0.9
+                      ? "text-emerald-400"
+                      : row.scoreMatch >= 0.75
+                      ? "text-yellow-400"
+                      : "text-orange-400";
+                  return (
+                    <tr
+                      key={row.id}
+                      className={`border-b border-border/40 hover:bg-accent/20 transition-colors ${
+                        row.isOutlier ? "bg-yellow-500/5" : i % 2 === 0 ? "bg-transparent" : "bg-card/20"
+                      }`}
+                    >
+                      <td className="px-3 py-2 font-mono text-foreground whitespace-nowrap">
+                        {row.codigoCetip}
+                        {row.isin && (
+                          <span className="ml-1.5 text-[10px] text-muted-foreground">{row.isin}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-foreground max-w-[180px] truncate" title={row.emissorAnbima || ""}>
+                        {row.emissorAnbima || "—"}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground max-w-[180px] truncate" title={row.emissorMoodys || ""}>
+                        {row.emissorMoodys || "—"}
+                      </td>
+                      <td className="px-3 py-2 text-center tabular-nums font-mono">
+                        {row.numeroEmissaoSnd != null ? (
+                          <span className="text-primary font-semibold">{row.numeroEmissaoSnd}ª</span>
+                        ) : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground max-w-[220px] truncate" title={row.instrumentoMoodys || ""}>
+                        {row.instrumentoMoodys || "—"}
+                      </td>
+                      <td className="px-3 py-2">
+                        {row.rating ? (
+                          <span className="font-semibold" style={{ color: getRatingColor(row.rating) }}>
+                            {row.rating}
+                          </span>
+                        ) : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-center tabular-nums">
+                        <span className={`font-mono text-[11px] font-semibold ${scoreColor}`}>
+                          {row.scoreMatch != null ? row.scoreMatch.toFixed(3) : "—"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums font-semibold">
+                        {zspreadBps != null ? (
+                          <span className={zspreadBps >= 0 ? "text-emerald-400" : "text-red-400"}>
+                            {zspreadBps > 0 ? "+" : ""}{zspreadBps} bps
+                          </span>
+                        ) : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                        {formatDuration(row.durationAnos)}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        {row.isOutlier ? (
+                          <span className="text-[10px] font-medium text-yellow-400 bg-yellow-500/10 px-1.5 py-0.5 rounded">
+                            Outlier
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+          {!reportQuery.isLoading && filtered.length === 0 && (
+            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
+              Nenhum registro encontrado
+            </div>
+          )}
+        </div>
+
+        {/* Legenda de scores */}
+        <div className="flex items-center gap-4 px-6 py-3 border-t border-border flex-shrink-0 text-[10px] text-muted-foreground">
+          <span className="font-semibold text-foreground">Score de similaridade:</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> ≥ 0.900 — Excelente</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> 0.750–0.899 — Bom</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> 0.650–0.749 — Limiar mínimo</span>
+          <span className="ml-auto">Outliers: 10% superior e inferior por rating (mín. 5 emissões)</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function SpreadDashboard() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
   const [activeView, setActiveView] = useState<"scatter" | "bar" | "table">("scatter");
   const [tableSearch, setTableSearch] = useState("");
+  const [showOutliers, setShowOutliers] = useState(false);
+  const [showMatchReport, setShowMatchReport] = useState(false);
 
   // Estado dos dois arquivos de upload
   const [moodysFile, setMoodysFile] = useState<File | null>(null);
@@ -257,8 +549,19 @@ export default function SpreadDashboard() {
   };
 
   // Dados processados
-  const analysisData = analysisQuery.data || [];
+  const allData = analysisQuery.data || [];
   const isSyncing = syncState.data?.status === "running";
+
+  // Filtrar outliers (por padrão, ocultar outliers)
+  const analysisData = useMemo(() => {
+    if (showOutliers) return allData;
+    return allData.filter((r) => !(r as { isOutlier?: boolean }).isOutlier);
+  }, [allData, showOutliers]);
+
+  const outlierCount = useMemo(
+    () => allData.filter((r) => (r as { isOutlier?: boolean }).isOutlier).length,
+    [allData]
+  );
 
   // Filtrar tabela por busca
   const filteredTableData = useMemo(() => {
@@ -317,312 +620,354 @@ export default function SpreadDashboard() {
     return sortRatings(filterOptions.data?.ratings || []);
   }, [filterOptions.data?.ratings]);
 
-  const bothFilesSelected = moodysFile !== null && anbimaFile !== null;
-
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* ── Sidebar de filtros ─────────────────────────────────────────────── */}
-      <aside className="w-64 flex-shrink-0 border-r border-border bg-sidebar flex flex-col">
-        {/* Logo / Header */}
-        <div className="px-4 py-4 border-b border-sidebar-border">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            <div>
-              <h1 className="text-sm font-bold text-sidebar-foreground">Spread Analyzer</h1>
-              <p className="text-xs text-muted-foreground">Crédito Corporativo</p>
+    <>
+      {/* Modal de relatório de qualidade */}
+      {showMatchReport && <MatchReportModal onClose={() => setShowMatchReport(false)} />}
+
+      <div className="flex h-screen bg-background overflow-hidden">
+        {/* ── Sidebar de filtros ─────────────────────────────────────────────── */}
+        <aside className="w-64 flex-shrink-0 border-r border-border bg-sidebar flex flex-col">
+          {/* Logo / Header */}
+          <div className="px-4 py-4 border-b border-sidebar-border">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <div>
+                <h1 className="text-sm font-bold text-sidebar-foreground">Spread Analyzer</h1>
+                <p className="text-xs text-muted-foreground">Crédito Corporativo</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Status de sincronização */}
-        <div className="px-4 py-3 border-b border-sidebar-border">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">Última atualização</span>
-            {isSyncing ? (
-              <Badge variant="outline" className="text-xs border-yellow-500/50 text-yellow-400">
-                <Loader2 className="h-2.5 w-2.5 mr-1 animate-spin" />
-                Sincronizando
-              </Badge>
-            ) : syncState.data?.status === "success" ? (
-              <Badge variant="outline" className="text-xs border-emerald-500/50 text-emerald-400">
-                <CheckCircle2 className="h-2.5 w-2.5 mr-1" />
-                OK
-              </Badge>
-            ) : syncState.data?.status === "error" ? (
-              <Badge variant="outline" className="text-xs border-red-500/50 text-red-400">
-                <AlertCircle className="h-2.5 w-2.5 mr-1" />
-                Erro
-              </Badge>
-            ) : null}
+          {/* Status de sincronização */}
+          <div className="px-4 py-3 border-b border-sidebar-border">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground">Última atualização</span>
+              {isSyncing ? (
+                <Badge variant="outline" className="text-xs border-yellow-500/50 text-yellow-400">
+                  <Loader2 className="h-2.5 w-2.5 mr-1 animate-spin" />
+                  Sincronizando
+                </Badge>
+              ) : syncState.data?.status === "success" ? (
+                <Badge variant="outline" className="text-xs border-emerald-500/50 text-emerald-400">
+                  <CheckCircle2 className="h-2.5 w-2.5 mr-1" />
+                  OK
+                </Badge>
+              ) : syncState.data?.status === "error" ? (
+                <Badge variant="outline" className="text-xs border-red-500/50 text-red-400">
+                  <AlertCircle className="h-2.5 w-2.5 mr-1" />
+                  Erro
+                </Badge>
+              ) : null}
+            </div>
+            {lastSync.data?.finalizadoEm && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {new Date(lastSync.data.finalizadoEm).toLocaleString("pt-BR")}
+              </p>
+            )}
+            {isSyncing && syncState.data?.progress && (
+              <p className="text-xs text-yellow-400 mt-1">{syncState.data.progress.step}</p>
+            )}
+
+            {/* Upload dos dois arquivos */}
+            <input
+              ref={moodysInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleMoodysFileChange}
+            />
+            <input
+              ref={anbimaInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleAnbimaFileChange}
+            />
+            <div className="mt-2 space-y-1.5">
+              {/* Botão Moody's */}
+              <button
+                onClick={() => moodysInputRef.current?.click()}
+                className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border transition-colors ${
+                  moodysFile
+                    ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
+                    : "border-dashed border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                }`}
+              >
+                <Upload className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">
+                  {moodysFile ? moodysFile.name : "Planilha Moody's (.xlsx)"}
+                </span>
+              </button>
+              {/* Botão ANBIMA */}
+              <button
+                onClick={() => anbimaInputRef.current?.click()}
+                className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border transition-colors ${
+                  anbimaFile
+                    ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
+                    : "border-dashed border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                }`}
+              >
+                <Upload className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">
+                  {anbimaFile ? anbimaFile.name : "Planilha ANBIMA Data (.xlsx)"}
+                </span>
+              </button>
+              {/* Links de download */}
+              <div className="flex gap-2 pt-0.5">
+                <a
+                  href="https://moodyslocal.com.br"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <ExternalLink className="h-2.5 w-2.5" />
+                  Moody's
+                </a>
+                <a
+                  href="https://data.anbima.com.br/datasets/data-debentures-precificacao-anbima"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <ExternalLink className="h-2.5 w-2.5" />
+                  ANBIMA Data
+                </a>
+              </div>
+              {/* Botão Atualizar */}
+              <button
+                onClick={handleSync}
+                disabled={isSyncing}
+                className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded text-xs bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+              >
+                <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`} />
+                {isSyncing ? "Sincronizando..." : "Atualizar dados"}
+              </button>
+            </div>
           </div>
-          {lastSync.data?.finalizadoEm && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {new Date(lastSync.data.finalizadoEm).toLocaleString("pt-BR")}
-            </p>
-          )}
-          {isSyncing && syncState.data?.progress && (
-            <p className="text-xs text-yellow-400 mt-1">{syncState.data.progress.step}</p>
-          )}
 
-          {/* Upload dos dois arquivos */}
-          <input
-            ref={moodysInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={handleMoodysFileChange}
-          />
-          <input
-            ref={anbimaInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={handleAnbimaFileChange}
-          />
-
-          <div className="mt-2 space-y-1.5">
-            {/* Botão Moody's */}
-            <button
-              onClick={() => moodysInputRef.current?.click()}
-              className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border transition-colors ${
-                moodysFile
-                  ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
-                  : "border-dashed border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
-              }`}
-            >
-              <Upload className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">
-                {moodysFile ? moodysFile.name : "Planilha Moody's (.xlsx)"}
-              </span>
-            </button>
-
-            {/* Botão ANBIMA */}
-            <button
-              onClick={() => anbimaInputRef.current?.click()}
-              className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border transition-colors ${
-                anbimaFile
-                  ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
-                  : "border-dashed border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
-              }`}
-            >
-              <Upload className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">
-                {anbimaFile ? anbimaFile.name : "Planilha ANBIMA Data (.xlsx)"}
-              </span>
-            </button>
-          </div>
-
-          <Button
-            size="sm"
-            variant={bothFilesSelected ? "default" : "outline"}
-            className="w-full mt-1.5 h-7 text-xs"
-            onClick={handleSync}
-            disabled={isSyncing || triggerSync.isPending}
-          >
-            <RefreshCw className={`h-3 w-3 mr-1.5 ${isSyncing ? "animate-spin" : ""}`} />
-            {isSyncing ? "Sincronizando..." : "Atualizar dados"}
-          </Button>
-        </div>
-
-        {/* Filtros */}
-        <ScrollArea className="flex-1 px-4 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-sidebar-foreground flex items-center gap-1.5">
-              <Filter className="h-3 w-3" />
-              Filtros
-            </span>
+          {/* Filtros */}
+          <ScrollArea className="flex-1 px-4 py-3">
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="text-xs text-primary hover:text-primary/80 transition-colors"
+                className="w-full mb-3 text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 py-1 rounded border border-dashed border-border hover:border-primary/50 transition-colors"
               >
-                Limpar
+                Limpar filtros
               </button>
             )}
-          </div>
 
-          {/* Duration */}
-          <FilterSection title="Duration (anos)">
-            <div className="px-1 pt-1">
-              <Slider
-                min={0}
-                max={20}
-                step={0.5}
-                value={filters.durationRange}
-                onValueChange={(v) =>
-                  setFilters((f) => ({ ...f, durationRange: v as [number, number] }))
-                }
-                className="mb-2"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{filters.durationRange[0]}a</span>
-                <span>{filters.durationRange[1]}a</span>
-              </div>
-            </div>
-          </FilterSection>
-
-          <Separator className="my-3 bg-sidebar-border" />
-
-          {/* Rating */}
-          <FilterSection title="Rating (Moody's Local)">
-            {sortedRatingOptions.map((r) => (
-              <CheckItem
-                key={r}
-                id={`rating-${r}`}
-                label={r}
-                checked={filters.ratings.includes(r)}
-                onToggle={() => toggleFilter("ratings", r, filters.ratings)}
-                color={getRatingColor(r)}
-              />
-            ))}
-          </FilterSection>
-
-          <Separator className="my-3 bg-sidebar-border" />
-
-          {/* Tipo de produto */}
-          <FilterSection title="Produto">
-            {["DEB", "CRI", "CRA"].map((t) => (
-              <CheckItem
-                key={t}
-                id={`tipo-${t}`}
-                label={t === "DEB" ? "Debênture" : t}
-                checked={filters.tipos.includes(t)}
-                onToggle={() => toggleFilter("tipos", t, filters.tipos)}
-              />
-            ))}
-          </FilterSection>
-
-          <Separator className="my-3 bg-sidebar-border" />
-
-          {/* Isenção fiscal */}
-          <FilterSection title="Isenção Fiscal">
-            {[
-              { value: "todos", label: "Todos" },
-              { value: "sim", label: "Incentivado (Lei 12.431)" },
-              { value: "nao", label: "Não incentivado" },
-            ].map((opt) => (
-              <div key={opt.value} className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  id={`isencao-${opt.value}`}
-                  name="isencao"
-                  checked={filters.incentivado === opt.value}
-                  onChange={() =>
-                    setFilters((f) => ({ ...f, incentivado: opt.value as FiltersState["incentivado"] }))
+            {/* Duration */}
+            <FilterSection title="Duration (anos)">
+              <div className="px-1 pb-1">
+                <Slider
+                  min={0}
+                  max={20}
+                  step={0.5}
+                  value={filters.durationRange}
+                  onValueChange={(v) =>
+                    setFilters((f) => ({ ...f, durationRange: v as [number, number] }))
                   }
-                  className="h-3.5 w-3.5 accent-primary"
+                  className="mt-2"
                 />
-                <Label htmlFor={`isencao-${opt.value}`} className="text-xs cursor-pointer">
-                  {opt.label}
-                </Label>
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5">
+                  <span>{filters.durationRange[0]}a</span>
+                  <span>{filters.durationRange[1]}a</span>
+                </div>
               </div>
-            ))}
-          </FilterSection>
+            </FilterSection>
 
-          <Separator className="my-3 bg-sidebar-border" />
+            <Separator className="my-3 bg-sidebar-border" />
 
-          {/* Indexador */}
-          <FilterSection title="Indexador" defaultOpen={false}>
-            {(filterOptions.data?.indexadores || []).map((idx) => (
-              <CheckItem
-                key={idx}
-                id={`idx-${idx}`}
-                label={idx}
-                checked={filters.indexadores.includes(idx)}
-                onToggle={() => toggleFilter("indexadores", idx, filters.indexadores)}
-              />
-            ))}
-          </FilterSection>
-
-          <Separator className="my-3 bg-sidebar-border" />
-
-          {/* Setor */}
-          <FilterSection title="Setor" defaultOpen={false}>
-            {(filterOptions.data?.setores || []).map((s) => (
-              <CheckItem
-                key={s}
-                id={`setor-${s}`}
-                label={s}
-                checked={filters.setores.includes(s)}
-                onToggle={() => toggleFilter("setores", s, filters.setores)}
-              />
-            ))}
-          </FilterSection>
-
-          <Separator className="my-3 bg-sidebar-border" />
-
-
-        </ScrollArea>
-      </aside>
-
-      {/* ── Conteúdo principal ─────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-card">
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Análise de Z-Spread</h2>
-            <p className="text-xs text-muted-foreground">
-              {analysisData.length} ativos{" "}
-              {analysisData.filter((r) => r.zspread != null).length} com Z-spread calculado
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Toggle de visualização */}
-            <div className="flex items-center gap-1 bg-secondary rounded-md p-0.5">
-              {(
-                [
-                  { key: "scatter", icon: TrendingUp, label: "Dispersão" },
-                  { key: "bar", icon: BarChart3, label: "Por Rating" },
-                  { key: "table", icon: Table2, label: "Tabela" },
-                ] as const
-              ).map(({ key, icon: Icon, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveView(key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                    activeView === key
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {label}
-                </button>
+            {/* Rating */}
+            <FilterSection title="Rating (Moody's Local)">
+              {sortedRatingOptions.map((r) => (
+                <CheckItem
+                  key={r}
+                  id={`rating-${r}`}
+                  label={r}
+                  checked={filters.ratings.includes(r)}
+                  onToggle={() => toggleFilter("ratings", r, filters.ratings)}
+                  color={getRatingColor(r)}
+                />
               ))}
-            </div>
-          </div>
-        </header>
+            </FilterSection>
 
-        {/* Conteúdo da view */}
-        <div className="flex-1 overflow-hidden p-6">
-          {analysisQuery.isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Separator className="my-3 bg-sidebar-border" />
+
+            {/* Produto */}
+            <FilterSection title="Produto" defaultOpen={false}>
+              {(filterOptions.data?.tipos || []).map((t) => (
+                <CheckItem
+                  key={t}
+                  id={`tipo-${t}`}
+                  label={t === "DEB" ? "Debênture" : t === "CRI" ? "CRI" : "CRA"}
+                  checked={filters.tipos.includes(t)}
+                  onToggle={() => toggleFilter("tipos", t, filters.tipos)}
+                />
+              ))}
+            </FilterSection>
+
+            <Separator className="my-3 bg-sidebar-border" />
+
+            {/* Isenção fiscal */}
+            <FilterSection title="Isenção Fiscal">
+              {[
+                { value: "todos", label: "Todos" },
+                { value: "sim", label: "Incentivado (Lei 12.431)" },
+                { value: "nao", label: "Não incentivado" },
+              ].map((opt) => (
+                <div key={opt.value} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    id={`isencao-${opt.value}`}
+                    name="isencao"
+                    checked={filters.incentivado === opt.value}
+                    onChange={() =>
+                      setFilters((f) => ({ ...f, incentivado: opt.value as FiltersState["incentivado"] }))
+                    }
+                    className="h-3.5 w-3.5 accent-primary"
+                  />
+                  <Label htmlFor={`isencao-${opt.value}`} className="text-xs cursor-pointer">
+                    {opt.label}
+                  </Label>
+                </div>
+              ))}
+            </FilterSection>
+
+            <Separator className="my-3 bg-sidebar-border" />
+
+            {/* Indexador */}
+            <FilterSection title="Indexador" defaultOpen={false}>
+              {(filterOptions.data?.indexadores || []).map((idx) => (
+                <CheckItem
+                  key={idx}
+                  id={`idx-${idx}`}
+                  label={idx}
+                  checked={filters.indexadores.includes(idx)}
+                  onToggle={() => toggleFilter("indexadores", idx, filters.indexadores)}
+                />
+              ))}
+            </FilterSection>
+
+            <Separator className="my-3 bg-sidebar-border" />
+
+            {/* Setor */}
+            <FilterSection title="Setor" defaultOpen={false}>
+              {(filterOptions.data?.setores || []).map((s) => (
+                <CheckItem
+                  key={s}
+                  id={`setor-${s}`}
+                  label={s}
+                  checked={filters.setores.includes(s)}
+                  onToggle={() => toggleFilter("setores", s, filters.setores)}
+                />
+              ))}
+            </FilterSection>
+
+            <Separator className="my-3 bg-sidebar-border" />
+          </ScrollArea>
+        </aside>
+
+        {/* ── Conteúdo principal ─────────────────────────────────────────────── */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-card">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Análise de Z-Spread</h2>
+              <p className="text-xs text-muted-foreground">
+                {analysisData.length} ativos{" "}
+                {analysisData.filter((r) => r.zspread != null).length} com Z-spread calculado
+                {!showOutliers && outlierCount > 0 && (
+                  <span className="ml-1 text-yellow-500/80">· {outlierCount} outliers ocultos</span>
+                )}
+              </p>
             </div>
-          ) : analysisData.length === 0 ? (
-            <EmptyState
-              onSync={handleSync}
-              isSyncing={isSyncing}
-              onMoodysSelect={() => moodysInputRef.current?.click()}
-              onAnbimaSelect={() => anbimaInputRef.current?.click()}
-              moodysFile={moodysFile}
-              anbimaFile={anbimaFile}
-            />
-          ) : activeView === "scatter" ? (
-            <ScatterView data={scatterData} ratingGroups={ratingGroups} />
-          ) : activeView === "bar" ? (
-            <BarView data={zspreadByRating.data || []} />
-          ) : (
-            <TableView
-              data={filteredTableData}
-              search={tableSearch}
-              onSearchChange={setTableSearch}
-            />
-          )}
-        </div>
-      </main>
-    </div>
+            <div className="flex items-center gap-2">
+              {/* Botão Relatório de Qualidade */}
+              {allData.length > 0 && (
+                <button
+                  onClick={() => setShowMatchReport(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
+                >
+                  <ClipboardCheck className="h-3.5 w-3.5" />
+                  Relatório de Qualidade
+                </button>
+              )}
+
+              {/* Toggle outliers */}
+              {outlierCount > 0 && (
+                <button
+                  onClick={() => setShowOutliers(!showOutliers)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+                    showOutliers
+                      ? "border-yellow-500/50 text-yellow-400 bg-yellow-500/10"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                  title={showOutliers ? "Ocultar outliers" : "Mostrar outliers"}
+                >
+                  {showOutliers ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  {showOutliers ? `Outliers visíveis (${outlierCount})` : `Outliers (${outlierCount})`}
+                </button>
+              )}
+
+              {/* Toggle de visualização */}
+              <div className="flex items-center gap-1 bg-secondary rounded-md p-0.5">
+                {(
+                  [
+                    { key: "scatter", icon: TrendingUp, label: "Dispersão" },
+                    { key: "bar", icon: BarChart3, label: "Por Rating" },
+                    { key: "table", icon: Table2, label: "Tabela" },
+                  ] as const
+                ).map(({ key, icon: Icon, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveView(key)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                      activeView === key
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </header>
+
+          {/* Conteúdo da view */}
+          <div className="flex-1 overflow-hidden p-6">
+            {analysisQuery.isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : allData.length === 0 ? (
+              <EmptyState
+                onSync={handleSync}
+                isSyncing={isSyncing}
+                onMoodysSelect={() => moodysInputRef.current?.click()}
+                onAnbimaSelect={() => anbimaInputRef.current?.click()}
+                moodysFile={moodysFile}
+                anbimaFile={anbimaFile}
+              />
+            ) : activeView === "scatter" ? (
+              <ScatterView data={scatterData} ratingGroups={ratingGroups} />
+            ) : activeView === "bar" ? (
+              <BarView data={zspreadByRating.data || []} />
+            ) : (
+              <TableView
+                data={filteredTableData}
+                search={tableSearch}
+                onSearchChange={setTableSearch}
+              />
+            )}
+          </div>
+        </main>
+      </div>
+    </>
   );
 }
 
@@ -975,12 +1320,10 @@ function TableView({
               <th className="px-3 py-2.5 text-right">Taxa Indicativa</th>
               <th className="px-3 py-2.5 text-left">NTN-B Ref.</th>
               <th className="px-3 py-2.5 text-right">Z-spread</th>
-              <th className="px-3 py-2.5 text-center">Match</th>
             </tr>
           </thead>
           <tbody>
             {data.map((row, i) => {
-              const matchInfo = TIPO_MATCH_LABELS[row.tipoMatch || "sem_match"];
               const zspreadBps = row.zspread != null ? Math.round(row.zspread * 10000) : null;
               return (
                 <tr
@@ -1035,11 +1378,6 @@ function TableView({
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <span className={`text-[10px] font-medium ${matchInfo.color}`}>
-                      {matchInfo.label}
-                    </span>
                   </td>
                 </tr>
               );

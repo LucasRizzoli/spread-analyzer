@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `spread_analysis` ADD `scoreMatch` decimal(5,4);\nALTER TABLE `spread_analysis` ADD `isOutlier` boolean DEFAULT false;\nALTER TABLE `spread_analysis` ADD `emissorMoodys` varchar(256);\nALTER TABLE `spread_analysis` ADD `numeroEmissaoSnd` int;\nALTER TABLE `spread_analysis` ADD `numeroEmissaoMoodys` varchar(16);\nALTER TABLE `spread_analysis` ADD `instrumentoMoodys` varchar(256);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute ALTER TABLE `spread_analysis` ADD `scoreMatch` decimal(5,4);\nALTER TABLE `spread_analysis` ADD `isOutlier` boolean DEFAULT false;\nALTER TABLE `spread_analysis` ADD `emissorMoodys` varchar(256);\nALTER TABLE `spread_analysis` ADD `numeroEmissaoSnd` int;\nALTER TABLE `spread_analysis` ADD `numeroEmissaoMoodys` varchar(16);\nALTER TABLE `spread_analysis` ADD `instrumentoMoodys` varchar(256);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 4466
+}

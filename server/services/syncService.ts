@@ -6,8 +6,9 @@
  * 1. Parsear planilha Moody's → ratings por emissão específica
  * 2. Parsear planilha ANBIMA Data → ativos com Z-spread (data mais recente)
  * 3. Enriquecer cada código CETIP via SND (debentures.com.br) → número de emissão real
- * 4. Cruzar por emissor normalizado + número de emissão exato
- * 5. Persistir apenas os ativos com match confirmado de emissão
+ * 4. Cruzar por emissor normalizado (Dice ≥ 0.65) + número de emissão exato
+ * 5. Marcar outliers: por rating, quando ≥5 emissões, remover 10% superior e 10% inferior de Z-spread
+ * 6. Persistir resultados com scoreMatch, isOutlier e campos de rastreabilidade
  */
 import { getDb } from "../db";
 import {
@@ -72,6 +73,13 @@ export interface SpreadResult {
   rating: string;
   setor: string | null;
   tipoMatch: TipoMatch;
+  scoreMatch: number;
+  // Rastreabilidade para relatório de qualidade
+  emissorMoodys: string;
+  numeroEmissaoMoodys: string;
+  instrumentoMoodys: string;
+  // Marcador de outlier (preenchido após o matching)
+  isOutlier: boolean;
 }
 
 // ── Lógica de cruzamento ──────────────────────────────────────────────────────
@@ -112,6 +120,7 @@ function diceCoefficient(a: string, b: string): number {
  * mesmo número de emissão.
  *
  * Retorna apenas os ativos com match confirmado — sem fallback para rating de emissor.
+ * Inclui scoreMatch e campos de rastreabilidade para o relatório de qualidade.
  */
 function crossByEmissao(
   assets: AnbimaAsset[],
@@ -143,6 +152,9 @@ function crossByEmissao(
     let bestRating: string | null = null;
     let bestSetor: string | null = null;
     let bestScore = 0;
+    let bestEmissorMoodys = "";
+    let bestNumeroEmissaoMoodys = "";
+    let bestInstrumentoMoodys = "";
 
     for (const r of ratingsEmissao) {
       // Filtro primário: número de emissão deve ser idêntico
@@ -154,6 +166,9 @@ function crossByEmissao(
         bestScore = score;
         bestRating = r.rating;
         bestSetor = r.setor;
+        bestEmissorMoodys = r.emissor;
+        bestNumeroEmissaoMoodys = r.numeroEmissao || "";
+        bestInstrumentoMoodys = r.instrumento || "";
       }
     }
 
@@ -178,10 +193,69 @@ function crossByEmissao(
       rating: bestRating,
       setor: bestSetor,
       tipoMatch: "emissao",
+      scoreMatch: bestScore,
+      emissorMoodys: bestEmissorMoodys,
+      numeroEmissaoMoodys: bestNumeroEmissaoMoodys,
+      instrumentoMoodys: bestInstrumentoMoodys,
+      isOutlier: false,
     });
   }
 
   return results;
+}
+
+/**
+ * Marca outliers por rating:
+ * Para cada rating com ≥5 emissões, remove os 10% com maior Z-spread
+ * e os 10% com menor Z-spread, marcando-os como isOutlier = true.
+ *
+ * Os outliers são mantidos no banco para rastreabilidade, mas marcados
+ * para serem excluídos do gráfico de dispersão por padrão.
+ */
+function markOutliers(results: SpreadResult[]): {
+  marked: SpreadResult[];
+  outlierCount: number;
+  ratingStats: Record<string, { total: number; outliers: number; cutLow: number; cutHigh: number }>;
+} {
+  // Agrupar por rating
+  const byRating = new Map<string, SpreadResult[]>();
+  for (const r of results) {
+    if (!byRating.has(r.rating)) byRating.set(r.rating, []);
+    byRating.get(r.rating)!.push(r);
+  }
+
+  const ratingStats: Record<string, { total: number; outliers: number; cutLow: number; cutHigh: number }> = {};
+  let outlierCount = 0;
+
+  for (const [rating, group] of Array.from(byRating.entries())) {
+    // Apenas grupos com ≥5 emissões recebem tratamento de outlier
+    if (group.length < 5) {
+      ratingStats[rating] = { total: group.length, outliers: 0, cutLow: -Infinity, cutHigh: Infinity };
+      continue;
+    }
+
+    // Ordenar por Z-spread
+    const sorted = [...group].sort((a, b) => a.zSpread - b.zSpread);
+    const n = sorted.length;
+
+    // Calcular índices de corte (10% de cada lado, mínimo 1)
+    const cutCount = Math.max(1, Math.floor(n * 0.10));
+    const cutLow = sorted[cutCount - 1].zSpread;
+    const cutHigh = sorted[n - cutCount].zSpread;
+
+    let outliers = 0;
+    for (const item of group) {
+      if (item.zSpread <= cutLow || item.zSpread >= cutHigh) {
+        item.isOutlier = true;
+        outliers++;
+        outlierCount++;
+      }
+    }
+
+    ratingStats[rating] = { total: n, outliers, cutLow, cutHigh };
+  }
+
+  return { marked: results, outlierCount, ratingStats };
 }
 
 // ── Função principal de sincronização ────────────────────────────────────────
@@ -190,7 +264,7 @@ export async function runFullSync(
   moodysBuffer: Buffer,
   anbimaBuffer: Buffer,
   onProgress?: (p: SyncProgress) => void
-): Promise<{ total: number; comRating: number; semMatch: number }> {
+): Promise<{ total: number; comRating: number; semMatch: number; outliers: number }> {
   if (currentSyncStatus === "running") {
     throw new Error("Sincronização já em andamento");
   }
@@ -331,11 +405,24 @@ export async function runFullSync(
       spreadResults.length
     );
 
-    // ── 7. Persistir resultados de spread ─────────────────────────────────────
+    // ── 7. Marcar outliers por rating ─────────────────────────────────────────
+    report("Identificando outliers por rating...", 0, 1);
+    const { marked, outlierCount, ratingStats } = markOutliers(spreadResults);
+    console.log("[Sync] Estatísticas de outliers por rating:");
+    for (const [rating, stats] of Object.entries(ratingStats)) {
+      if (stats.outliers > 0) {
+        console.log(
+          `  ${rating}: ${stats.total} emissões, ${stats.outliers} outliers (corte: ${(stats.cutLow * 10000).toFixed(0)}bps–${(stats.cutHigh * 10000).toFixed(0)}bps)`
+        );
+      }
+    }
+    report(`${outlierCount} outliers identificados`, 1, 1);
+
+    // ── 8. Persistir resultados de spread ─────────────────────────────────────
     report("Salvando análise de spread...", 0, 1);
     await db.delete(spreadAnalysis);
-    for (let i = 0; i < spreadResults.length; i += BATCH) {
-      const batch = spreadResults.slice(i, i + BATCH);
+    for (let i = 0; i < marked.length; i += BATCH) {
+      const batch = marked.slice(i, i + BATCH);
       await db.insert(spreadAnalysis).values(
         batch.map((s) => ({
           codigoCetip: s.codigoCetip,
@@ -359,17 +446,23 @@ export async function runFullSync(
           ntnbTaxa: null,
           ntnbDuration: null,
           zspread: String(s.zSpread),
+          scoreMatch: String(s.scoreMatch.toFixed(4)),
+          isOutlier: s.isOutlier,
+          emissorMoodys: s.emissorMoodys || null,
+          numeroEmissaoSnd: s.numeroEmissao,
+          numeroEmissaoMoodys: s.numeroEmissaoMoodys || null,
+          instrumentoMoodys: s.instrumentoMoodys || null,
         }))
       );
     }
 
-    const comRating = spreadResults.length;
+    const comRating = marked.length;
     const semMatch = anbimaData.length - comRating;
 
     report(
       "Sincronização concluída!",
-      spreadResults.length,
-      spreadResults.length
+      marked.length,
+      marked.length
     );
 
     // Atualizar log
@@ -378,8 +471,8 @@ export async function runFullSync(
         .update(syncLog)
         .set({
           status: "success",
-          mensagem: `Concluído: ${moodysData.length} ratings Moody's, ${anbimaData.length} ativos ANBIMA, ${enriquecidos} enriquecidos via SND, ${comRating} com match de emissão`,
-          totalProcessados: spreadResults.length,
+          mensagem: `Concluído: ${moodysData.length} ratings Moody's, ${anbimaData.length} ativos ANBIMA, ${enriquecidos} enriquecidos via SND, ${comRating} com match de emissão, ${outlierCount} outliers marcados`,
+          totalProcessados: marked.length,
           finalizadoEm: new Date(),
         })
         .where(eq(syncLog.id, logId));
@@ -388,7 +481,7 @@ export async function runFullSync(
     currentSyncStatus = "success";
     lastSyncAt = new Date();
 
-    return { total: spreadResults.length, comRating, semMatch };
+    return { total: marked.length, comRating, semMatch, outliers: outlierCount };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("[Sync] Erro na sincronização:", msg);
