@@ -1,18 +1,27 @@
 /**
- * Serviço de sincronização — orquestra todos os serviços e persiste no banco
+ * Serviço de sincronização — processa as planilhas da Moody's e ANBIMA Data
+ * e persiste os dados cruzados no banco de dados.
+ *
+ * Fluxo:
+ * 1. Parsear planilha Moody's → ratings por emissão
+ * 2. Parsear planilha ANBIMA Data → ativos com Z-spread já calculado (data mais recente)
+ * 3. Cruzar por fuzzy matching (emissor)
+ * 4. Persistir resultados no banco
  */
 import { getDb } from "../db";
 import {
   moodysRatings,
   anbimaAssets,
-  ntnbCurve,
   spreadAnalysis,
   syncLog,
 } from "../../drizzle/schema";
-import { parseMoodysXlsx, MoodysRatingRow } from "./moodysScraperService";
-import { fetchNtnbCurve, fetchDebentures, fetchCriCra } from "./anbimaFeedService";
-import { fetchAnbimaDataAssets } from "./anbimaDataService";
-import { calculateSpreads } from "./spreadCalculatorService";
+import {
+  parseMoodysXlsx,
+  parseAnbimaDataXlsx,
+  normalizeEmissor,
+  MoodysRatingRow,
+  AnbimaAsset,
+} from "./moodysScraperService";
 import { eq } from "drizzle-orm";
 
 export interface SyncProgress {
@@ -23,7 +32,7 @@ export interface SyncProgress {
 
 export type SyncStatus = "idle" | "running" | "success" | "error";
 
-// Estado global de sincronização (simples, sem Redis)
+// Estado global de sincronização (in-memory)
 let currentSyncStatus: SyncStatus = "idle";
 let currentSyncProgress: SyncProgress = { step: "", done: 0, total: 0 };
 let lastSyncAt: Date | null = null;
@@ -38,16 +47,156 @@ export function getSyncState() {
   };
 }
 
+// ── Tipos de resultado do cruzamento ─────────────────────────────────────────
+
+export type TipoMatch = "emissao" | "emissor" | "sem_match";
+
+export interface SpreadResult {
+  codigoCetip: string;
+  emissorNome: string;
+  tipoRemuneracao: string;
+  remuneracao: string;
+  dataVencimento: string;
+  taxaIndicativa: number | null;
+  duration: number | null;
+  referenciaNtnb: string | null;
+  zSpread: number;
+  spreadIncentivadoSemGrossUp: number | null;
+  lei12431: boolean;
+  dataReferencia: string;
+  // Campos do cruzamento com Moody's
+  rating: string | null;
+  setor: string | null;
+  tipoMatch: TipoMatch;
+}
+
+// ── Lógica de cruzamento ──────────────────────────────────────────────────────
+
+/**
+ * Calcula score de similaridade entre dois strings normalizados (0-1)
+ * Baseado em bigrams (Dice coefficient)
+ */
+function diceCoefficient(a: string, b: string): number {
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+
+  const getBigrams = (str: string): Map<string, number> => {
+    const bigrams = new Map<string, number>();
+    for (let i = 0; i < str.length - 1; i++) {
+      const bigram = str.substring(i, i + 2);
+      bigrams.set(bigram, (bigrams.get(bigram) || 0) + 1);
+    }
+    return bigrams;
+  };
+
+  const bigramsA = getBigrams(a);
+  const bigramsB = getBigrams(b);
+
+  let intersection = 0;
+  for (const entry of Array.from(bigramsA.entries())) {
+    const countB = bigramsB.get(entry[0]) || 0;
+    intersection += Math.min(entry[1], countB);
+  }
+
+  return (2 * intersection) / (a.length - 1 + (b.length - 1));
+}
+
+/**
+ * Realiza o cruzamento entre os ativos da ANBIMA e os ratings da Moody's
+ * Estratégia:
+ * 1. Match por emissor (fuzzy) — usa o melhor rating disponível para o emissor
+ * 2. Prefere ratings de emissão específica quando disponíveis
+ */
+function crossRatings(
+  assets: AnbimaAsset[],
+  ratings: MoodysRatingRow[]
+): SpreadResult[] {
+  // Pré-processar ratings: normalizar nomes para matching
+  const ratingsNormalized = ratings.map((r) => ({
+    ...r,
+    emissorNorm: normalizeEmissor(r.emissor),
+  }));
+
+  // Separar ratings de emissão e de emissor (corporativo)
+  const ratingsEmissao = ratingsNormalized.filter((r) => r.isEmissao);
+  const ratingsEmissor = ratingsNormalized.filter((r) => !r.isEmissao);
+
+  const results: SpreadResult[] = [];
+
+  for (const asset of assets) {
+    const emissorNormAsset = normalizeEmissor(asset.emissor);
+
+    let bestRating: string | null = null;
+    let bestSetor: string | null = null;
+    let tipoMatch: TipoMatch = "sem_match";
+    let bestScore = 0;
+
+    // ── Etapa 1: tentar match por rating de emissão específica ───────────────
+    for (const r of ratingsEmissao) {
+      const score = diceCoefficient(emissorNormAsset, r.emissorNorm);
+      if (score > bestScore && score >= 0.65) {
+        bestScore = score;
+        bestRating = r.rating;
+        bestSetor = r.setor;
+        tipoMatch = "emissor"; // match por emissor (rating de emissão)
+      }
+    }
+
+    // ── Etapa 2: fallback para rating corporativo do emissor ─────────────────
+    if (tipoMatch === "sem_match" || bestScore < 0.65) {
+      for (const r of ratingsEmissor) {
+        const score = diceCoefficient(emissorNormAsset, r.emissorNorm);
+        if (score > bestScore && score >= 0.65) {
+          bestScore = score;
+          bestRating = r.rating;
+          bestSetor = r.setor;
+          tipoMatch = "emissor";
+        }
+      }
+    }
+
+    // Se score muito baixo, marcar como sem match
+    if (bestScore < 0.65) {
+      bestRating = null;
+      bestSetor = null;
+      tipoMatch = "sem_match";
+    }
+
+    results.push({
+      codigoCetip: asset.codigoAtivo,
+      emissorNome: asset.emissor,
+      tipoRemuneracao: asset.tipoRemuneracao,
+      remuneracao: asset.remuneracao,
+      dataVencimento: asset.dataVencimento,
+      taxaIndicativa: asset.taxaIndicativa,
+      duration: asset.duration,
+      referenciaNtnb: asset.referenciaNtnb,
+      zSpread: asset.zSpread,
+      spreadIncentivadoSemGrossUp: asset.spreadIncentivadoSemGrossUp,
+      lei12431: asset.lei12431,
+      dataReferencia: asset.dataReferencia,
+      rating: bestRating,
+      setor: bestSetor,
+      tipoMatch,
+    });
+  }
+
+  return results;
+}
+
+// ── Função principal de sincronização ────────────────────────────────────────
+
 export async function runFullSync(
   moodysBuffer: Buffer,
+  anbimaBuffer: Buffer,
   onProgress?: (p: SyncProgress) => void
-): Promise<void> {
+): Promise<{ total: number; comRating: number; semMatch: number }> {
   if (currentSyncStatus === "running") {
     throw new Error("Sincronização já em andamento");
   }
 
   currentSyncStatus = "running";
-  currentSyncError = null;
+  lastSyncError = null;
   let logId: number | null = null;
 
   const db = await getDb();
@@ -66,17 +215,34 @@ export async function runFullSync(
       status: "running",
       mensagem: "Sincronização iniciada",
     });
-    logId = (logResult as { insertId: number }).insertId;
+    logId = (logResult as any).insertId;
 
-    // ── 1. Processar planilha da Moody's (enviada pelo usuário) ─────────────
+    // ── 1. Parsear planilha da Moody's ────────────────────────────────────────
     report("Processando planilha da Moody's...", 0, 1);
-    const moodysData: MoodysRatingRow[] = parseMoodysXlsx(moodysBuffer);
-    report("Planilha da Moody's processada", 1, 1);
+    const moodysData = parseMoodysXlsx(moodysBuffer);
+    if (moodysData.length === 0) {
+      throw new Error(
+        "Nenhum rating encontrado na planilha da Moody's. Verifique se o arquivo está correto."
+      );
+    }
+    report(`${moodysData.length} ratings da Moody's processados`, 1, 1);
 
-    // Limpar e reinserir ratings
+    // ── 2. Parsear planilha ANBIMA Data ───────────────────────────────────────
+    report("Processando planilha ANBIMA Data...", 0, 1);
+    const anbimaData = parseAnbimaDataXlsx(anbimaBuffer);
+    if (anbimaData.length === 0) {
+      throw new Error(
+        "Nenhum ativo encontrado na planilha ANBIMA Data. Verifique se o arquivo está correto."
+      );
+    }
+    report(`${anbimaData.length} ativos ANBIMA processados`, 1, 1);
+
+    // ── 3. Persistir ratings da Moody's ──────────────────────────────────────
+    report("Salvando ratings no banco...", 0, 1);
     await db.delete(moodysRatings);
-    for (let i = 0; i < moodysData.length; i += 100) {
-      const batch = moodysData.slice(i, i + 100);
+    const BATCH = 200;
+    for (let i = 0; i < moodysData.length; i += BATCH) {
+      const batch = moodysData.slice(i, i + BATCH);
       await db.insert(moodysRatings).values(
         batch.map((r) => ({
           setor: r.setor || null,
@@ -91,202 +257,97 @@ export async function runFullSync(
         }))
       );
     }
-    report(`${moodysData.length} ratings da Moody's salvos`, moodysData.length, moodysData.length);
+    report(`${moodysData.length} ratings salvos`, 1, 1);
 
-    // ── 2. ANBIMA Feed: NTN-B ────────────────────────────────────────────────
-    report("Coletando curva NTN-B...", 0, 1);
-    const ntnbData = await fetchNtnbCurve();
-    report("Curva NTN-B coletada", 1, 1);
-
-    if (ntnbData.length > 0) {
-      const dataRef = ntnbData[0].data_referencia;
-      await db.delete(ntnbCurve).where(eq(ntnbCurve.dataReferencia, dataRef));
-      await db.insert(ntnbCurve).values(
-        ntnbData.map((n) => ({
-          dataReferencia: n.data_referencia,
-          codigoCetip: n.codigo_selic,
-          vencimento: n.vencimento || null,
-          taxaIndicativa: String(n.taxa_indicativa),
-          durationAnos: String(n.durationAnos),
+    // ── 4. Persistir ativos ANBIMA ────────────────────────────────────────────
+    report("Salvando ativos ANBIMA no banco...", 0, 1);
+    await db.delete(anbimaAssets);
+    for (let i = 0; i < anbimaData.length; i += BATCH) {
+      const batch = anbimaData.slice(i, i + BATCH);
+      await db.insert(anbimaAssets).values(
+        batch.map((a) => ({
+          codigoCetip: a.codigoAtivo,
+          isin: null,
+          tipo: "DEB" as const,
+          emissorNome: a.emissor,
+          emissorCnpj: null,
+          setor: null,
+          numeroEmissao: null,
+          numeroSerie: null,
+          dataEmissao: null,
+          dataVencimento: a.dataVencimento || null,
+          remuneracao: a.remuneracao || null,
+          indexador: a.tipoRemuneracao || null,
+          incentivado: a.lei12431,
+          taxaIndicativa:
+            a.taxaIndicativa !== null ? String(a.taxaIndicativa) : null,
+          taxaCompra: null,
+          taxaVenda: null,
+          durationDias:
+            a.duration !== null ? Math.round(a.duration) : null,
+          durationAnos:
+            a.duration !== null
+              ? String((a.duration / 252).toFixed(4))
+              : null,
+          dataReferencia: a.dataReferencia || null,
         }))
       );
-      report(`${ntnbData.length} vértices NTN-B salvos`, ntnbData.length, ntnbData.length);
     }
-
-    // ── 3. ANBIMA Feed: Debêntures + CRI/CRA ─────────────────────────────────
-    report("Coletando debêntures e CRI/CRA...", 0, 2);
-    const [debenturesData, criCraData] = await Promise.all([
-      fetchDebentures(),
-      fetchCriCra(),
-    ]);
-    report("Debêntures e CRI/CRA coletados", 2, 2);
-
-    const totalAtivos = debenturesData.length + criCraData.length;
-    report(`${totalAtivos} ativos coletados da ANBIMA Feed`, totalAtivos, totalAtivos);
-
-    // ── 4. ANBIMA Data: metadados cadastrais (ISIN, emissor, incentivado) ────
-    // Coletar apenas ativos que ainda não temos no banco ou que precisam de update
-    const ativosParaBuscar = [
-      ...debenturesData.map((d) => ({ codigoCetip: d.codigo_ativo, tipo: "DEB" as const })),
-      ...criCraData.map((c) => ({ codigoCetip: c.codigo_ativo, tipo: c.tipo as "CRI" | "CRA" })),
-    ];
-
-    report("Coletando dados cadastrais (ANBIMA Data)...", 0, ativosParaBuscar.length);
-
-    // Buscar apenas uma amostra para não demorar demais (máx 200 ativos)
-    const sampleSize = Math.min(ativosParaBuscar.length, 200);
-    const sample = ativosParaBuscar.slice(0, sampleSize);
-
-    const anbimaDataResults = await fetchAnbimaDataAssets(sample, (done, total) => {
-      report("Coletando dados cadastrais (ANBIMA Data)...", done, total);
-    });
-
-    // Salvar/atualizar ativos no banco
-    for (const asset of anbimaDataResults) {
-      await db
-        .insert(anbimaAssets)
-        .values({
-          codigoCetip: asset.codigoCetip,
-          isin: asset.isin || null,
-          tipo: asset.tipo,
-          emissorNome: asset.emissorNome || null,
-          emissorCnpj: asset.emissorCnpj || null,
-          setor: asset.setor || null,
-          numeroEmissao: asset.numeroEmissao || null,
-          numeroSerie: asset.numeroSerie || null,
-          dataEmissao: asset.dataEmissao || null,
-          dataVencimento: asset.dataVencimento || null,
-          remuneracao: asset.remuneracao || null,
-          indexador: asset.indexador || null,
-          incentivado: asset.incentivado,
-        })
-        .onDuplicateKeyUpdate({
-          set: {
-            isin: asset.isin || null,
-            emissorNome: asset.emissorNome || null,
-            emissorCnpj: asset.emissorCnpj || null,
-            setor: asset.setor || null,
-            numeroEmissao: asset.numeroEmissao || null,
-            incentivado: asset.incentivado,
-          },
-        });
-    }
-
-    // Atualizar preços dos ativos do Feed
-    for (const deb of debenturesData) {
-      await db
-        .update(anbimaAssets)
-        .set({
-          taxaIndicativa: String(deb.taxa_indicativa),
-          taxaCompra: String(deb.taxa_compra),
-          taxaVenda: String(deb.taxa_venda),
-          durationDias: deb.duration,
-          durationAnos: String(deb.durationAnos),
-          dataReferencia: deb.data_referencia,
-          indexador: deb.indexador || null,
-          remuneracao: deb.remuneracao || null,
-        })
-        .where(eq(anbimaAssets.codigoCetip, deb.codigo_ativo));
-    }
-
-    for (const cri of criCraData) {
-      await db
-        .update(anbimaAssets)
-        .set({
-          taxaIndicativa: String(cri.taxa_indicativa),
-          taxaCompra: String(cri.taxa_compra),
-          taxaVenda: String(cri.taxa_venda),
-          durationDias: cri.duration,
-          durationAnos: String(cri.durationAnos),
-          dataReferencia: cri.data_referencia,
-          indexador: cri.indexador || null,
-          remuneracao: cri.remuneracao || null,
-        })
-        .where(eq(anbimaAssets.codigoCetip, cri.codigo_ativo));
-    }
+    report(`${anbimaData.length} ativos ANBIMA salvos`, 1, 1);
 
     // ── 5. Cruzamento e cálculo de Z-spread ──────────────────────────────────
-    report("Calculando Z-spreads...", 0, 1);
-
-    // Buscar ratings com IDs do banco
-    const moodysFromDb = await db.select().from(moodysRatings);
-    const ntnbFromDb = await db.select().from(ntnbCurve);
-
-    const ntnbItems = ntnbFromDb.map((n) => ({
-      codigo_selic: n.codigoCetip,
-      data_referencia: n.dataReferencia,
-      vencimento: n.vencimento || "",
-      taxa_indicativa: Number(n.taxaIndicativa),
-      duration: 0,
-      durationAnos: Number(n.durationAnos),
-    }));
-
-    const moodysWithId = moodysFromDb.map((m) => ({
-      id: m.id,
-      setor: m.setor || "",
-      emissor: m.emissor,
-      produto: m.produto || "",
-      instrumento: m.instrumento || "",
-      objeto: m.objeto || "",
-      rating: m.rating,
-      perspectiva: m.perspectiva || "",
-      dataAtualizacao: m.dataAtualizacao || "",
-      numeroEmissao: m.numeroEmissao || null,
-    }));
-
-    const anbimaDataFromDb = await db.select().from(anbimaAssets);
-    const anbimaDataForCalc = anbimaDataFromDb.map((a) => ({
-      codigoCetip: a.codigoCetip,
-      isin: a.isin || null,
-      tipo: a.tipo,
-      emissorNome: a.emissorNome || "",
-      emissorCnpj: a.emissorCnpj || "",
-      setor: a.setor || "",
-      numeroEmissao: a.numeroEmissao || null,
-      numeroSerie: a.numeroSerie || null,
-      dataEmissao: a.dataEmissao || null,
-      dataVencimento: a.dataVencimento || null,
-      remuneracao: a.remuneracao || "",
-      indexador: a.indexador || "",
-      incentivado: a.incentivado || false,
-    }));
-
-    const spreadResults = calculateSpreads(
-      debenturesData,
-      criCraData,
-      anbimaDataForCalc,
-      moodysWithId,
-      ntnbItems
+    report("Cruzando ratings com ativos...", 0, anbimaData.length);
+    const spreadResults = crossRatings(anbimaData, moodysData);
+    report(
+      `${spreadResults.length} cruzamentos realizados`,
+      spreadResults.length,
+      spreadResults.length
     );
 
-    // Salvar resultados
+    // ── 6. Persistir resultados de spread ─────────────────────────────────────
+    report("Salvando análise de spread...", 0, 1);
     await db.delete(spreadAnalysis);
-    for (let i = 0; i < spreadResults.length; i += 100) {
-      const batch = spreadResults.slice(i, i + 100);
+    for (let i = 0; i < spreadResults.length; i += BATCH) {
+      const batch = spreadResults.slice(i, i + BATCH);
       await db.insert(spreadAnalysis).values(
         batch.map((s) => ({
           codigoCetip: s.codigoCetip,
-          isin: s.isin || null,
-          tipo: s.tipo,
+          isin: null,
+          tipo: "DEB" as const,
           emissorNome: s.emissorNome || null,
           setor: s.setor || null,
-          indexador: s.indexador || null,
-          incentivado: s.incentivado,
+          indexador: s.tipoRemuneracao || null,
+          incentivado: s.lei12431,
           rating: s.rating || null,
           tipoMatch: s.tipoMatch,
-          moodysRatingId: s.moodysRatingId || null,
-          taxaIndicativa: s.taxaIndicativa ? String(s.taxaIndicativa) : null,
-          durationAnos: s.durationAnos ? String(s.durationAnos) : null,
+          moodysRatingId: null,
+          taxaIndicativa:
+            s.taxaIndicativa !== null ? String(s.taxaIndicativa) : null,
+          durationAnos:
+            s.duration !== null
+              ? String((s.duration / 252).toFixed(4))
+              : null,
           dataReferencia: s.dataReferencia || null,
-          ntnbReferencia: s.ntnbReferencia || null,
-          ntnbTaxa: s.ntnbTaxa ? String(s.ntnbTaxa) : null,
-          ntnbDuration: s.ntnbDuration ? String(s.ntnbDuration) : null,
-          zspread: s.zspread ? String(s.zspread) : null,
+          ntnbReferencia: s.referenciaNtnb || null,
+          ntnbTaxa: null,
+          ntnbDuration: null,
+          zspread: String(s.zSpread),
         }))
       );
     }
 
-    report(`${spreadResults.length} spreads calculados e salvos`, spreadResults.length, spreadResults.length);
+    const comRating = spreadResults.filter(
+      (s) => s.tipoMatch !== "sem_match"
+    ).length;
+    const semMatch = spreadResults.filter(
+      (s) => s.tipoMatch === "sem_match"
+    ).length;
+
+    report(
+      "Sincronização concluída!",
+      spreadResults.length,
+      spreadResults.length
+    );
 
     // Atualizar log
     if (logId) {
@@ -294,7 +355,7 @@ export async function runFullSync(
         .update(syncLog)
         .set({
           status: "success",
-          mensagem: `Sincronização concluída: ${moodysData.length} ratings, ${totalAtivos} ativos, ${spreadResults.length} spreads`,
+          mensagem: `Concluído: ${moodysData.length} ratings, ${anbimaData.length} ativos, ${comRating} com rating, ${semMatch} sem match`,
           totalProcessados: spreadResults.length,
           finalizadoEm: new Date(),
         })
@@ -303,10 +364,11 @@ export async function runFullSync(
 
     currentSyncStatus = "success";
     lastSyncAt = new Date();
-    currentSyncProgress = { step: "Sincronização concluída!", done: 1, total: 1 };
+
+    return { total: spreadResults.length, comRating, semMatch };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error("[Sync] Erro:", msg);
+    console.error("[Sync] Erro na sincronização:", msg);
     currentSyncStatus = "error";
     lastSyncError = msg;
 
@@ -315,11 +377,7 @@ export async function runFullSync(
       if (db2) {
         await db2
           .update(syncLog)
-          .set({
-            status: "error",
-            mensagem: msg,
-            finalizadoEm: new Date(),
-          })
+          .set({ status: "error", mensagem: msg, finalizadoEm: new Date() })
           .where(eq(syncLog.id, logId));
       }
     }
@@ -327,6 +385,3 @@ export async function runFullSync(
     throw error;
   }
 }
-
-// Variável para evitar erro de referência
-let currentSyncError: string | null = null;

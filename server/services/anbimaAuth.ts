@@ -58,10 +58,12 @@ export async function getAnbimaToken(): Promise<string> {
 export async function anbimaFetch<T>(path: string): Promise<T> {
   const token = await getAnbimaToken();
 
+  // A ANBIMA usa headers proprietários: client_id + access_token (não Authorization: Bearer)
+  // Ref: https://developers.anbima.com.br/pt/documentacao/precos-indices/autenticacao/
   const response = await fetch(`${ANBIMA_BASE_URL}${path}`, {
     headers: {
-      Authorization: `Bearer ${token}`,
       "client_id": process.env.ANBIMA_CLIENT_ID!,
+      "access_token": token,
       "Content-Type": "application/json",
     },
   });

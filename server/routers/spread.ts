@@ -96,15 +96,22 @@ export const spreadRouter = router({
     }),
 
   /**
-   * Dispara sincronização com base64 do arquivo Moody's (via tRPC)
-   * O arquivo é enviado como base64 para contornar limitações de multipart no tRPC
+   * Dispara sincronização com os dois arquivos em base64 (via tRPC)
+   * - moodysFileBase64: planilha MOODYS_LOCAL_BRAZIL_*.xlsx
+   * - anbimaFileBase64: planilha debentures-precos-*.xlsx
    */
   triggerSync: protectedProcedure
-    .input(z.object({ moodysFileBase64: z.string() }))
+    .input(
+      z.object({
+        moodysFileBase64: z.string(),
+        anbimaFileBase64: z.string(),
+      })
+    )
     .mutation(async ({ input }) => {
       const moodysBuffer = Buffer.from(input.moodysFileBase64, "base64");
+      const anbimaBuffer = Buffer.from(input.anbimaFileBase64, "base64");
       // Rodar em background sem bloquear a resposta
-      runFullSync(moodysBuffer).catch((err) => {
+      runFullSync(moodysBuffer, anbimaBuffer).catch((err) => {
         console.error("[Sync] Erro na sincronização:", err);
       });
       return { started: true, message: "Sincronização iniciada em background" };

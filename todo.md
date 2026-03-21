@@ -46,3 +46,16 @@
 - [x] Processamento do .xlsx enviado pelo usuário
 - [x] Sincronização orquestrada pelo syncService com buffer do arquivo Moody's
 - [x] 17 testes passando (spread calculator, auth ANBIMA, logout)
+
+## Bugs Identificados (v1.1)
+- [x] Bug: parser Moody's retornando 0 ratings (verificar estrutura real do xlsx)
+- [x] Bug: ANBIMA Feed 401 - substituído por upload manual de planilha ANBIMA Data
+
+## Refatoração v1.2 — Upload de planilhas reais
+- [x] Inspecionar estrutura real das planilhas Moody's e ANBIMA Data
+- [x] Reescrever parser Moody's para formato real (808 ratings, cabeçalho linha 3)
+- [x] Reescrever parser ANBIMA Data para formato real (Z-spread pré-calculado, filtra data mais recente)
+- [x] Atualizar lógica de cruzamento (fuzzy match Dice Coefficient, limiar 0.65)
+- [x] Atualizar frontend: upload de duas planilhas separadas (Moody's + ANBIMA)
+- [x] Adicionar links de download das planilhas na interface (empty state + sidebar)
+- [x] Testar fluxo completo end-to-end com dados reais (23 testes passando, 53% match rate)

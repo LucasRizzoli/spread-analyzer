@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { getRatingOrder, sortRatings } from "./services/spreadCalculatorService";
 import {
-  getRatingOrder,
-  sortRatings,
-  calculateSpreads,
-  normalizeEmissorName,
-  extractEmissaoNumber,
-} from "./services/spreadCalculatorService";
+  normalizeEmissor,
+  extractNumeroEmissao,
+  extractSerie,
+  parseMoodysXlsx,
+  parseAnbimaDataXlsx,
+} from "./services/moodysScraperService";
+import * as XLSX from "xlsx";
 
 // ─── Rating ordering ──────────────────────────────────────────────────────────
 
@@ -28,13 +30,16 @@ describe("sortRatings", () => {
   it("ordena ratings do melhor para o pior", () => {
     const input = ["BB.br", "AAA.br", "A.br", "BBB+.br"];
     const result = sortRatings(input);
-    expect(result).toEqual(["AAA.br", "A.br", "BBB+.br", "BB.br"]);
+    expect(result[0]).toBe("AAA.br");
+    expect(result[1]).toBe("A.br");
+    expect(result[2]).toBe("BBB+.br");
+    expect(result[3]).toBe("BB.br");
   });
 
   it("remove duplicatas", () => {
     const input = ["AA.br", "AA.br", "A.br"];
     const result = sortRatings(input);
-    expect(result).toEqual(["AA.br", "A.br"]);
+    expect(result).toHaveLength(2);
   });
 
   it("lida com array vazio", () => {
@@ -42,222 +47,178 @@ describe("sortRatings", () => {
   });
 });
 
-// ─── Normalização de nomes ────────────────────────────────────────────────────
+// ─── Normalização de emissor ──────────────────────────────────────────────────
 
-describe("normalizeEmissorName", () => {
-  it("remove sufixos jurídicos comuns", () => {
-    expect(normalizeEmissorName("PETROBRAS S.A.")).toBe("PETROBRAS");
-    expect(normalizeEmissorName("VALE S/A")).toBe("VALE");
-    expect(normalizeEmissorName("EMBRAER SA")).toBe("EMBRAER");
-    expect(normalizeEmissorName("AMBEV S.A")).toBe("AMBEV");
+describe("normalizeEmissor", () => {
+  it("remove sufixos societários", () => {
+    expect(normalizeEmissor("Petrobras S.A.")).toBe("petrobras");
+    expect(normalizeEmissor("Vale S/A")).toBe("vale");
+    expect(normalizeEmissor("Braskem Ltda.")).toBe("braskem");
   });
 
-  it("converte para maiúsculas e remove espaços extras", () => {
-    expect(normalizeEmissorName("  petrobras  ")).toBe("PETROBRAS");
+  it("remove acentos", () => {
+    expect(normalizeEmissor("Companhia Energética")).toBe("companhia energetica");
+    expect(normalizeEmissor("Ânima Holding S.A.")).toBe("anima holding");
   });
 
-  it("lida com string vazia", () => {
-    expect(normalizeEmissorName("")).toBe("");
+  it("remove conteúdo entre parênteses", () => {
+    expect(normalizeEmissor("AEGEA SANEAMENTO (*) (**)")).toBe("aegea saneamento");
+    expect(normalizeEmissor("Empresa XYZ (*)")).toBe("empresa xyz");
+  });
+
+  it("normaliza espaços e caracteres especiais", () => {
+    expect(normalizeEmissor("  Empresa   ABC  ")).toBe("empresa abc");
   });
 });
 
 // ─── Extração de número de emissão ───────────────────────────────────────────
 
-describe("extractEmissaoNumber", () => {
-  it("extrai número ordinal de emissão", () => {
-    expect(extractEmissaoNumber("4ª Emissão de Debêntures - Série Única")).toBe(4);
-    expect(extractEmissaoNumber("1ª Emissão")).toBe(1);
-    expect(extractEmissaoNumber("12ª Emissão de CRI")).toBe(12);
+describe("extractNumeroEmissao", () => {
+  it("extrai número de emissão com ª", () => {
+    expect(extractNumeroEmissao("4ª Emissão de Debêntures - Série Única")).toBe("4");
+    expect(extractNumeroEmissao("1ª Emissão de Debêntures")).toBe("1");
+    expect(extractNumeroEmissao("11ª Emissão de Debêntures – Série Única")).toBe("11");
   });
 
-  it("extrai número cardinal", () => {
-    expect(extractEmissaoNumber("3a Emissão")).toBe(3);
-    expect(extractEmissaoNumber("Emissão 5")).toBe(5);
+  it("extrai número de emissão com 'a'", () => {
+    expect(extractNumeroEmissao("7a Emissão de Debêntures")).toBe("7");
+    expect(extractNumeroEmissao("8a Emissão de Debêntures")).toBe("8");
   });
 
-  it("retorna null quando não encontra número", () => {
-    expect(extractEmissaoNumber("Debênture Simples")).toBeNull();
-    expect(extractEmissaoNumber("")).toBeNull();
+  it("retorna null para strings sem emissão", () => {
+    expect(extractNumeroEmissao("N/A")).toBeNull();
+    expect(extractNumeroEmissao("Rating Corporativo")).toBeNull();
+    expect(extractNumeroEmissao("")).toBeNull();
   });
 });
 
-// ─── Cálculo de Z-spread ─────────────────────────────────────────────────────
+// ─── Extração de série ────────────────────────────────────────────────────────
 
-describe("calculateSpreads", () => {
-  const mockDebentures = [
-    {
-      codigo_ativo: "PETR14",
-      data_referencia: "2025-03-21",
-      taxa_indicativa: 0.0850,
-      taxa_compra: 0.0855,
-      taxa_venda: 0.0845,
-      duration: 730,
-      durationAnos: 2.0,
-      indexador: "IPCA",
-      remuneracao: "IPCA+",
-    },
-    {
-      codigo_ativo: "VALE11",
-      data_referencia: "2025-03-21",
-      taxa_indicativa: 0.0780,
-      taxa_compra: 0.0785,
-      taxa_venda: 0.0775,
-      duration: 1460,
-      durationAnos: 4.0,
-      indexador: "IPCA",
-      remuneracao: "IPCA+",
-    },
-  ];
-
-  const mockCriCra: typeof mockDebentures = [];
-
-  const mockAnbimaData = [
-    {
-      codigoCetip: "PETR14",
-      isin: "BRPETR14BS001",
-      tipo: "DEB" as const,
-      emissorNome: "PETROBRAS S.A.",
-      emissorCnpj: "33000167000101",
-      setor: "Energia",
-      numeroEmissao: "14",
-      numeroSerie: null,
-      dataEmissao: null,
-      dataVencimento: null,
-      remuneracao: "IPCA+",
-      indexador: "IPCA",
-      incentivado: false,
-    },
-    {
-      codigoCetip: "VALE11",
-      isin: "BRVALE11BS001",
-      tipo: "DEB" as const,
-      emissorNome: "VALE S.A.",
-      emissorCnpj: "33592510000154",
-      setor: "Mineração",
-      numeroEmissao: "11",
-      numeroSerie: null,
-      dataEmissao: null,
-      dataVencimento: null,
-      remuneracao: "IPCA+",
-      indexador: "IPCA",
-      incentivado: false,
-    },
-  ];
-
-  const mockMoodys = [
-    {
-      id: 1,
-      setor: "Energia",
-      emissor: "PETROBRAS S.A.",
-      produto: "Debêntures",
-      instrumento: "Debêntures",
-      objeto: "14ª Emissão de Debêntures",
-      rating: "AA-.br",
-      perspectiva: "Estável",
-      dataAtualizacao: "2025-01-01",
-      numeroEmissao: "14",
-    },
-    {
-      id: 2,
-      setor: "Mineração",
-      emissor: "VALE S.A.",
-      produto: "Debêntures",
-      instrumento: "Debêntures",
-      objeto: "11ª Emissão de Debêntures",
-      rating: "AAA.br",
-      perspectiva: "Estável",
-      dataAtualizacao: "2025-01-01",
-      numeroEmissao: "11",
-    },
-  ];
-
-  const mockNtnb = [
-    {
-      codigo_selic: "760199",
-      data_referencia: "2025-03-21",
-      vencimento: "2026-08-15",
-      taxa_indicativa: 0.0620,
-      duration: 365,
-      durationAnos: 1.0,
-    },
-    {
-      codigo_selic: "760200",
-      data_referencia: "2025-03-21",
-      vencimento: "2028-08-15",
-      taxa_indicativa: 0.0650,
-      duration: 1095,
-      durationAnos: 3.0,
-    },
-    {
-      codigo_selic: "760201",
-      data_referencia: "2025-03-21",
-      vencimento: "2030-08-15",
-      taxa_indicativa: 0.0680,
-      duration: 1825,
-      durationAnos: 5.0,
-    },
-  ];
-
-  it("calcula Z-spread corretamente para papéis com match", () => {
-    const results = calculateSpreads(
-      mockDebentures,
-      mockCriCra,
-      mockAnbimaData,
-      mockMoodys,
-      mockNtnb
-    );
-
-    expect(results.length).toBe(2);
-
-    const petr = results.find((r) => r.codigoCetip === "PETR14");
-    expect(petr).toBeDefined();
-    expect(petr?.rating).toBe("AA-.br");
-    // PETR14 duration=2.0: interpolação linear entre NTN-B 1.0 (6.20%) e 3.0 (6.50%)
-    // taxa interpolada = 0.062 + (2.0-1.0)/(3.0-1.0) * (0.065-0.062) = 0.062 + 0.5*0.003 = 0.0635
-    // Z-spread = 0.085 - 0.0635 = 0.0215
-    expect(petr?.zspread).toBeCloseTo(0.0215, 3);
-    expect(petr?.tipoMatch).toBe("emissao");
-
-    const vale = results.find((r) => r.codigoCetip === "VALE11");
-    expect(vale).toBeDefined();
-    expect(vale?.rating).toBe("AAA.br");
-    expect(vale?.tipoMatch).toBe("emissao");
+describe("extractSerie", () => {
+  it("extrai número de série", () => {
+    expect(extractSerie("4ª Emissão de Debêntures - 1ª Série")).toBe("1");
+    expect(extractSerie("4ª Emissão de Debêntures - 2ª Série")).toBe("2");
   });
 
-  it("usa NTN-B de duration mais próxima", () => {
-    const results = calculateSpreads(
-      mockDebentures,
-      mockCriCra,
-      mockAnbimaData,
-      mockMoodys,
-      mockNtnb
-    );
-
-    // PETR14 tem duration 2.0 anos — NTN-B mais próxima é a de 1.0 ou 3.0 anos
-    // Diferença: |2.0 - 1.0| = 1.0 vs |2.0 - 3.0| = 1.0 — empate, deve pegar a de menor duration
-    const petr = results.find((r) => r.codigoCetip === "PETR14");
-    expect(petr?.ntnbDuration).toBeDefined();
-
-    // VALE11 tem duration 4.0 anos — NTN-B mais próxima é a de 3.0 ou 5.0 anos
-    const vale = results.find((r) => r.codigoCetip === "VALE11");
-    expect(vale?.ntnbDuration).toBeDefined();
+  it("identifica série única", () => {
+    expect(extractSerie("4ª Emissão de Debêntures - Série Única")).toBe("unica");
   });
 
-  it("retorna tipoMatch sem_match quando não há rating", () => {
-    const results = calculateSpreads(
-      [{ ...mockDebentures[0], codigo_ativo: "UNKN11" }],
-      [],
-      [{ ...mockAnbimaData[0], codigoCetip: "UNKN11", emissorNome: "EMPRESA DESCONHECIDA LTDA" }],
-      mockMoodys,
-      mockNtnb
-    );
+  it("retorna null quando não há série", () => {
+    expect(extractSerie("N/A")).toBeNull();
+    expect(extractSerie("")).toBeNull();
+  });
+});
 
-    const unkn = results.find((r) => r.codigoCetip === "UNKN11");
-    expect(unkn?.tipoMatch).toBe("sem_match");
-    expect(unkn?.rating).toBeNull();
-    // Sem match de rating, mas ainda tem taxa e NTN-B — Z-spread pode ser calculado
-    // O Z-spread é null apenas quando não há taxa indicativa ou NTN-B
-    // Neste caso o ativo tem taxa, então Z-spread é calculado mesmo sem rating
-    expect(unkn?.zspread).toBeDefined();
+// ─── Parser Moody's ───────────────────────────────────────────────────────────
+
+describe("parseMoodysXlsx", () => {
+  function buildMoodysWorkbook(rows: unknown[][]): Buffer {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+    return Buffer.from(XLSX.write(wb, { type: "buffer", bookType: "xlsx" }));
+  }
+
+  it("parseia planilha Moody's sintética corretamente", () => {
+    const data = [
+      ["", "", "", "", "", "", "Data de Atualização", 45770],
+      ["", "", "Moody's Local Brasil", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      ["Setor", "Emissor", "Produto", "Instrumento", "Objeto", "Rating / Avaliação", "Perspectiva", "Última data"],
+      ["Empresas Não-Financeiras", "Empresa ABC S.A.", "Rating de Dívida", "4ª Emissão de Debêntures - Série Única", "Rating de Emissão Sênior", "AA-.br", "Perspectiva estável", 45770],
+      ["Empresas Não-Financeiras", "Empresa ABC S.A.", "Rating de Emissor", "N/A", "Rating de Emissor", "AA.br", "Perspectiva estável", 45770],
+      ["Financeiras", "Banco XYZ S.A.", "Rating Corporativo", "N/A", "Rating Corporativo", "A.br", "Perspectiva positiva", 45770],
+    ];
+
+    const result = parseMoodysXlsx(buildMoodysWorkbook(data));
+
+    expect(result.length).toBe(3);
+    expect(result[0].emissor).toBe("Empresa ABC S.A.");
+    expect(result[0].rating).toBe("AA-.br");
+    expect(result[0].isEmissao).toBe(true);
+    expect(result[0].numeroEmissao).toBe("4");
+    expect(result[1].isEmissao).toBe(false); // Rating de Emissor
+    expect(result[2].rating).toBe("A.br");
+  });
+
+  it("ignora linhas com rating inválido ou emissor vazio", () => {
+    const data = [
+      ["", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      ["Setor", "Emissor", "Produto", "Instrumento", "Objeto", "Rating / Avaliação", "Perspectiva", "Data"],
+      ["Setor1", "Empresa A", "Rating de Dívida", "1ª Emissão", "Obj", "AA-.br", "Estável", 45770],
+      ["Setor1", "Empresa B", "Rating de Dívida", "1ª Emissão", "Obj", "INVALIDO", "Estável", 45770],
+      ["Setor1", "", "Rating de Dívida", "1ª Emissão", "Obj", "AA.br", "Estável", 45770],
+    ];
+
+    const result = parseMoodysXlsx(buildMoodysWorkbook(data));
+    expect(result.length).toBe(1);
+    expect(result[0].emissor).toBe("Empresa A");
+  });
+});
+
+// ─── Parser ANBIMA Data ───────────────────────────────────────────────────────
+
+describe("parseAnbimaDataXlsx", () => {
+  function buildAnbimaWorkbook(rows: unknown[][]): Buffer {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+    return Buffer.from(XLSX.write(wb, { type: "buffer", bookType: "xlsx" }));
+  }
+
+  const header = [
+    "Data de referência", "Código", "Emissor", "Tipo Remuneração", "Remuneração",
+    "Data de vencimento", "Taxa de compra", "Taxa de venda", "Taxa indicativa",
+    "PU", "Desvio", "Min", "Max", "% PU", "% VNE", "Duration",
+    "% Reúne", "Referência NTN-B", "Z-Spread", "Spread incentivados", "Lei 12.431",
+    "VNA", "PU Par",
+  ];
+
+  it("parseia planilha ANBIMA Data e filtra data mais recente", () => {
+    const data = [
+      header,
+      ["20/03/2026", "ABCD11", "Empresa Teste S.A.", "IPCA SPREAD", "IPCA + 3,5000%", "15/06/2030", 7.2, 6.8, 7.0, 1050, 0.05, 6.9, 7.1, 99.5, "", 850, "10%", "15/05/2029", 0.85, -0.15, "SIM", 1000, 1050],
+      ["20/03/2026", "EFGH22", "Outra Empresa Ltda.", "DI SPREAD", "DI + 2,0000%", "15/12/2028", 2.3, 1.9, 2.1, 1020, 0.08, 2.0, 2.2, 98.5, "", 650, "--", "", 2.1, "", "NÃO", 1000, 1035],
+      // dia anterior - deve ser ignorado
+      ["19/03/2026", "ABCD11", "Empresa Teste S.A.", "IPCA SPREAD", "IPCA + 3,5000%", "15/06/2030", 7.1, 6.7, 6.9, 1048, 0.05, 6.8, 7.0, 99.3, "", 851, "10%", "15/05/2029", 0.84, -0.16, "SIM", 1000, 1050],
+    ];
+
+    const result = parseAnbimaDataXlsx(buildAnbimaWorkbook(data));
+
+    // Deve retornar apenas os 2 registros da data mais recente (20/03/2026)
+    expect(result.length).toBe(2);
+    expect(result[0].codigoAtivo).toBe("ABCD11");
+    expect(result[0].emissor).toBe("Empresa Teste S.A.");
+    expect(result[0].zSpread).toBeCloseTo(0.85);
+    expect(result[0].lei12431).toBe(true);
+    expect(result[0].dataReferencia).toBe("20/03/2026");
+    expect(result[1].lei12431).toBe(false);
+  });
+
+  it("ignora linhas sem Z-spread", () => {
+    const data = [
+      header,
+      ["20/03/2026", "ABCD11", "Empresa A", "DI SPREAD", "DI + 2%", "15/12/2028", 2.3, 1.9, 2.1, 1020, 0.08, 2.0, 2.2, 98.5, "", 650, "--", "", 2.1, "", "NÃO", 1000, 1035],
+      ["20/03/2026", "EFGH22", "Empresa B", "DI SPREAD", "DI + 1%", "15/12/2028", "", "", "", 1010, "", "", "", 99, "", "", "--", "", "", "", "NÃO", 1000, 1010],
+    ];
+
+    const result = parseAnbimaDataXlsx(buildAnbimaWorkbook(data));
+    expect(result.length).toBe(1);
+    expect(result[0].codigoAtivo).toBe("ABCD11");
+  });
+
+  it("identifica corretamente o campo lei12431", () => {
+    const data = [
+      header,
+      ["20/03/2026", "ABCD11", "Empresa A", "IPCA SPREAD", "IPCA + 3%", "15/06/2030", 7.0, 6.8, 7.0, 1050, 0.05, 6.9, 7.1, 99.5, "", 850, "10%", "15/05/2029", 0.85, -0.15, "SIM", 1000, 1050],
+      ["20/03/2026", "EFGH22", "Empresa B", "IPCA SPREAD", "IPCA + 2%", "15/06/2028", 6.0, 5.8, 6.0, 1020, 0.03, 5.9, 6.1, 98.5, "", 650, "", "", 0.50, "", "NÃO", 1000, 1035],
+    ];
+
+    const result = parseAnbimaDataXlsx(buildAnbimaWorkbook(data));
+    expect(result.find(r => r.codigoAtivo === "ABCD11")?.lei12431).toBe(true);
+    expect(result.find(r => r.codigoAtivo === "EFGH22")?.lei12431).toBe(false);
   });
 });

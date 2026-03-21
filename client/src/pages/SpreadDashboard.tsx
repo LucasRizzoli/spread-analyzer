@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   Loader2,
   Upload,
+  ExternalLink,
 } from "lucide-react";
 import {
   ScatterChart,
@@ -32,12 +33,12 @@ import {
   BarChart,
   Bar,
   Cell,
-  Legend,
   ReferenceLine,
 } from "recharts";
 import { toast } from "sonner";
 import { sortRatings } from "../lib/ratings";
-// ─── Helperss ──────────────────────────────────────────────────────────────────
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatRate(v: number | null | undefined): string {
   if (v == null) return "—";
@@ -47,12 +48,6 @@ function formatRate(v: number | null | undefined): string {
 function formatDuration(v: number | null | undefined): string {
   if (v == null) return "—";
   return `${v.toFixed(2)}a`;
-}
-
-function formatSpread(v: number | null | undefined): string {
-  if (v == null) return "—";
-  const bps = Math.round(v * 10000);
-  return `${bps > 0 ? "+" : ""}${bps} bps`;
 }
 
 const RATING_COLORS: Record<string, string> = {
@@ -165,8 +160,12 @@ export default function SpreadDashboard() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
   const [activeView, setActiveView] = useState<"scatter" | "bar" | "table">("scatter");
   const [tableSearch, setTableSearch] = useState("");
+
+  // Estado dos dois arquivos de upload
   const [moodysFile, setMoodysFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [anbimaFile, setAnbimaFile] = useState<File | null>(null);
+  const moodysInputRef = useRef<HTMLInputElement>(null);
+  const anbimaInputRef = useRef<HTMLInputElement>(null);
 
   // Queries
   const filterOptions = trpc.spread.getFilterOptions.useQuery();
@@ -191,16 +190,17 @@ export default function SpreadDashboard() {
   const triggerSync = trpc.spread.triggerSync.useMutation({
     onSuccess: () => {
       toast.success("Sincronização iniciada", {
-        description: "Os dados serão atualizados em alguns minutos.",
+        description: "Os dados serão atualizados em alguns instantes.",
       });
       setMoodysFile(null);
+      setAnbimaFile(null);
     },
     onError: (err) => {
       toast.error("Erro ao iniciar sincronização", { description: err.message });
     },
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMoodysFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
@@ -211,23 +211,55 @@ export default function SpreadDashboard() {
     }
   };
 
-  const handleSync = async () => {
-    if (!moodysFile) {
-      toast.error("Arquivo obrigatório", {
-        description: "Faça o download da planilha em moodyslocal.com.br e selecione o arquivo .xlsx",
-      });
-      fileInputRef.current?.click();
-      return;
+  const handleAnbimaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+        toast.error("Arquivo inválido", { description: "Selecione um arquivo .xlsx da ANBIMA Data" });
+        return;
+      }
+      setAnbimaFile(file);
     }
-    const arrayBuffer = await moodysFile.arrayBuffer();
+  };
+
+  const fileToBase64 = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
     const uint8 = new Uint8Array(arrayBuffer);
     let binary = "";
     for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
-    const base64 = btoa(binary);
-    triggerSync.mutate({ moodysFileBase64: base64 });
+    return btoa(binary);
   };
 
-  const utils = trpc.useUtils();
+  const handleSync = async () => {
+    if (!moodysFile) {
+      toast.error("Planilha Moody's obrigatória", {
+        description: "Faça o download em moodyslocal.com.br e selecione o arquivo .xlsx",
+      });
+      moodysInputRef.current?.click();
+      return;
+    }
+    if (!anbimaFile) {
+      toast.error("Planilha ANBIMA Data obrigatória", {
+        description: "Faça o download em data.anbima.com.br e selecione o arquivo .xlsx",
+      });
+      anbimaInputRef.current?.click();
+      return;
+    }
+    try {
+      const [moodysBase64, anbimaBase64] = await Promise.all([
+        fileToBase64(moodysFile),
+        fileToBase64(anbimaFile),
+      ]);
+      triggerSync.mutate({
+        moodysFileBase64: moodysBase64,
+        anbimaFileBase64: anbimaBase64,
+      });
+    } catch (err) {
+      toast.error("Erro ao processar arquivos", {
+        description: err instanceof Error ? err.message : "Tente novamente",
+      });
+    }
+  };
 
   // Dados processados
   const analysisData = analysisQuery.data || [];
@@ -291,6 +323,8 @@ export default function SpreadDashboard() {
     return sortRatings(filterOptions.data?.ratings || []);
   }, [filterOptions.data?.ratings]);
 
+  const bothFilesSelected = moodysFile !== null && anbimaFile !== null;
+
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* ── Sidebar de filtros ─────────────────────────────────────────────── */}
@@ -336,36 +370,64 @@ export default function SpreadDashboard() {
           {isSyncing && syncState.data?.progress && (
             <p className="text-xs text-yellow-400 mt-1">{syncState.data.progress.step}</p>
           )}
-          {/* Upload do arquivo Moody's */}
+
+          {/* Upload dos dois arquivos */}
           <input
-            ref={fileInputRef}
+            ref={moodysInputRef}
             type="file"
             accept=".xlsx,.xls"
             className="hidden"
-            onChange={handleFileChange}
+            onChange={handleMoodysFileChange}
           />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className={`w-full mt-2 flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border transition-colors ${
-              moodysFile
-                ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
-                : "border-dashed border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
-            }`}
-          >
-            <Upload className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">
-              {moodysFile ? moodysFile.name : "Planilha Moody's (.xlsx)"}
-            </span>
-          </button>
+          <input
+            ref={anbimaInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleAnbimaFileChange}
+          />
+
+          <div className="mt-2 space-y-1.5">
+            {/* Botão Moody's */}
+            <button
+              onClick={() => moodysInputRef.current?.click()}
+              className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border transition-colors ${
+                moodysFile
+                  ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
+                  : "border-dashed border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+              }`}
+            >
+              <Upload className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">
+                {moodysFile ? moodysFile.name : "Planilha Moody's (.xlsx)"}
+              </span>
+            </button>
+
+            {/* Botão ANBIMA */}
+            <button
+              onClick={() => anbimaInputRef.current?.click()}
+              className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border transition-colors ${
+                anbimaFile
+                  ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
+                  : "border-dashed border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+              }`}
+            >
+              <Upload className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">
+                {anbimaFile ? anbimaFile.name : "Planilha ANBIMA Data (.xlsx)"}
+              </span>
+            </button>
+          </div>
+
           <Button
             size="sm"
-            variant="outline"
+            variant={bothFilesSelected ? "default" : "outline"}
             className="w-full mt-1.5 h-7 text-xs"
             onClick={handleSync}
             disabled={isSyncing || triggerSync.isPending}
           >
             <RefreshCw className={`h-3 w-3 mr-1.5 ${isSyncing ? "animate-spin" : ""}`} />
-            Atualizar dados
+            {isSyncing ? "Sincronizando..." : "Atualizar dados"}
           </Button>
         </div>
 
@@ -556,7 +618,14 @@ export default function SpreadDashboard() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : analysisData.length === 0 ? (
-            <EmptyState onSync={handleSync} isSyncing={isSyncing} onFileSelect={() => fileInputRef.current?.click()} moodysFile={moodysFile} />
+            <EmptyState
+              onSync={handleSync}
+              isSyncing={isSyncing}
+              onMoodysSelect={() => moodysInputRef.current?.click()}
+              onAnbimaSelect={() => anbimaInputRef.current?.click()}
+              moodysFile={moodysFile}
+              anbimaFile={anbimaFile}
+            />
           ) : activeView === "scatter" ? (
             <ScatterView data={scatterData} ratingGroups={ratingGroups} />
           ) : activeView === "bar" ? (
@@ -579,35 +648,84 @@ export default function SpreadDashboard() {
 function EmptyState({
   onSync,
   isSyncing,
-  onFileSelect,
+  onMoodysSelect,
+  onAnbimaSelect,
   moodysFile,
+  anbimaFile,
 }: {
   onSync: () => void;
   isSyncing: boolean;
-  onFileSelect: () => void;
+  onMoodysSelect: () => void;
+  onAnbimaSelect: () => void;
   moodysFile: File | null;
+  anbimaFile: File | null;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+    <div className="flex flex-col items-center justify-center h-full gap-6 text-center max-w-lg mx-auto">
       <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
         <TrendingUp className="h-8 w-8 text-muted-foreground" />
       </div>
       <div>
         <h3 className="text-base font-semibold text-foreground mb-1">Nenhum dado disponível</h3>
-        <p className="text-sm text-muted-foreground max-w-sm">
-          Para iniciar, faça o download da planilha em{" "}
-          <a href="https://moodyslocal.com.br" target="_blank" rel="noreferrer" className="text-primary underline">
-            moodyslocal.com.br
-          </a>{" "}
-          e selecione o arquivo abaixo.
+        <p className="text-sm text-muted-foreground">
+          Faça o download das planilhas e selecione os arquivos para iniciar a análise.
         </p>
       </div>
-      <div className="flex flex-col items-center gap-2 w-64">
-        <Button variant="outline" onClick={onFileSelect} className="w-full">
+
+      {/* Instruções de download */}
+      <div className="w-full grid grid-cols-2 gap-3 text-left">
+        <div className="border border-border rounded-lg p-3 bg-card/50">
+          <p className="text-xs font-semibold text-foreground mb-1">1. Planilha Moody's</p>
+          <p className="text-xs text-muted-foreground mb-2">
+            Acesse e baixe a planilha de ratings em formato .xlsx
+          </p>
+          <a
+            href="https://moodyslocal.com.br"
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-primary hover:underline flex items-center gap-1"
+          >
+            moodyslocal.com.br <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+        <div className="border border-border rounded-lg p-3 bg-card/50">
+          <p className="text-xs font-semibold text-foreground mb-1">2. Planilha ANBIMA Data</p>
+          <p className="text-xs text-muted-foreground mb-2">
+            Baixe o dataset de precificação de debêntures (.xlsx)
+          </p>
+          <a
+            href="https://data.anbima.com.br/datasets/data-debentures-precificacao-anbima"
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-primary hover:underline flex items-center gap-1"
+          >
+            data.anbima.com.br <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-2 w-full max-w-xs">
+        <Button
+          variant="outline"
+          onClick={onMoodysSelect}
+          className={`w-full ${moodysFile ? "border-emerald-500/50 text-emerald-400" : ""}`}
+        >
           <Upload className="h-4 w-4 mr-2" />
           {moodysFile ? moodysFile.name : "Selecionar planilha Moody's"}
         </Button>
-        <Button onClick={onSync} disabled={isSyncing} className="w-full">
+        <Button
+          variant="outline"
+          onClick={onAnbimaSelect}
+          className={`w-full ${anbimaFile ? "border-emerald-500/50 text-emerald-400" : ""}`}
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          {anbimaFile ? anbimaFile.name : "Selecionar planilha ANBIMA Data"}
+        </Button>
+        <Button
+          onClick={onSync}
+          disabled={isSyncing || (!moodysFile && !anbimaFile)}
+          className="w-full"
+        >
           <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
           {isSyncing ? "Sincronizando..." : "Iniciar sincronização"}
         </Button>
@@ -866,15 +984,13 @@ function TableView({
             <tr>
               <th className="px-3 py-2.5 text-left">Emissor</th>
               <th className="px-3 py-2.5 text-left">Código</th>
-              <th className="px-3 py-2.5 text-left">ISIN</th>
               <th className="px-3 py-2.5 text-left">Tipo</th>
               <th className="px-3 py-2.5 text-left">Indexador</th>
               <th className="px-3 py-2.5 text-center">Incentivado</th>
               <th className="px-3 py-2.5 text-left">Rating</th>
               <th className="px-3 py-2.5 text-right">Duration</th>
-              <th className="px-3 py-2.5 text-right">Taxa</th>
+              <th className="px-3 py-2.5 text-right">Taxa Indicativa</th>
               <th className="px-3 py-2.5 text-left">NTN-B Ref.</th>
-              <th className="px-3 py-2.5 text-right">NTN-B Taxa</th>
               <th className="px-3 py-2.5 text-right">Z-spread</th>
               <th className="px-3 py-2.5 text-center">Match</th>
             </tr>
@@ -894,9 +1010,6 @@ function TableView({
                     {row.emissorNome || "—"}
                   </td>
                   <td className="px-3 py-2 font-mono text-muted-foreground">{row.codigoCetip}</td>
-                  <td className="px-3 py-2 font-mono text-muted-foreground text-[10px]">
-                    {row.isin || "—"}
-                  </td>
                   <td className="px-3 py-2">
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground">
                       {row.tipo || "—"}
@@ -930,9 +1043,6 @@ function TableView({
                   </td>
                   <td className="px-3 py-2 font-mono text-muted-foreground text-[10px]">
                     {row.ntnbReferencia || "—"}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                    {formatRate(row.ntnbTaxa)}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums font-semibold">
                     {zspreadBps != null ? (
