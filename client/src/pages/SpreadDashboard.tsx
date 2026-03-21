@@ -264,31 +264,37 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
   }, [data, search, showOutliersOnly]);
 
   const outlierCount = useMemo(() => data.filter((r) => r.isOutlier).length, [data]);
+  const hasData = data.length > 0;
+  const hasNullScores = hasData && data.every((r) => r.scoreMatch == null);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-xl shadow-2xl w-[95vw] max-w-7xl h-[90vh] flex flex-col">
+
         {/* Header do modal */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
             <ClipboardCheck className="h-5 w-5 text-primary" />
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Relatório de Qualidade dos Matches</h2>
+              <h2 className="text-sm font-semibold text-foreground">Verificação Manual de Matches</h2>
               <p className="text-xs text-muted-foreground">
-                {data.length} emissões com match confirmado · {outlierCount} outliers marcados
+                Compare o que veio da ANBIMA com o que foi encontrado na Moody's para cada emissão
+                {hasData && ` · ${data.length} pares · ${outlierCount} outliers`}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => downloadCsv(filtered as MatchReportRow[])}
-              className="text-xs h-7 gap-1.5"
-            >
-              <FileDown className="h-3.5 w-3.5" />
-              Exportar CSV ({filtered.length})
-            </Button>
+            {hasData && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => downloadCsv(filtered as MatchReportRow[])}
+                className="text-xs h-7 gap-1.5"
+              >
+                <FileDown className="h-3.5 w-3.5" />
+                Exportar CSV ({filtered.length})
+              </Button>
+            )}
             <button
               onClick={onClose}
               className="p-1.5 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
@@ -298,11 +304,23 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
+        {/* Aviso de dados antigos */}
+        {hasNullScores && (
+          <div className="mx-6 mt-3 flex items-start gap-2.5 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex-shrink-0">
+            <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold">Dados desatualizados.</span>{" "}
+              Os registros no banco foram gerados por uma versão anterior do sistema e não possuem os campos de rastreabilidade (emissor Moody's, instrumento, score de similaridade).
+              {" "}<span className="font-semibold">Execute uma nova sincronização</span> com as planilhas para popular esses campos e habilitar a verificação completa.
+            </div>
+          </div>
+        )}
+
         {/* Controles */}
-        <div className="flex items-center gap-3 px-6 py-3 border-b border-border flex-shrink-0">
+        <div className="flex items-center gap-3 px-6 py-3 border-b border-border flex-shrink-0 mt-2">
           <input
             type="text"
-            placeholder="Buscar por código, emissor, instrumento ou rating..."
+            placeholder="Buscar por código CETIP, emissor, instrumento Moody's ou rating..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 h-8 px-3 text-xs bg-input border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
@@ -323,7 +341,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
           </span>
         </div>
 
-        {/* Tabela */}
+        {/* Cabeçalho explicativo das colunas */}
         <div className="flex-1 overflow-auto">
           {reportQuery.isLoading ? (
             <div className="flex items-center justify-center h-full">
@@ -331,87 +349,158 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-card border-b border-border z-10">
-                <tr>
-                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">Código CETIP</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">Emissor ANBIMA</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">Emissor Moody's</th>
-                  <th className="px-3 py-2.5 text-center font-semibold text-muted-foreground whitespace-nowrap">Nº Emissão SND</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">Instrumento Moody's</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground whitespace-nowrap">Rating</th>
-                  <th className="px-3 py-2.5 text-center font-semibold text-muted-foreground whitespace-nowrap">Score</th>
-                  <th className="px-3 py-2.5 text-right font-semibold text-muted-foreground whitespace-nowrap">Z-spread</th>
-                  <th className="px-3 py-2.5 text-right font-semibold text-muted-foreground whitespace-nowrap">Duration</th>
-                  <th className="px-3 py-2.5 text-center font-semibold text-muted-foreground whitespace-nowrap">Outlier</th>
+              <thead className="sticky top-0 z-10">
+                {/* Linha de agrupamento de colunas */}
+                <tr className="bg-muted/30 border-b border-border/60">
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap" colSpan={2}>
+                    IDENTIFICAÇÃO
+                  </th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-blue-400/70 whitespace-nowrap border-l border-blue-500/20" colSpan={2}>
+                    ← ANBIMA DATA
+                  </th>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-emerald-400/70 whitespace-nowrap border-l border-emerald-500/20" colSpan={3}>
+                    MOODY'S LOCAL →
+                  </th>
+                  <th className="px-3 py-1.5 text-center text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap border-l border-border/60" colSpan={4}>
+                    RESULTADO
+                  </th>
+                </tr>
+                {/* Linha de nomes das colunas */}
+                <tr className="bg-card border-b border-border">
+                  {/* Identificação */}
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Código CETIP</th>
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">ISIN</th>
+                  {/* ANBIMA */}
+                  <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap border-l border-blue-500/20">Emissor (ANBIMA)</th>
+                  <th className="px-3 py-2 text-center font-semibold text-blue-400 whitespace-nowrap">Nº Emissão (SND)</th>
+                  {/* Moody's */}
+                  <th className="px-3 py-2 text-left font-semibold text-emerald-400 whitespace-nowrap border-l border-emerald-500/20">Emissor (Moody's)</th>
+                  <th className="px-3 py-2 text-center font-semibold text-emerald-400 whitespace-nowrap">Nº Emissão</th>
+                  <th className="px-3 py-2 text-left font-semibold text-emerald-400 whitespace-nowrap">Instrumento Moody's</th>
+                  {/* Resultado */}
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap border-l border-border/60">Rating</th>
+                  <th className="px-3 py-2 text-center font-semibold text-muted-foreground whitespace-nowrap">Score</th>
+                  <th className="px-3 py-2 text-right font-semibold text-muted-foreground whitespace-nowrap">Z-spread</th>
+                  <th className="px-3 py-2 text-center font-semibold text-muted-foreground whitespace-nowrap">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((row, i) => {
                   const zspreadBps = row.zspread != null ? Math.round(row.zspread * 10000) : null;
+                  const score = row.scoreMatch;
                   const scoreColor =
-                    row.scoreMatch == null
+                    score == null
                       ? "text-muted-foreground"
-                      : row.scoreMatch >= 0.9
+                      : score >= 0.9
                       ? "text-emerald-400"
-                      : row.scoreMatch >= 0.75
+                      : score >= 0.75
                       ? "text-yellow-400"
                       : "text-orange-400";
+                  const scoreBg =
+                    score == null
+                      ? ""
+                      : score >= 0.9
+                      ? "bg-emerald-500/10"
+                      : score >= 0.75
+                      ? "bg-yellow-500/10"
+                      : "bg-orange-500/10";
+                  // Verificar se os nomes de emissor são iguais (match exato)
+                  const emissorMatch =
+                    row.emissorAnbima && row.emissorMoodys
+                      ? row.emissorAnbima.toLowerCase().includes(
+                          row.emissorMoodys.split(" ")[0].toLowerCase()
+                        ) ||
+                        row.emissorMoodys.toLowerCase().includes(
+                          row.emissorAnbima.split(" ")[0].toLowerCase()
+                        )
+                      : null;
                   return (
                     <tr
                       key={row.id}
-                      className={`border-b border-border/40 hover:bg-accent/20 transition-colors ${
-                        row.isOutlier ? "bg-yellow-500/5" : i % 2 === 0 ? "bg-transparent" : "bg-card/20"
+                      className={`border-b border-border/40 hover:bg-accent/30 transition-colors ${
+                        row.isOutlier ? "bg-yellow-500/5" : i % 2 === 0 ? "" : "bg-white/[0.02]"
                       }`}
                     >
-                      <td className="px-3 py-2 font-mono text-foreground whitespace-nowrap">
+                      {/* Identificação */}
+                      <td className="px-3 py-2.5 font-mono text-foreground whitespace-nowrap font-semibold">
                         {row.codigoCetip}
-                        {row.isin && (
-                          <span className="ml-1.5 text-[10px] text-muted-foreground">{row.isin}</span>
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-[10px] text-muted-foreground whitespace-nowrap">
+                        {row.isin || "—"}
+                      </td>
+                      {/* ANBIMA */}
+                      <td className="px-3 py-2.5 border-l border-blue-500/10">
+                        <span className="text-blue-300 max-w-[200px] block truncate" title={row.emissorAnbima || ""}>
+                          {row.emissorAnbima || "—"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        {row.numeroEmissaoSnd != null ? (
+                          <span className="font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[11px]">
+                            {row.numeroEmissaoSnd}ª
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/50 text-[10px]">sem SND</span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-foreground max-w-[180px] truncate" title={row.emissorAnbima || ""}>
-                        {row.emissorAnbima || "—"}
+                      {/* Moody's */}
+                      <td className="px-3 py-2.5 border-l border-emerald-500/10">
+                        <span
+                          className={`max-w-[200px] block truncate ${
+                            emissorMatch === true
+                              ? "text-emerald-300"
+                              : emissorMatch === false
+                              ? "text-orange-300"
+                              : "text-muted-foreground"
+                          }`}
+                          title={row.emissorMoodys || ""}
+                        >
+                          {row.emissorMoodys || "—"}
+                        </span>
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground max-w-[180px] truncate" title={row.emissorMoodys || ""}>
-                        {row.emissorMoodys || "—"}
+                      <td className="px-3 py-2.5 text-center">
+                        {row.numeroEmissaoMoodys ? (
+                          <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-[11px]">
+                            {row.numeroEmissaoMoodys}ª
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/50 text-[10px]">—</span>
+                        )}
                       </td>
-                      <td className="px-3 py-2 text-center tabular-nums font-mono">
-                        {row.numeroEmissaoSnd != null ? (
-                          <span className="text-primary font-semibold">{row.numeroEmissaoSnd}ª</span>
-                        ) : "—"}
+                      <td className="px-3 py-2.5">
+                        <span className="text-muted-foreground max-w-[240px] block truncate text-[11px]" title={row.instrumentoMoodys || ""}>
+                          {row.instrumentoMoodys || "—"}
+                        </span>
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground max-w-[220px] truncate" title={row.instrumentoMoodys || ""}>
-                        {row.instrumentoMoodys || "—"}
-                      </td>
-                      <td className="px-3 py-2">
+                      {/* Resultado */}
+                      <td className="px-3 py-2.5 border-l border-border/40">
                         {row.rating ? (
-                          <span className="font-semibold" style={{ color: getRatingColor(row.rating) }}>
+                          <span className="font-bold text-[11px]" style={{ color: getRatingColor(row.rating) }}>
                             {row.rating}
                           </span>
                         ) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-center tabular-nums">
-                        <span className={`font-mono text-[11px] font-semibold ${scoreColor}`}>
-                          {row.scoreMatch != null ? row.scoreMatch.toFixed(3) : "—"}
+                      <td className={`px-3 py-2.5 text-center rounded-sm ${scoreBg}`}>
+                        <span className={`font-mono text-[11px] font-bold ${scoreColor}`}>
+                          {score != null ? score.toFixed(3) : "—"}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums font-semibold">
+                      <td className="px-3 py-2.5 text-right tabular-nums">
                         {zspreadBps != null ? (
-                          <span className={zspreadBps >= 0 ? "text-emerald-400" : "text-red-400"}>
+                          <span className={`font-semibold text-[11px] ${
+                            zspreadBps >= 0 ? "text-emerald-400" : "text-red-400"
+                          }`}>
                             {zspreadBps > 0 ? "+" : ""}{zspreadBps} bps
                           </span>
                         ) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                        {formatDuration(row.durationAnos)}
-                      </td>
-                      <td className="px-3 py-2 text-center">
+                      <td className="px-3 py-2.5 text-center">
                         {row.isOutlier ? (
-                          <span className="text-[10px] font-medium text-yellow-400 bg-yellow-500/10 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-semibold text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-1.5 py-0.5 rounded">
                             Outlier
                           </span>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground">—</span>
+                          <span className="text-[10px] text-emerald-400/70">✓</span>
                         )}
                       </td>
                     </tr>
@@ -421,18 +510,33 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
             </table>
           )}
           {!reportQuery.isLoading && filtered.length === 0 && (
-            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-              Nenhum registro encontrado
+            <div className="flex flex-col items-center justify-center h-48 gap-2 text-muted-foreground">
+              {data.length === 0 ? (
+                <>
+                  <ClipboardCheck className="h-8 w-8 opacity-30" />
+                  <p className="text-sm">Nenhum dado disponível</p>
+                  <p className="text-xs opacity-60">Execute uma sincronização com as planilhas para gerar os matches</p>
+                </>
+              ) : (
+                <p className="text-sm">Nenhum registro encontrado para a busca</p>
+              )}
             </div>
           )}
         </div>
 
-        {/* Legenda de scores */}
-        <div className="flex items-center gap-4 px-6 py-3 border-t border-border flex-shrink-0 text-[10px] text-muted-foreground">
-          <span className="font-semibold text-foreground">Score de similaridade:</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> ≥ 0.900 — Excelente</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> 0.750–0.899 — Bom</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> 0.650–0.749 — Limiar mínimo</span>
+        {/* Legenda */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 px-6 py-3 border-t border-border flex-shrink-0 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <span className="font-semibold text-foreground">Score:</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> ≥ 0.90 Excelente</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> 0.75–0.89 Bom</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> 0.65–0.74 Limiar</span>
+          </div>
+          <div className="flex items-center gap-3 ml-4">
+            <span className="font-semibold text-foreground">Emissor:</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Nomes compatíveis</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> Verificar manualmente</span>
+          </div>
           <span className="ml-auto">Outliers: 10% superior e inferior por rating (mín. 5 emissões)</span>
         </div>
       </div>

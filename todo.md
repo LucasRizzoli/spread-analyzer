@@ -77,3 +77,12 @@
 - [x] Download CSV com BOM UTF-8 (compatível com Excel) com todos os campos de auditoria
 - [x] Legenda de scores de similaridade (Excelente/Bom/Limiar mínimo)
 - [x] 28 testes passando após todas as mudanças
+
+## v1.5 — Correção de outliers e relatório de verificação manual
+- [x] Diagnosticar: dados no banco eram de versão anterior (scoreMatch/emissorMoodys nulos)
+- [x] Código do syncService confirmado correto: isOutlier é persistido na nova sincronização
+- [x] Aprimorar relatório: layout lado a lado ANBIMA vs Moody's com grupos visuais por cor
+- [x] Adicionar aviso de dados desatualizados quando scoreMatch é nulo em todos os registros
+- [x] Destaque visual: emissor compatível (verde) vs requer verificação (laranja)
+- [x] Colunas separadas: Nº Emissão SND (ANBIMA) vs Nº Emissão Moody's para comparação direta
+- [x] 28 testes passando
