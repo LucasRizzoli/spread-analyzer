@@ -9,7 +9,7 @@ import {
   spreadAnalysis,
   syncLog,
 } from "../../drizzle/schema";
-import { scrapeMoodysRatings } from "./moodysScraperService";
+import { parseMoodysXlsx, MoodysRatingRow } from "./moodysScraperService";
 import { fetchNtnbCurve, fetchDebentures, fetchCriCra } from "./anbimaFeedService";
 import { fetchAnbimaDataAssets } from "./anbimaDataService";
 import { calculateSpreads } from "./spreadCalculatorService";
@@ -38,7 +38,10 @@ export function getSyncState() {
   };
 }
 
-export async function runFullSync(onProgress?: (p: SyncProgress) => void): Promise<void> {
+export async function runFullSync(
+  moodysBuffer: Buffer,
+  onProgress?: (p: SyncProgress) => void
+): Promise<void> {
   if (currentSyncStatus === "running") {
     throw new Error("Sincronização já em andamento");
   }
@@ -65,10 +68,10 @@ export async function runFullSync(onProgress?: (p: SyncProgress) => void): Promi
     });
     logId = (logResult as { insertId: number }).insertId;
 
-    // ── 1. Scraping Moody's ──────────────────────────────────────────────────
-    report("Coletando ratings da Moody's...", 0, 1);
-    const moodysData = await scrapeMoodysRatings();
-    report("Ratings da Moody's coletados", 1, 1);
+    // ── 1. Processar planilha da Moody's (enviada pelo usuário) ─────────────
+    report("Processando planilha da Moody's...", 0, 1);
+    const moodysData: MoodysRatingRow[] = parseMoodysXlsx(moodysBuffer);
+    report("Planilha da Moody's processada", 1, 1);
 
     // Limpar e reinserir ratings
     await db.delete(moodysRatings);

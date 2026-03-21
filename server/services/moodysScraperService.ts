@@ -1,8 +1,7 @@
 /**
- * Serviço de scraping da planilha de ratings da Moody's Local
- * Estratégia: Playwright headless → extrai link do .xlsx → baixa e parseia
+ * Serviço de processamento da planilha de ratings da Moody's Local
+ * Estratégia: o usuário faz o download manual do .xlsx e envia via upload
  */
-import { chromium } from "playwright";
 import * as XLSX from "xlsx";
 
 export interface MoodysRatingRow {
@@ -30,52 +29,20 @@ function extractNumeroEmissao(objeto: string): string | null {
 }
 
 /**
- * Busca o link mais recente do .xlsx no site da Moody's Local
+ * Parseia o buffer do arquivo .xlsx da Moody's
  */
-async function getMoodysXlsxUrl(): Promise<string> {
-  const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
-  try {
-    const page = await browser.newPage();
-    await page.goto("https://moodyslocal.com.br", { waitUntil: "networkidle", timeout: 30000 });
-
-    // Aceitar cookies se o banner aparecer
-    try {
-      await page.click('button:has-text("Aceitar")', { timeout: 3000 });
-    } catch {
-      // Sem banner de cookies
-    }
-
-    // Aguardar o link do xlsx aparecer
-    await page.waitForSelector('a[href*="MOODYS_LOCAL_BRAZIL"]', { timeout: 15000 });
-
-    const href = await page.$eval(
-      'a[href*="MOODYS_LOCAL_BRAZIL"]',
-      (el) => (el as HTMLAnchorElement).href
-    );
-
-    return href;
-  } finally {
-    await browser.close();
-  }
-}
-
-/**
- * Baixa e parseia o arquivo .xlsx da Moody's
- */
-async function downloadAndParseXlsx(url: string): Promise<MoodysRatingRow[]> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Falha ao baixar xlsx da Moody's: ${response.status}`);
-  }
-
-  const buffer = await response.arrayBuffer();
-  const workbook = XLSX.read(Buffer.from(buffer), { type: "buffer" });
+export function parseMoodysXlsx(buffer: Buffer): MoodysRatingRow[] {
+  const workbook = XLSX.read(buffer, { type: "buffer" });
 
   const sheetName = workbook.SheetNames[0];
+  if (!sheetName) throw new Error("Planilha da Moody's está vazia ou inválida");
+
   const sheet = workbook.Sheets[sheetName];
   const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
 
-  return rows.map((row: Record<string, string>) => {
+  if (rows.length === 0) throw new Error("Nenhuma linha encontrada na planilha da Moody's");
+
+  const result = rows.map((row: Record<string, string>) => {
     // Normalizar nomes de colunas (podem variar levemente entre versões)
     const keys = Object.keys(row);
     const get = (patterns: string[]): string => {
@@ -99,15 +66,7 @@ async function downloadAndParseXlsx(url: string): Promise<MoodysRatingRow[]> {
       numeroEmissao: extractNumeroEmissao(objeto),
     };
   }).filter((r: MoodysRatingRow) => r.emissor && r.rating);
-}
 
-/**
- * Função principal: scraping completo da Moody's
- */
-export async function scrapeMoodysRatings(): Promise<MoodysRatingRow[]> {
-  const url = await getMoodysXlsxUrl();
-  console.log(`[Moody's] Baixando planilha: ${url}`);
-  const rows = await downloadAndParseXlsx(url);
-  console.log(`[Moody's] ${rows.length} ratings encontrados`);
-  return rows;
+  console.log(`[Moody's] ${result.length} ratings parseados do arquivo`);
+  return result;
 }

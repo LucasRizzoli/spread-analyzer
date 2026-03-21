@@ -96,13 +96,17 @@ export const spreadRouter = router({
     }),
 
   /**
-   * Dispara uma sincronização completa (apenas admin)
+   * Dispara sincronização com base64 do arquivo Moody's (via tRPC)
+   * O arquivo é enviado como base64 para contornar limitações de multipart no tRPC
    */
-  triggerSync: protectedProcedure.mutation(async () => {
-    // Rodar em background sem bloquear a resposta
-    runFullSync().catch((err) => {
-      console.error("[Sync] Erro na sincronização:", err);
-    });
-    return { started: true, message: "Sincronização iniciada em background" };
-  }),
+  triggerSync: protectedProcedure
+    .input(z.object({ moodysFileBase64: z.string() }))
+    .mutation(async ({ input }) => {
+      const moodysBuffer = Buffer.from(input.moodysFileBase64, "base64");
+      // Rodar em background sem bloquear a resposta
+      runFullSync(moodysBuffer).catch((err) => {
+        console.error("[Sync] Erro na sincronização:", err);
+      });
+      return { started: true, message: "Sincronização iniciada em background" };
+    }),
 });

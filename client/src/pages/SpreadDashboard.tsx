@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
+  Upload,
 } from "lucide-react";
 import {
   ScatterChart,
@@ -36,8 +37,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { sortRatings } from "../lib/ratings";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helperss ──────────────────────────────────────────────────────────────────
 
 function formatRate(v: number | null | undefined): string {
   if (v == null) return "—";
@@ -165,6 +165,8 @@ export default function SpreadDashboard() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
   const [activeView, setActiveView] = useState<"scatter" | "bar" | "table">("scatter");
   const [tableSearch, setTableSearch] = useState("");
+  const [moodysFile, setMoodysFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Queries
   const filterOptions = trpc.spread.getFilterOptions.useQuery();
@@ -191,11 +193,39 @@ export default function SpreadDashboard() {
       toast.success("Sincronização iniciada", {
         description: "Os dados serão atualizados em alguns minutos.",
       });
+      setMoodysFile(null);
     },
     onError: (err) => {
       toast.error("Erro ao iniciar sincronização", { description: err.message });
     },
   });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+        toast.error("Arquivo inválido", { description: "Selecione um arquivo .xlsx da Moody's" });
+        return;
+      }
+      setMoodysFile(file);
+    }
+  };
+
+  const handleSync = async () => {
+    if (!moodysFile) {
+      toast.error("Arquivo obrigatório", {
+        description: "Faça o download da planilha em moodyslocal.com.br e selecione o arquivo .xlsx",
+      });
+      fileInputRef.current?.click();
+      return;
+    }
+    const arrayBuffer = await moodysFile.arrayBuffer();
+    const uint8 = new Uint8Array(arrayBuffer);
+    let binary = "";
+    for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+    const base64 = btoa(binary);
+    triggerSync.mutate({ moodysFileBase64: base64 });
+  };
 
   const utils = trpc.useUtils();
 
@@ -306,11 +336,32 @@ export default function SpreadDashboard() {
           {isSyncing && syncState.data?.progress && (
             <p className="text-xs text-yellow-400 mt-1">{syncState.data.progress.step}</p>
           )}
+          {/* Upload do arquivo Moody's */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className={`w-full mt-2 flex items-center gap-1.5 px-2 py-1.5 rounded text-xs border transition-colors ${
+              moodysFile
+                ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"
+                : "border-dashed border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+            }`}
+          >
+            <Upload className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">
+              {moodysFile ? moodysFile.name : "Planilha Moody's (.xlsx)"}
+            </span>
+          </button>
           <Button
             size="sm"
             variant="outline"
-            className="w-full mt-2 h-7 text-xs"
-            onClick={() => triggerSync.mutate()}
+            className="w-full mt-1.5 h-7 text-xs"
+            onClick={handleSync}
             disabled={isSyncing || triggerSync.isPending}
           >
             <RefreshCw className={`h-3 w-3 mr-1.5 ${isSyncing ? "animate-spin" : ""}`} />
@@ -505,7 +556,7 @@ export default function SpreadDashboard() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : analysisData.length === 0 ? (
-            <EmptyState onSync={() => triggerSync.mutate()} isSyncing={isSyncing} />
+            <EmptyState onSync={handleSync} isSyncing={isSyncing} onFileSelect={() => fileInputRef.current?.click()} moodysFile={moodysFile} />
           ) : activeView === "scatter" ? (
             <ScatterView data={scatterData} ratingGroups={ratingGroups} />
           ) : activeView === "bar" ? (
@@ -525,7 +576,17 @@ export default function SpreadDashboard() {
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
-function EmptyState({ onSync, isSyncing }: { onSync: () => void; isSyncing: boolean }) {
+function EmptyState({
+  onSync,
+  isSyncing,
+  onFileSelect,
+  moodysFile,
+}: {
+  onSync: () => void;
+  isSyncing: boolean;
+  onFileSelect: () => void;
+  moodysFile: File | null;
+}) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
       <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
@@ -534,14 +595,23 @@ function EmptyState({ onSync, isSyncing }: { onSync: () => void; isSyncing: bool
       <div>
         <h3 className="text-base font-semibold text-foreground mb-1">Nenhum dado disponível</h3>
         <p className="text-sm text-muted-foreground max-w-sm">
-          Inicie uma sincronização para coletar os dados da Moody's e da ANBIMA e calcular os
-          Z-spreads.
+          Para iniciar, faça o download da planilha em{" "}
+          <a href="https://moodyslocal.com.br" target="_blank" rel="noreferrer" className="text-primary underline">
+            moodyslocal.com.br
+          </a>{" "}
+          e selecione o arquivo abaixo.
         </p>
       </div>
-      <Button onClick={onSync} disabled={isSyncing}>
-        <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-        {isSyncing ? "Sincronizando..." : "Iniciar sincronização"}
-      </Button>
+      <div className="flex flex-col items-center gap-2 w-64">
+        <Button variant="outline" onClick={onFileSelect} className="w-full">
+          <Upload className="h-4 w-4 mr-2" />
+          {moodysFile ? moodysFile.name : "Selecionar planilha Moody's"}
+        </Button>
+        <Button onClick={onSync} disabled={isSyncing} className="w-full">
+          <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
+          {isSyncing ? "Sincronizando..." : "Iniciar sincronização"}
+        </Button>
+      </div>
     </div>
   );
 }

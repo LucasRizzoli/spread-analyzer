@@ -38,3 +38,11 @@
 - [x] Vitest: ordenação de ratings
 - [x] Vitest: extração de número de emissão
 - [x] Vitest: logout de sessão
+
+## Correções e Melhorias
+- [x] Substituir scraping Playwright da Moody's por upload manual de .xlsx
+- [x] Endpoint de upload via base64 no tRPC para receber o arquivo
+- [x] Componente de upload no frontend (botão + drag-and-drop na sidebar e empty state)
+- [x] Processamento do .xlsx enviado pelo usuário
+- [x] Sincronização orquestrada pelo syncService com buffer do arquivo Moody's
+- [x] 17 testes passando (spread calculator, auth ANBIMA, logout)
