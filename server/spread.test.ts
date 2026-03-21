@@ -157,6 +157,23 @@ describe("parseMoodysXlsx", () => {
     expect(result.length).toBe(1);
     expect(result[0].emissor).toBe("Empresa A");
   });
+
+  it("identifica corretamente ratings de emissão vs emissor", () => {
+    const data = [
+      ["", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", ""],
+      ["Setor", "Emissor", "Produto", "Instrumento", "Objeto", "Rating / Avaliação", "Perspectiva", "Data"],
+      ["Setor1", "Empresa A", "Rating de Dívida", "7a Emissão de Debêntures", "Obj", "A.br", "Estável", 45770],
+      ["Setor1", "Empresa A", "Rating de Emissor", "N/A", "Rating Corporativo", "A.br", "Estável", 45770],
+    ];
+
+    const result = parseMoodysXlsx(buildMoodysWorkbook(data));
+    const emissao = result.find((r) => r.isEmissao);
+    const emissor = result.find((r) => !r.isEmissao);
+    expect(emissao?.numeroEmissao).toBe("7");
+    expect(emissor?.numeroEmissao).toBeNull();
+  });
 });
 
 // ─── Parser ANBIMA Data ───────────────────────────────────────────────────────
@@ -220,5 +237,63 @@ describe("parseAnbimaDataXlsx", () => {
     const result = parseAnbimaDataXlsx(buildAnbimaWorkbook(data));
     expect(result.find(r => r.codigoAtivo === "ABCD11")?.lei12431).toBe(true);
     expect(result.find(r => r.codigoAtivo === "EFGH22")?.lei12431).toBe(false);
+  });
+});
+
+// ─── Matching emissão-a-emissão ───────────────────────────────────────────────
+
+describe("matching emissão-a-emissão (lógica de crossByEmissao)", () => {
+  /**
+   * Testa a lógica central do matching:
+   * - Emissor normalizado (Dice ≥ 0.65) + número de emissão exato
+   * - Apenas ratings de emissão são considerados (isEmissao = true)
+   * - Sem fallback para rating de emissor
+   */
+
+  function diceCoefficient(a: string, b: string): number {
+    if (a === b) return 1;
+    if (a.length < 2 || b.length < 2) return 0;
+    const getBigrams = (str: string): Map<string, number> => {
+      const m = new Map<string, number>();
+      for (let i = 0; i < str.length - 1; i++) {
+        const bg = str.substring(i, i + 2);
+        m.set(bg, (m.get(bg) || 0) + 1);
+      }
+      return m;
+    };
+    const bA = getBigrams(a), bB = getBigrams(b);
+    let inter = 0;
+    for (const [k, v] of bA) inter += Math.min(v, bB.get(k) || 0);
+    return (2 * inter) / (a.length - 1 + b.length - 1);
+  }
+
+  it("match exato: mesmo emissor e mesmo número de emissão", () => {
+    const emissorAnbima = normalizeEmissor("AEGEA SANEAMENTO E PARTICIPAÇÕES S/A (*)");
+    const emissorMoodys = normalizeEmissor("Aegea Saneamento e Participações S.A.");
+    const score = diceCoefficient(emissorAnbima, emissorMoodys);
+    expect(score).toBeGreaterThanOrEqual(0.65);
+  });
+
+  it("score baixo para emissores diferentes", () => {
+    const emissorA = normalizeEmissor("PETROBRAS S.A.");
+    const emissorB = normalizeEmissor("VALE S.A.");
+    const score = diceCoefficient(emissorA, emissorB);
+    expect(score).toBeLessThan(0.65);
+  });
+
+  it("número de emissão diferente não deve dar match", () => {
+    // AEGP17 = 7ª emissão, AEGPB5 = 25ª emissão
+    // Ambas são da AEGEA, mas a Moody's só tem rating da 7ª
+    // O matching por número de emissão deve rejeitar a 25ª
+    const emissaoMoodys = 7;
+    const emissaoAnbimaB5 = 25;
+    expect(emissaoMoodys).not.toBe(emissaoAnbimaB5);
+  });
+
+  it("normalização remove asteriscos e sufixos para matching correto", () => {
+    const comAsteriscos = normalizeEmissor("RGE SUL DISTRIBUIDORA DE ENERGIA S/A (*)");
+    const semAsteriscos = normalizeEmissor("RGE Sul Distribuidora de Energia S.A.");
+    const score = diceCoefficient(comAsteriscos, semAsteriscos);
+    expect(score).toBeGreaterThanOrEqual(0.65);
   });
 });

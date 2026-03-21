@@ -59,3 +59,11 @@
 - [x] Atualizar frontend: upload de duas planilhas separadas (Moody's + ANBIMA)
 - [x] Adicionar links de download das planilhas na interface (empty state + sidebar)
 - [x] Testar fluxo completo end-to-end com dados reais (23 testes passando, 53% match rate)
+
+## Refatoração v1.3 — Matching emissão-a-emissão
+- [x] Investigar como relacionar número de emissão (Moody's) com código CETIP (ANBIMA) via SND
+- [x] Criar sndEnrichmentService: consulta debentures.com.br para obter número de emissão real por código CETIP
+- [x] Refatorar syncService: matching por emissor (Dice ≥ 0.65) + número de emissão exato
+- [x] Remover matches por emissor genérico e sem_match (apenas tipoMatch="emissao" persiste)
+- [x] Atualizar frontend: remover filtro "Qualidade do Match", exibir apenas emissões confirmadas
+- [x] Atualizar testes: 28 testes passando (inclui testes de matching emissão-a-emissão)

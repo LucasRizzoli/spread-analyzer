@@ -110,7 +110,6 @@ export interface SpreadFilters {
   ratings?: string[];
   setores?: string[];
   tipos?: string[];
-  tiposMatch?: string[];
 }
 
 export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
@@ -143,12 +142,6 @@ export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
 
   if (filters.tipos?.length) {
     conditions.push(inArray(spreadAnalysis.tipo, filters.tipos as ("DEB" | "CRI" | "CRA")[]));
-  }
-
-  if (filters.tiposMatch?.length) {
-    conditions.push(
-      inArray(spreadAnalysis.tipoMatch, filters.tiposMatch as ("emissao" | "emissor" | "sem_match")[])
-    );
   }
 
   return db

@@ -74,9 +74,7 @@ function getRatingColor(rating: string | null | undefined): string {
 }
 
 const TIPO_MATCH_LABELS: Record<string, { label: string; color: string }> = {
-  emissao: { label: "Emissão", color: "text-emerald-400" },
-  emissor: { label: "Emissor", color: "text-yellow-400" },
-  sem_match: { label: "Sem match", color: "text-red-400" },
+  emissao: { label: "Rating de Emissão", color: "text-emerald-400" },
 };
 
 // ─── Componente de filtros ────────────────────────────────────────────────────
@@ -88,7 +86,6 @@ interface FiltersState {
   ratings: string[];
   setores: string[];
   tipos: string[];
-  tiposMatch: string[];
 }
 
 const DEFAULT_FILTERS: FiltersState = {
@@ -98,7 +95,6 @@ const DEFAULT_FILTERS: FiltersState = {
   ratings: [],
   setores: [],
   tipos: [],
-  tiposMatch: [],
 };
 
 function FilterSection({
@@ -183,7 +179,6 @@ export default function SpreadDashboard() {
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
     tipos: filters.tipos.length ? filters.tipos : undefined,
-    tiposMatch: filters.tiposMatch.length ? filters.tiposMatch : undefined,
   });
 
   const zspreadByRating = trpc.spread.getZspreadByRating.useQuery();
@@ -314,7 +309,6 @@ export default function SpreadDashboard() {
     filters.ratings.length > 0 ||
     filters.setores.length > 0 ||
     filters.tipos.length > 0 ||
-    filters.tiposMatch.length > 0 ||
     filters.incentivado !== "todos" ||
     filters.durationRange[0] > 0 ||
     filters.durationRange[1] < 20;
@@ -558,18 +552,7 @@ export default function SpreadDashboard() {
 
           <Separator className="my-3 bg-sidebar-border" />
 
-          {/* Qualidade do match */}
-          <FilterSection title="Qualidade do Match" defaultOpen={false}>
-            {(["emissao", "emissor", "sem_match"] as const).map((m) => (
-              <CheckItem
-                key={m}
-                id={`match-${m}`}
-                label={TIPO_MATCH_LABELS[m].label}
-                checked={filters.tiposMatch.includes(m)}
-                onToggle={() => toggleFilter("tiposMatch", m, filters.tiposMatch)}
-              />
-            ))}
-          </FilterSection>
+
         </ScrollArea>
       </aside>
 

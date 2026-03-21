@@ -3,10 +3,11 @@
  * e persiste os dados cruzados no banco de dados.
  *
  * Fluxo:
- * 1. Parsear planilha Moody's → ratings por emissão
- * 2. Parsear planilha ANBIMA Data → ativos com Z-spread já calculado (data mais recente)
- * 3. Cruzar por fuzzy matching (emissor)
- * 4. Persistir resultados no banco
+ * 1. Parsear planilha Moody's → ratings por emissão específica
+ * 2. Parsear planilha ANBIMA Data → ativos com Z-spread (data mais recente)
+ * 3. Enriquecer cada código CETIP via SND (debentures.com.br) → número de emissão real
+ * 4. Cruzar por emissor normalizado + número de emissão exato
+ * 5. Persistir apenas os ativos com match confirmado de emissão
  */
 import { getDb } from "../db";
 import {
@@ -22,6 +23,7 @@ import {
   MoodysRatingRow,
   AnbimaAsset,
 } from "./moodysScraperService";
+import { enrichBatch, clearSndCache, SndRecord } from "./sndEnrichmentService";
 import { eq } from "drizzle-orm";
 
 export interface SyncProgress {
@@ -49,7 +51,7 @@ export function getSyncState() {
 
 // ── Tipos de resultado do cruzamento ─────────────────────────────────────────
 
-export type TipoMatch = "emissao" | "emissor" | "sem_match";
+export type TipoMatch = "emissao";
 
 export interface SpreadResult {
   codigoCetip: string;
@@ -64,8 +66,10 @@ export interface SpreadResult {
   spreadIncentivadoSemGrossUp: number | null;
   lei12431: boolean;
   dataReferencia: string;
+  isin: string | null;
+  numeroEmissao: number | null;
   // Campos do cruzamento com Moody's
-  rating: string | null;
+  rating: string;
   setor: string | null;
   tipoMatch: TipoMatch;
 }
@@ -102,65 +106,59 @@ function diceCoefficient(a: string, b: string): number {
 }
 
 /**
- * Realiza o cruzamento entre os ativos da ANBIMA e os ratings da Moody's
- * Estratégia:
- * 1. Match por emissor (fuzzy) — usa o melhor rating disponível para o emissor
- * 2. Prefere ratings de emissão específica quando disponíveis
+ * Realiza o cruzamento emissão-a-emissão:
+ * Para cada ativo ANBIMA que foi enriquecido com número de emissão via SND,
+ * busca na Moody's o rating de emissão com mesmo emissor (fuzzy ≥ 0.65) e
+ * mesmo número de emissão.
+ *
+ * Retorna apenas os ativos com match confirmado — sem fallback para rating de emissor.
  */
-function crossRatings(
+function crossByEmissao(
   assets: AnbimaAsset[],
-  ratings: MoodysRatingRow[]
+  ratings: MoodysRatingRow[],
+  sndMap: Map<string, SndRecord>
 ): SpreadResult[] {
-  // Pré-processar ratings: normalizar nomes para matching
-  const ratingsNormalized = ratings.map((r) => ({
-    ...r,
-    emissorNorm: normalizeEmissor(r.emissor),
-  }));
-
-  // Separar ratings de emissão e de emissor (corporativo)
-  const ratingsEmissao = ratingsNormalized.filter((r) => r.isEmissao);
-  const ratingsEmissor = ratingsNormalized.filter((r) => !r.isEmissao);
+  // Pré-processar ratings: apenas emissões específicas (isEmissao = true)
+  const ratingsEmissao = ratings
+    .filter((r) => r.isEmissao && r.numeroEmissao !== null)
+    .map((r) => ({
+      ...r,
+      emissorNorm: normalizeEmissor(r.emissor),
+      emissaoNum: parseInt(r.numeroEmissao!, 10),
+    }))
+    .filter((r) => !isNaN(r.emissaoNum));
 
   const results: SpreadResult[] = [];
 
   for (const asset of assets) {
-    const emissorNormAsset = normalizeEmissor(asset.emissor);
+    const sndRecord = sndMap.get(asset.codigoAtivo.toUpperCase());
 
+    // Sem enriquecimento SND → não é possível identificar a emissão
+    if (!sndRecord) continue;
+
+    const emissorNormAsset = normalizeEmissor(asset.emissor);
+    const numeroEmissaoAsset = sndRecord.numeroEmissao;
+
+    // Buscar na Moody's: mesmo número de emissão + emissor similar
     let bestRating: string | null = null;
     let bestSetor: string | null = null;
-    let tipoMatch: TipoMatch = "sem_match";
     let bestScore = 0;
 
-    // ── Etapa 1: tentar match por rating de emissão específica ───────────────
     for (const r of ratingsEmissao) {
+      // Filtro primário: número de emissão deve ser idêntico
+      if (r.emissaoNum !== numeroEmissaoAsset) continue;
+
+      // Filtro secundário: nome do emissor deve ser similar (Dice ≥ 0.65)
       const score = diceCoefficient(emissorNormAsset, r.emissorNorm);
-      if (score > bestScore && score >= 0.65) {
+      if (score >= 0.65 && score > bestScore) {
         bestScore = score;
         bestRating = r.rating;
         bestSetor = r.setor;
-        tipoMatch = "emissor"; // match por emissor (rating de emissão)
       }
     }
 
-    // ── Etapa 2: fallback para rating corporativo do emissor ─────────────────
-    if (tipoMatch === "sem_match" || bestScore < 0.65) {
-      for (const r of ratingsEmissor) {
-        const score = diceCoefficient(emissorNormAsset, r.emissorNorm);
-        if (score > bestScore && score >= 0.65) {
-          bestScore = score;
-          bestRating = r.rating;
-          bestSetor = r.setor;
-          tipoMatch = "emissor";
-        }
-      }
-    }
-
-    // Se score muito baixo, marcar como sem match
-    if (bestScore < 0.65) {
-      bestRating = null;
-      bestSetor = null;
-      tipoMatch = "sem_match";
-    }
+    // Sem match de emissão → ignorar este ativo
+    if (!bestRating) continue;
 
     results.push({
       codigoCetip: asset.codigoAtivo,
@@ -175,9 +173,11 @@ function crossRatings(
       spreadIncentivadoSemGrossUp: asset.spreadIncentivadoSemGrossUp,
       lei12431: asset.lei12431,
       dataReferencia: asset.dataReferencia,
+      isin: sndRecord.isin || null,
+      numeroEmissao: numeroEmissaoAsset,
       rating: bestRating,
       setor: bestSetor,
-      tipoMatch,
+      tipoMatch: "emissao",
     });
   }
 
@@ -197,6 +197,8 @@ export async function runFullSync(
 
   currentSyncStatus = "running";
   lastSyncError = null;
+  clearSndCache();
+
   let logId: number | null = null;
 
   const db = await getDb();
@@ -225,7 +227,12 @@ export async function runFullSync(
         "Nenhum rating encontrado na planilha da Moody's. Verifique se o arquivo está correto."
       );
     }
-    report(`${moodysData.length} ratings da Moody's processados`, 1, 1);
+    const emissaoCount = moodysData.filter((r) => r.isEmissao).length;
+    report(
+      `${moodysData.length} ratings da Moody's processados (${emissaoCount} de emissão)`,
+      1,
+      1
+    );
 
     // ── 2. Parsear planilha ANBIMA Data ───────────────────────────────────────
     report("Processando planilha ANBIMA Data...", 0, 1);
@@ -237,7 +244,24 @@ export async function runFullSync(
     }
     report(`${anbimaData.length} ativos ANBIMA processados`, 1, 1);
 
-    // ── 3. Persistir ratings da Moody's ──────────────────────────────────────
+    // ── 3. Enriquecer via SND ─────────────────────────────────────────────────
+    report(
+      `Consultando SND para ${anbimaData.length} ativos...`,
+      0,
+      anbimaData.length
+    );
+    const codigos = anbimaData.map((a) => a.codigoAtivo);
+    const sndMap = await enrichBatch(codigos, 8, (done, total) => {
+      report(`Consultando SND (${done}/${total})...`, done, total);
+    });
+    const enriquecidos = sndMap.size;
+    report(
+      `${enriquecidos} de ${anbimaData.length} ativos enriquecidos via SND`,
+      enriquecidos,
+      anbimaData.length
+    );
+
+    // ── 4. Persistir ratings da Moody's ──────────────────────────────────────
     report("Salvando ratings no banco...", 0, 1);
     await db.delete(moodysRatings);
     const BATCH = 200;
@@ -259,52 +283,55 @@ export async function runFullSync(
     }
     report(`${moodysData.length} ratings salvos`, 1, 1);
 
-    // ── 4. Persistir ativos ANBIMA ────────────────────────────────────────────
+    // ── 5. Persistir ativos ANBIMA ────────────────────────────────────────────
     report("Salvando ativos ANBIMA no banco...", 0, 1);
     await db.delete(anbimaAssets);
     for (let i = 0; i < anbimaData.length; i += BATCH) {
       const batch = anbimaData.slice(i, i + BATCH);
       await db.insert(anbimaAssets).values(
-        batch.map((a) => ({
-          codigoCetip: a.codigoAtivo,
-          isin: null,
-          tipo: "DEB" as const,
-          emissorNome: a.emissor,
-          emissorCnpj: null,
-          setor: null,
-          numeroEmissao: null,
-          numeroSerie: null,
-          dataEmissao: null,
-          dataVencimento: a.dataVencimento || null,
-          remuneracao: a.remuneracao || null,
-          indexador: a.tipoRemuneracao || null,
-          incentivado: a.lei12431,
-          taxaIndicativa:
-            a.taxaIndicativa !== null ? String(a.taxaIndicativa) : null,
-          taxaCompra: null,
-          taxaVenda: null,
-          durationDias:
-            a.duration !== null ? Math.round(a.duration) : null,
-          durationAnos:
-            a.duration !== null
-              ? String((a.duration / 252).toFixed(4))
-              : null,
-          dataReferencia: a.dataReferencia || null,
-        }))
+        batch.map((a) => {
+          const snd = sndMap.get(a.codigoAtivo.toUpperCase());
+          return {
+            codigoCetip: a.codigoAtivo,
+            isin: snd?.isin || null,
+            tipo: "DEB" as const,
+            emissorNome: a.emissor,
+            emissorCnpj: null,
+            setor: null,
+            numeroEmissao: snd ? String(snd.numeroEmissao) : null,
+            numeroSerie: snd?.serie || null,
+            dataEmissao: null,
+            dataVencimento: a.dataVencimento || null,
+            remuneracao: a.remuneracao || null,
+            indexador: a.tipoRemuneracao || null,
+            incentivado: a.lei12431,
+            taxaIndicativa:
+              a.taxaIndicativa !== null ? String(a.taxaIndicativa) : null,
+            taxaCompra: null,
+            taxaVenda: null,
+            durationDias:
+              a.duration !== null ? Math.round(a.duration) : null,
+            durationAnos:
+              a.duration !== null
+                ? String((a.duration / 252).toFixed(4))
+                : null,
+            dataReferencia: a.dataReferencia || null,
+          };
+        })
       );
     }
     report(`${anbimaData.length} ativos ANBIMA salvos`, 1, 1);
 
-    // ── 5. Cruzamento e cálculo de Z-spread ──────────────────────────────────
-    report("Cruzando ratings com ativos...", 0, anbimaData.length);
-    const spreadResults = crossRatings(anbimaData, moodysData);
+    // ── 6. Cruzamento emissão-a-emissão ──────────────────────────────────────
+    report("Cruzando emissões com ratings...", 0, anbimaData.length);
+    const spreadResults = crossByEmissao(anbimaData, moodysData, sndMap);
     report(
-      `${spreadResults.length} cruzamentos realizados`,
+      `${spreadResults.length} emissões com rating confirmado`,
       spreadResults.length,
       spreadResults.length
     );
 
-    // ── 6. Persistir resultados de spread ─────────────────────────────────────
+    // ── 7. Persistir resultados de spread ─────────────────────────────────────
     report("Salvando análise de spread...", 0, 1);
     await db.delete(spreadAnalysis);
     for (let i = 0; i < spreadResults.length; i += BATCH) {
@@ -312,13 +339,13 @@ export async function runFullSync(
       await db.insert(spreadAnalysis).values(
         batch.map((s) => ({
           codigoCetip: s.codigoCetip,
-          isin: null,
+          isin: s.isin,
           tipo: "DEB" as const,
           emissorNome: s.emissorNome || null,
           setor: s.setor || null,
           indexador: s.tipoRemuneracao || null,
           incentivado: s.lei12431,
-          rating: s.rating || null,
+          rating: s.rating,
           tipoMatch: s.tipoMatch,
           moodysRatingId: null,
           taxaIndicativa:
@@ -336,12 +363,8 @@ export async function runFullSync(
       );
     }
 
-    const comRating = spreadResults.filter(
-      (s) => s.tipoMatch !== "sem_match"
-    ).length;
-    const semMatch = spreadResults.filter(
-      (s) => s.tipoMatch === "sem_match"
-    ).length;
+    const comRating = spreadResults.length;
+    const semMatch = anbimaData.length - comRating;
 
     report(
       "Sincronização concluída!",
@@ -355,7 +378,7 @@ export async function runFullSync(
         .update(syncLog)
         .set({
           status: "success",
-          mensagem: `Concluído: ${moodysData.length} ratings, ${anbimaData.length} ativos, ${comRating} com rating, ${semMatch} sem match`,
+          mensagem: `Concluído: ${moodysData.length} ratings Moody's, ${anbimaData.length} ativos ANBIMA, ${enriquecidos} enriquecidos via SND, ${comRating} com match de emissão`,
           totalProcessados: spreadResults.length,
           finalizadoEm: new Date(),
         })
