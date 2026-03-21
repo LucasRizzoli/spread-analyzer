@@ -86,3 +86,9 @@
 - [x] Destaque visual: emissor compatível (verde) vs requer verificação (laranja)
 - [x] Colunas separadas: Nº Emissão SND (ANBIMA) vs Nº Emissão Moody's para comparação direta
 - [x] 28 testes passando
+
+## v1.6 — Correção de escala do Z-spread
+- [x] Investigar: ANBIMA entrega Z-spread em % a.a. (ex: 1.20 = 120 bps), não em decimal puro
+- [x] Corrigir frontend: multiplicar por 100 (não 10000) em todos os pontos de exibição
+- [x] Corrigir CSV: exportar com 2 casas decimais em bps
+- [x] 28 testes passando

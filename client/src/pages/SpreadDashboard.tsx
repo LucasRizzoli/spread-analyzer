@@ -225,7 +225,7 @@ function downloadCsv(rows: MatchReportRow[]) {
         escape(r.incentivado ? "Sim" : "Não"),
         escape(r.durationAnos != null ? r.durationAnos.toFixed(2) : null),
         escape(r.taxaIndicativa != null ? (r.taxaIndicativa * 100).toFixed(4) : null),
-        escape(r.zspread != null ? Math.round(r.zspread * 10000) : null),
+        escape(r.zspread != null ? (r.zspread * 100).toFixed(2) : null),
         escape(r.isOutlier ? "Sim" : "Não"),
       ].join(",")
     ),
@@ -386,7 +386,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
               </thead>
               <tbody>
                 {filtered.map((row, i) => {
-                  const zspreadBps = row.zspread != null ? Math.round(row.zspread * 10000) : null;
+                  const zspreadBps = row.zspread != null ? Math.round(row.zspread * 100) : null;
                   const score = row.scoreMatch;
                   const scoreColor =
                     score == null
@@ -686,7 +686,7 @@ export default function SpreadDashboard() {
       .filter((r) => r.zspread != null && r.durationAnos != null && r.rating)
       .map((r) => ({
         x: Number(r.durationAnos),
-        y: Math.round(Number(r.zspread) * 10000), // em bps
+        y: Math.round(Number(r.zspread) * 100), // em bps
         rating: r.rating,
         emissor: r.emissorNome,
         cetip: r.codigoCetip,
@@ -1315,8 +1315,7 @@ function BarView({
         {d && (
           <>
             <p className="text-muted-foreground">
-              Mín: {Math.round(d.minZspread * 10000)} bps | Máx:{" "}
-              {Math.round(d.maxZspread * 10000)} bps
+              Mín: {Math.round(d.minZspread * 100)} bps | Máx: {Math.round(d.maxZspread * 100)} bps
             </p>
             <p className="text-muted-foreground">{d.count} ativos</p>
           </>
@@ -1330,7 +1329,7 @@ function BarView({
       <BarChart
         data={sorted.map((d) => ({
           ...d,
-          avgZspreadBps: Math.round(d.avgZspread * 10000),
+          avgZspreadBps: Math.round(d.avgZspread * 100),
         }))}
         margin={{ top: 10, right: 20, bottom: 60, left: 20 }}
       >
