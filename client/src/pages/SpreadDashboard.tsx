@@ -567,6 +567,8 @@ export default function SpreadDashboard() {
   const [showMatchReport, setShowMatchReport] = useState(false);
   // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B) ou DI SPREAD (spread sobre CDI)
   const [universo, setUniverso] = useState<"IPCA" | "DI">("IPCA");
+  // Métrica do gráfico Por Rating: média ou mediana
+  const [metrica, setMetrica] = useState<"media" | "mediana">("media");
 
   // Estado dos dois arquivos de upload
   const [moodysFile, setMoodysFile] = useState<File | null>(null);
@@ -1063,6 +1065,24 @@ export default function SpreadDashboard() {
                 </button>
               )}
 
+              {/* Toggle Média/Mediana — apenas na aba Por Rating */}
+              {activeView === "bar" && (
+                <div className="flex items-center gap-1 bg-secondary rounded-md p-0.5">
+                  {(["media", "mediana"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setMetrica(m)}
+                      className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                        metrica === m
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {m === "media" ? "Média" : "Mediana"}
+                    </button>
+                  ))}
+                </div>
+              )}
               {/* Toggle outliers */}
               {outlierCount > 0 && (
                 <button
@@ -1123,7 +1143,7 @@ export default function SpreadDashboard() {
             ) : activeView === "scatter" ? (
               <ScatterView data={scatterData} ratingGroups={ratingGroups} yAxisLabel={yAxisLabel} />
             ) : activeView === "bar" ? (
-              <BarView data={zspreadByRating.data || []} yAxisLabel={yAxisLabel} />
+              <BarView data={zspreadByRating.data || []} yAxisLabel={yAxisLabel} metrica={metrica} />
             ) : (
               <TableView
                 data={filteredTableData}
@@ -1347,10 +1367,12 @@ function ScatterView({
 
 function BarView({
   data,
-  yAxisLabel = "Spread médio (bps)",
+  yAxisLabel = "Spread (bps)",
+  metrica = "media",
 }: {
-  data: { rating: string; avgZspread: number; count: number; minZspread: number; maxZspread: number }[];
+  data: { rating: string; avgZspread: number; medianZspread?: number; count: number; minZspread: number; maxZspread: number }[];
   yAxisLabel?: string;
+  metrica?: "media" | "mediana";
 }) {
   const sorted = useMemo(() => {
     return [...data].sort((a, b) => {
@@ -1358,12 +1380,14 @@ function BarView({
       return order.indexOf(a.rating) - order.indexOf(b.rating);
     });
   }, [data]);
-
   // Calcular linha de tendência linear (regressão simples sobre índice ordinal)
   const trendData = useMemo(() => {
     if (sorted.length < 2) return [];
     const xs = sorted.map((_, i) => i);
-    const ys = sorted.map((d) => Math.round(d.avgZspread * 100));
+    const ys = sorted.map((d) => {
+      const val = metrica === "mediana" ? (d.medianZspread ?? d.avgZspread) : d.avgZspread;
+      return Math.round(val * 100);
+    });
     const n = xs.length;
     const sumX = xs.reduce((a, b) => a + b, 0);
     const sumY = ys.reduce((a, b) => a + b, 0);
@@ -1371,12 +1395,15 @@ function BarView({
     const sumX2 = xs.reduce((s, x) => s + x * x, 0);
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
-    return sorted.map((d, i) => ({
-      rating: d.rating,
-      avgZspreadBps: Math.round(d.avgZspread * 100),
-      trend: Math.round(slope * i + intercept),
-    }));
-  }, [sorted]);
+    return sorted.map((d, i) => {
+      const val = metrica === "mediana" ? (d.medianZspread ?? d.avgZspread) : d.avgZspread;
+      return {
+        rating: d.rating,
+        spreadBps: Math.round(val * 100),
+        trend: Math.round(slope * i + intercept),
+      };
+    });
+  }, [sorted, metrica]);
 
   const CustomTooltip = ({
     active,
@@ -1393,7 +1420,7 @@ function BarView({
       <div className="bg-popover border border-border rounded-lg p-3 text-xs shadow-xl">
         <p className="font-semibold text-foreground mb-1">{label}</p>
         <p>
-          Z-spread médio:{" "}
+          {metrica === "mediana" ? "Mediana" : "Média"}:{" "}
           <span className="text-primary font-medium">
             {Math.round(payload[0].value)} bps
           </span>
@@ -1437,7 +1464,7 @@ function BarView({
         />
         <Tooltip content={<CustomTooltip />} />
         <ReferenceLine y={0} stroke="oklch(0.35 0.01 240)" strokeDasharray="4 4" />
-        <Bar dataKey="avgZspreadBps" radius={[3, 3, 0, 0]}>
+        <Bar dataKey="spreadBps" radius={[3, 3, 0, 0]}>
           {trendData.map((entry) => (
             <Cell key={entry.rating} fill={getRatingColor(entry.rating)} fillOpacity={0.85} />
           ))}

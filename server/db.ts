@@ -203,18 +203,42 @@ export async function getZspreadByRating(filters: SpreadFilters = {}) {
     conditions.push(eq(spreadAnalysis.isOutlier, false));
   }
 
-  return db
+  // Buscar todos os valores brutos para calcular mediana no servidor
+  const rows = await db
     .select({
       rating: spreadAnalysis.rating,
-      avgZspread: sql<number>`AVG(CAST(${spreadAnalysis.zspread} AS DECIMAL(10,6)))`,
-      count: sql<number>`COUNT(*)`,
-      minZspread: sql<number>`MIN(CAST(${spreadAnalysis.zspread} AS DECIMAL(10,6)))`,
-      maxZspread: sql<number>`MAX(CAST(${spreadAnalysis.zspread} AS DECIMAL(10,6)))`,
+      zspread: spreadAnalysis.zspread,
     })
     .from(spreadAnalysis)
     .where(and(...conditions))
-    .groupBy(spreadAnalysis.rating)
     .orderBy(asc(spreadAnalysis.rating));
+
+  // Agrupar por rating e calcular média, mediana, min, max
+  const grouped = new Map<string, number[]>();
+  for (const row of rows) {
+    if (!row.rating || row.zspread === null || row.zspread === undefined) continue;
+    const v = Number(row.zspread);
+    if (!isFinite(v)) continue;
+    if (!grouped.has(row.rating)) grouped.set(row.rating, []);
+    grouped.get(row.rating)!.push(v);
+  }
+
+  const calcMedian = (vals: number[]): number => {
+    const sorted = [...vals].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0
+      ? (sorted[mid - 1] + sorted[mid]) / 2
+      : sorted[mid];
+  };
+
+  return Array.from(grouped.entries()).map(([rating, vals]) => ({
+    rating,
+    avgZspread: vals.reduce((s, v) => s + v, 0) / vals.length,
+    medianZspread: calcMedian(vals),
+    count: vals.length,
+    minZspread: Math.min(...vals),
+    maxZspread: Math.max(...vals),
+  }));
 }
 
 export async function getLastSyncLog() {

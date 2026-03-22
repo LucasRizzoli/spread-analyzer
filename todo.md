@@ -136,3 +136,11 @@
 - [x] SpreadFilters e SpreadFiltersSchema recebem excludeOutliers: boolean
 - [x] getZspreadByRating aplica WHERE is_outlier = false quando excludeOutliers = true
 - [x] Frontend passa excludeOutliers: !showOutliers ao getZspreadByRating
+
+## v2.3 — Toggle Média/Mediana na aba Por Rating (CONCLUÍDO)
+- [x] Backend: getZspreadByRating calcula mediana no servidor Node.js (sem dependência de função SQL)
+- [x] Router expõe medianZspread no retorno de getZspreadByRating
+- [x] Frontend: toggle Média/Mediana no header (visível apenas na aba Por Rating)
+- [x] Linha de tendência recalculada conforme a métrica selecionada
+- [x] Tooltip atualizado: mostra "Média" ou "Mediana" conforme seleção
+- [x] 28 testes passando

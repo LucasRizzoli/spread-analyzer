@@ -63,6 +63,7 @@ export const spreadRouter = router({
         .map((r) => ({
           rating: r.rating!,
           avgZspread: Number(r.avgZspread),
+          medianZspread: Number(r.medianZspread),
           count: Number(r.count),
           minZspread: Number(r.minZspread),
           maxZspread: Number(r.maxZspread),
