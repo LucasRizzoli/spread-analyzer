@@ -38,6 +38,8 @@ import {
   Bar,
   Cell,
   ReferenceLine,
+  ComposedChart,
+  Line,
 } from "recharts";
 import { toast } from "sonner";
 import { sortRatings } from "../lib/ratings";
@@ -590,10 +592,14 @@ export default function SpreadDashboard() {
     tipos: filters.tipos.length ? filters.tipos : undefined,
   });
 
+  // Mapear universo para indexadores correspondentes
+  const universoIndexadores = universo === "IPCA"
+    ? ["IPCA SPREAD"]
+    : ["DI SPREAD", "DI PERCENTUAL"];
   const zspreadByRating = trpc.spread.getZspreadByRating.useQuery({
     durationMin: filters.durationRange[0],
     durationMax: filters.durationRange[1],
-    indexadores: filters.indexadores.length ? filters.indexadores : undefined,
+    indexadores: universoIndexadores,
     incentivado:
       filters.incentivado === "todos"
         ? undefined
@@ -1352,6 +1358,25 @@ function BarView({
     });
   }, [data]);
 
+  // Calcular linha de tendência linear (regressão simples sobre índice ordinal)
+  const trendData = useMemo(() => {
+    if (sorted.length < 2) return [];
+    const xs = sorted.map((_, i) => i);
+    const ys = sorted.map((d) => Math.round(d.avgZspread * 100));
+    const n = xs.length;
+    const sumX = xs.reduce((a, b) => a + b, 0);
+    const sumY = ys.reduce((a, b) => a + b, 0);
+    const sumXY = xs.reduce((s, x, i) => s + x * ys[i], 0);
+    const sumX2 = xs.reduce((s, x) => s + x * x, 0);
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    return sorted.map((d, i) => ({
+      rating: d.rating,
+      avgZspreadBps: Math.round(d.avgZspread * 100),
+      trend: Math.round(slope * i + intercept),
+    }));
+  }, [sorted]);
+
   const CustomTooltip = ({
     active,
     payload,
@@ -1386,11 +1411,8 @@ function BarView({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart
-        data={sorted.map((d) => ({
-          ...d,
-          avgZspreadBps: Math.round(d.avgZspread * 100),
-        }))}
+      <ComposedChart
+        data={trendData}
         margin={{ top: 10, right: 20, bottom: 60, left: 20 }}
       >
         <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.25 0.01 240)" />
@@ -1415,11 +1437,20 @@ function BarView({
         <Tooltip content={<CustomTooltip />} />
         <ReferenceLine y={0} stroke="oklch(0.35 0.01 240)" strokeDasharray="4 4" />
         <Bar dataKey="avgZspreadBps" radius={[3, 3, 0, 0]}>
-          {sorted.map((entry) => (
+          {trendData.map((entry) => (
             <Cell key={entry.rating} fill={getRatingColor(entry.rating)} fillOpacity={0.85} />
           ))}
         </Bar>
-      </BarChart>
+        <Line
+          type="monotone"
+          dataKey="trend"
+          stroke="oklch(0.75 0.15 60)"
+          strokeWidth={2}
+          dot={false}
+          strokeDasharray="5 3"
+          name="Tendência"
+        />
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }

@@ -126,3 +126,8 @@
 - [x] Relatório de qualidade: ocultar linhas com scoreMatch < 0.90
 - [x] Rótulo do eixo Y simplificado para "Spread (bps)" em todos os gráficos
 - [x] Título dinâmico: "IPCA+ — Z-Spread sobre NTN-B" / "DI+ — Spread sobre CDI"
+
+## v2.1 — Gráfico Por Rating: filtro de universo e linha de tendência (CONCLUÍDO)
+- [x] Corrigir gráfico "Por Rating": getZspreadByRating agora recebe indexadores do universo selecionado
+- [x] Linha de tendência linear (regressão simples por índice ordinal de rating) no gráfico Por Rating
+- [x] BarChart substituído por ComposedChart para suportar Bar + Line simultaneamente
