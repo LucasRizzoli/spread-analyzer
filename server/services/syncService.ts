@@ -205,23 +205,38 @@ function crossByEmissao(
 }
 
 /**
- * Marca outliers por rating usando \u00b13 desvios padr\u00e3o da m\u00e9dia:
- * Para cada rating com \u22655 emiss\u00f5es, calcula m\u00e9dia e desvio padr\u00e3o do Z-spread.
- * Pontos a 3 ou mais desvios padr\u00e3o da m\u00e9dia s\u00e3o marcados como isOutlier = true.
+ * Marca outliers por rating+universo usando ±3 desvios padrão da média:
+ * Para cada combinação de (rating, universo) com ≥5 emissões, calcula média e desvio
+ * padrão do Z-spread. Pontos a 3 ou mais desvios padrão da média são marcados como
+ * isOutlier = true.
  *
- * Os outliers s\u00e3o mantidos no banco para rastreabilidade, mas marcados
- * para serem exclu\u00eddos do gr\u00e1fico de dispers\u00e3o por padr\u00e3o.
+ * O agrupamento por universo (IPCA vs DI) é essencial: misturar os dois universos
+ * faria com que ativos DI+ (spreads menores em bps) fossem penalizados ao serem
+ * comparados com ativos IPCA+ do mesmo rating.
+ *
+ * Os outliers são mantidos no banco para rastreabilidade, mas marcados
+ * para serem excluídos do gráfico de dispersão por padrão.
  */
 function markOutliers(results: SpreadResult[]): {
   marked: SpreadResult[];
   outlierCount: number;
   ratingStats: Record<string, { total: number; outliers: number; cutLow: number; cutHigh: number; mean: number; stdDev: number }>;
 } {
-  // Agrupar por rating
+  // Determinar universo de cada ativo (IPCA ou DI) para agrupar separadamente
+  const getUniverso = (tipoRemuneracao: string): string => {
+    const t = tipoRemuneracao.toUpperCase();
+    if (t.includes("IPCA")) return "IPCA";
+    if (t.includes("DI")) return "DI";
+    return "OUTRO";
+  };
+
+  // Agrupar por rating + universo (ex: "AA-.br|IPCA", "AA-.br|DI")
   const byRating = new Map<string, SpreadResult[]>();
   for (const r of results) {
-    if (!byRating.has(r.rating)) byRating.set(r.rating, []);
-    byRating.get(r.rating)!.push(r);
+    const universo = getUniverso(r.tipoRemuneracao);
+    const key = `${r.rating}|${universo}`;
+    if (!byRating.has(key)) byRating.set(key, []);
+    byRating.get(key)!.push(r);
   }
 
   const ratingStats: Record<string, { total: number; outliers: number; cutLow: number; cutHigh: number; mean: number; stdDev: number }> = {};

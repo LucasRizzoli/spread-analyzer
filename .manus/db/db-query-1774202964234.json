@@ -1,0 +1,118 @@
+{
+  "query": "\nSELECT \n  rating,\n  indexador,\n  isOutlier,\n  COUNT(*) as total,\n  ROUND(AVG(zspread)*10000, 0) as avg_bps,\n  ROUND(MIN(zspread)*10000, 0) as min_bps,\n  ROUND(MAX(zspread)*10000, 0) as max_bps\nFROM spread_analysis\nWHERE indexador IN ('DI SPREAD', 'DI PERCENTUAL')\nGROUP BY rating, indexador, isOutlier\nORDER BY rating, indexador, isOutlier;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  rating,\n  indexador,\n  isOutlier,\n  COUNT(*) as total,\n  ROUND(AVG(zspread)*10000, 0) as avg_bps,\n  ROUND(MIN(zspread)*10000, 0) as min_bps,\n  ROUND(MAX(zspread)*10000, 0) as max_bps\nFROM spread_analysis\nWHERE indexador IN ('DI SPREAD', 'DI PERCENTUAL')\nGROUP BY rating, indexador, isOutlier\nORDER BY rating, indexador, isOutlier;\n",
+  "rows": [
+    {
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "0",
+      "total": "5",
+      "avg_bps": "15779",
+      "min_bps": "13167",
+      "max_bps": "19585"
+    },
+    {
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "1",
+      "total": "1",
+      "avg_bps": "43390",
+      "min_bps": "43390",
+      "max_bps": "43390"
+    },
+    {
+      "rating": "A+.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "0",
+      "total": "5",
+      "avg_bps": "20472",
+      "min_bps": "16054",
+      "max_bps": "25892"
+    },
+    {
+      "rating": "AA-.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "1",
+      "total": "1",
+      "avg_bps": "5224",
+      "min_bps": "5224",
+      "max_bps": "5224"
+    },
+    {
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "0",
+      "total": "8",
+      "avg_bps": "16997",
+      "min_bps": "11130",
+      "max_bps": "23788"
+    },
+    {
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "1",
+      "total": "1",
+      "avg_bps": "8054",
+      "min_bps": "8054",
+      "max_bps": "8054"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "0",
+      "total": "16",
+      "avg_bps": "14692",
+      "min_bps": "7739",
+      "max_bps": "26748"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "1",
+      "total": "2",
+      "avg_bps": "19198",
+      "min_bps": "5536",
+      "max_bps": "32860"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "DI PERCENTUAL",
+      "isOutlier": "1",
+      "total": "1",
+      "avg_bps": "3551",
+      "min_bps": "3551",
+      "max_bps": "3551"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "0",
+      "total": "62",
+      "avg_bps": "9153",
+      "min_bps": "5473",
+      "max_bps": "14802"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "1",
+      "total": "6",
+      "avg_bps": "8676",
+      "min_bps": "4464",
+      "max_bps": "16992"
+    },
+    {
+      "rating": "BBB+.br",
+      "indexador": "DI SPREAD",
+      "isOutlier": "0",
+      "total": "1",
+      "avg_bps": "41964",
+      "min_bps": "41964",
+      "max_bps": "41964"
+    }
+  ],
+  "messages": [],
+  "stdout": "rating\tindexador\tisOutlier\ttotal\tavg_bps\tmin_bps\tmax_bps\nA.br\tDI SPREAD\t0\t5\t15779\t13167\t19585\nA.br\tDI SPREAD\t1\t1\t43390\t43390\t43390\nA+.br\tDI SPREAD\t0\t5\t20472\t16054\t25892\nAA-.br\tDI SPREAD\t1\t1\t5224\t5224\t5224\nAA.br\tDI SPREAD\t0\t8\t16997\t11130\t23788\nAA.br\tDI SPREAD\t1\t1\t8054\t8054\t8054\nAA+.br\tDI SPREAD\t0\t16\t14692\t7739\t26748\nAA+.br\tDI SPREAD\t1\t2\t19198\t5536\t32860\nAAA.br\tDI PERCENTUAL\t1\t1\t3551\t3551\t3551\nAAA.br\tDI SPREAD\t0\t62\t9153\t5473\t14802\nAAA.br\tDI SPREAD\t1\t6\t8676\t4464\t16992\nBBB+.br\tDI SPREAD\t0\t1\t41964\t41964\t41964\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}
