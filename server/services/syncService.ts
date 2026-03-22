@@ -6,7 +6,7 @@
  * 1. Parsear planilha Moody's → ratings por emissão específica
  * 2. Parsear planilha ANBIMA Data → ativos com Z-spread (data mais recente)
  * 3. Enriquecer cada código CETIP via SND (debentures.com.br) → número de emissão real
- * 4. Cruzar por emissor normalizado (Dice ≥ 0.65) + número de emissão exato
+ * 4. Cruzar por emissor normalizado (Dice ≥ 0.90) + número de emissão exato
  * 5. Marcar outliers: por rating, quando ≥5 emissões, remover 10% superior e 10% inferior de Z-spread
  * 6. Persistir resultados com scoreMatch, isOutlier e campos de rastreabilidade
  */
@@ -116,7 +116,7 @@ function diceCoefficient(a: string, b: string): number {
 /**
  * Realiza o cruzamento emissão-a-emissão:
  * Para cada ativo ANBIMA que foi enriquecido com número de emissão via SND,
- * busca na Moody's o rating de emissão com mesmo emissor (fuzzy ≥ 0.65) e
+ * busca na Moody's o rating de emissão com mesmo emissor (fuzzy ≥ 0.90) e
  * mesmo número de emissão.
  *
  * Retorna apenas os ativos com match confirmado — sem fallback para rating de emissor.
@@ -160,9 +160,9 @@ function crossByEmissao(
       // Filtro primário: número de emissão deve ser idêntico
       if (r.emissaoNum !== numeroEmissaoAsset) continue;
 
-      // Filtro secundário: nome do emissor deve ser similar (Dice ≥ 0.65)
+      // Filtro secundário: nome do emissor deve ser similar (Dice ≥ 0.90)
       const score = diceCoefficient(emissorNormAsset, r.emissorNorm);
-      if (score >= 0.65 && score > bestScore) {
+      if (score >= 0.90 && score > bestScore) {
         bestScore = score;
         bestRating = r.rating;
         bestSetor = r.setor;

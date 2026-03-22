@@ -423,7 +423,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                       {/* Identificação */}
                       <td className="px-3 py-2.5 font-mono text-foreground whitespace-nowrap font-semibold">
                         <a
-                          href={`https://www.debentures.com.br/exploreosnd/consultaadados/emissoesdedebentures/caracteristicas_e.asp?op_exc=False&ativo=${row.codigoCetip}`}
+                          href={`https://www.debentures.com.br/exploreosnd/consultaadados/emissoesdedebentures/caracteristicas_d.asp?tip_deb=publicas&selecao=${row.codigoCetip}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="hover:text-blue-400 hover:underline transition-colors flex items-center gap-1"
@@ -478,7 +478,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                       <td className="px-3 py-2.5">
                         {row.instrumentoMoodys ? (
                           <a
-                            href={`https://www.moodyslocal.com.br/ratings/search?q=${encodeURIComponent(row.emissorMoodys || row.codigoCetip)}`}
+                            href={`https://moodyslocal.com.br/?s=${encodeURIComponent((row.emissorMoodys || row.codigoCetip).split(' ').slice(0, 2).join(' '))}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-muted-foreground hover:text-emerald-400 hover:underline transition-colors max-w-[240px] block truncate text-[11px] flex items-center gap-1"

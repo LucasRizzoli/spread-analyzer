@@ -245,7 +245,7 @@ describe("parseAnbimaDataXlsx", () => {
 describe("matching emissão-a-emissão (lógica de crossByEmissao)", () => {
   /**
    * Testa a lógica central do matching:
-   * - Emissor normalizado (Dice ≥ 0.65) + número de emissão exato
+   * - Emissor normalizado (Dice ≥ 0.90) + número de emissão exato
    * - Apenas ratings de emissão são considerados (isEmissao = true)
    * - Sem fallback para rating de emissor
    */
@@ -271,14 +271,14 @@ describe("matching emissão-a-emissão (lógica de crossByEmissao)", () => {
     const emissorAnbima = normalizeEmissor("AEGEA SANEAMENTO E PARTICIPAÇÕES S/A (*)");
     const emissorMoodys = normalizeEmissor("Aegea Saneamento e Participações S.A.");
     const score = diceCoefficient(emissorAnbima, emissorMoodys);
-    expect(score).toBeGreaterThanOrEqual(0.65);
+    expect(score).toBeGreaterThanOrEqual(0.90);
   });
 
   it("score baixo para emissores diferentes", () => {
     const emissorA = normalizeEmissor("PETROBRAS S.A.");
     const emissorB = normalizeEmissor("VALE S.A.");
     const score = diceCoefficient(emissorA, emissorB);
-    expect(score).toBeLessThan(0.65);
+    expect(score).toBeLessThan(0.90);
   });
 
   it("número de emissão diferente não deve dar match", () => {
@@ -294,6 +294,6 @@ describe("matching emissão-a-emissão (lógica de crossByEmissao)", () => {
     const comAsteriscos = normalizeEmissor("RGE SUL DISTRIBUIDORA DE ENERGIA S/A (*)");
     const semAsteriscos = normalizeEmissor("RGE Sul Distribuidora de Energia S.A.");
     const score = diceCoefficient(comAsteriscos, semAsteriscos);
-    expect(score).toBeGreaterThanOrEqual(0.65);
+    expect(score).toBeGreaterThanOrEqual(0.90);
   });
 });

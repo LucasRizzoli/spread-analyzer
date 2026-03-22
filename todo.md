@@ -102,3 +102,10 @@
 - [x] Coluna "Tipo" (DEB/CRI/CRA) em vez de ISIN no relatório
 - [x] Legenda atualizada: ±3σ da média por rating (mín. 5 emissões)
 - [x] 28 testes passando
+
+## v1.8 — Score mínimo 0.90 e links corretos no relatório (CONCLUÍDO)
+- [x] Elevar limiar de score de 0.65 para 0.90 no syncService (crossByEmissao)
+- [x] Corrigir link SND: URL funcional `caracteristicas_d.asp?tip_deb=publicas&selecao=CETIP` (verificado no browser)
+- [x] Corrigir link Moody's Local: URL de busca `moodyslocal.com.br/?s=EMISSOR` (verificado no browser)
+- [x] Atualizar testes: limiar 0.90 em todos os casos de matching
+- [x] 28 testes passando
