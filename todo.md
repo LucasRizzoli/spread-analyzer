@@ -144,3 +144,17 @@
 - [x] Linha de tendência recalculada conforme a métrica selecionada
 - [x] Tooltip atualizado: mostra "Média" ou "Mediana" conforme seleção
 - [x] 28 testes passando
+
+## v2.4 — Migração SND → ANBIMA Data e unificação Tabela/Relatório (CONCLUÍDO)
+- [x] Substituir sndEnrichmentService (debentures.com.br) pelo anbimaDataService (ANBIMA Data via Playwright)
+- [x] anbimaDataService usa API interna web-bff do data.anbima.com.br (dados mais ricos: CNPJ, setor, remuneração, Lei 12.431)
+- [x] syncService atualizado: mensagens de progresso, batchSize 3 (Playwright), campos enriquecidos (emissorCnpj, setor, dataEmissao)
+- [x] Remover todas as referências ao SND/debentures.com no frontend (links, labels, textos)
+- [x] Link do código CETIP aponta para data.anbima.com.br/debentures/{CETIP}/caracteristicas
+- [x] Renomear "Nº Emissão (SND)" para "Nº Emissão (ANBIMA)" em todos os contextos
+- [x] Unificar Relatório de Qualidade com a aba Tabela: colunas Moody's (instrumento, score, outlier) integradas diretamente
+- [x] Remover botão "Relatório de Qualidade" e modal separado
+- [x] Tabela com agrupamento visual: IDENTIFICAÇÃO | ANBIMA DATA | MOODY'S LOCAL | SPREAD
+- [x] Busca na tabela inclui instrumentoMoodys e emissorMoodys
+- [x] scoreMatch exposto no getAnalysis (conversão numérica no router)
+- [x] 28 testes passando

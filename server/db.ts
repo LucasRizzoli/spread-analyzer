@@ -275,6 +275,8 @@ export async function getMatchQualityReport() {
       emissorAnbima: spreadAnalysis.emissorNome,
       // Dados do match Moody's
       emissorMoodys: spreadAnalysis.emissorMoodys,
+      // Nota: campo ainda se chama numeroEmissaoSnd no schema DB por compatibilidade histórica,
+      // mas agora é populado via ANBIMA Data (não mais pelo SND/debentures.com.br)
       numeroEmissaoSnd: spreadAnalysis.numeroEmissaoSnd,
       numeroEmissaoMoodys: spreadAnalysis.numeroEmissaoMoodys,
       instrumentoMoodys: spreadAnalysis.instrumentoMoodys,

@@ -37,6 +37,7 @@ export const spreadRouter = router({
         ntnbTaxa: row.ntnbTaxa ? Number(row.ntnbTaxa) : null,
         ntnbDuration: row.ntnbDuration ? Number(row.ntnbDuration) : null,
         zspread: row.zspread ? Number(row.zspread) : null,
+        scoreMatch: row.scoreMatch ? Number(row.scoreMatch) : null,
       }));
     }),
 
@@ -100,7 +101,7 @@ export const spreadRouter = router({
   /**
    * Retorna relatório de qualidade dos matches para verificação manual.
    * Inclui todos os campos de rastreabilidade: emissor ANBIMA, emissor Moody's,
-   * número de emissão SND, instrumento Moody's, score de similaridade e outlier.
+   * número de emissão (ANBIMA Data), instrumento Moody's, score de similaridade e outlier.
    */
   getMatchReport: publicProcedure.query(async () => {
     const data = await getMatchQualityReport();

@@ -184,7 +184,7 @@ function downloadCsv(rows: MatchReportRow[]) {
     "Data Referência",
     "Emissor ANBIMA",
     "Emissor Moody's",
-    "Nº Emissão (SND)",
+    "Nº Emissão (ANBIMA Data)",
     "Nº Emissão (Moody's)",
     "Instrumento Moody's",
     "Rating",
@@ -375,7 +375,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                   <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Tipo</th>
                   {/* ANBIMA */}
                   <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap border-l border-blue-500/20">Emissor (ANBIMA)</th>
-                  <th className="px-3 py-2 text-center font-semibold text-blue-400 whitespace-nowrap">Nº Emissão (SND)</th>
+                  <th className="px-3 py-2 text-center font-semibold text-blue-400 whitespace-nowrap">Nº Emissão (ANBIMA)</th>
                   {/* Moody's */}
                   <th className="px-3 py-2 text-left font-semibold text-emerald-400 whitespace-nowrap border-l border-emerald-500/20">Emissor (Moody's)</th>
                   <th className="px-3 py-2 text-center font-semibold text-emerald-400 whitespace-nowrap">Nº Emissão</th>
@@ -426,11 +426,11 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                       {/* Identificação */}
                       <td className="px-3 py-2.5 font-mono text-foreground whitespace-nowrap font-semibold">
                         <a
-                          href={`https://www.debentures.com.br/exploreosnd/consultaadados/emissoesdedebentures/caracteristicas_d.asp?tip_deb=publicas&selecao=${row.codigoCetip}`}
+                          href={`https://data.anbima.com.br/debentures/${row.codigoCetip}/caracteristicas`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="hover:text-blue-400 hover:underline transition-colors flex items-center gap-1"
-                          title="Verificar no SND (debentures.com.br)"
+                          title="Ver no ANBIMA Data"
                         >
                           {row.codigoCetip}
                           <ExternalLink className="h-2.5 w-2.5 opacity-50" />
@@ -451,7 +451,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                             {row.numeroEmissaoSnd}ª
                           </span>
                         ) : (
-                          <span className="text-muted-foreground/50 text-[10px]">sem SND</span>
+                          <span className="text-muted-foreground/50 text-[10px]">sem dados</span>
                         )}
                       </td>
                       {/* Moody's */}
@@ -564,7 +564,6 @@ export default function SpreadDashboard() {
   const [activeView, setActiveView] = useState<"scatter" | "bar" | "table">("scatter");
   const [tableSearch, setTableSearch] = useState("");
   const [showOutliers, setShowOutliers] = useState(false);
-  const [showMatchReport, setShowMatchReport] = useState(false);
   // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B) ou DI SPREAD (spread sobre CDI)
   const [universo, setUniverso] = useState<"IPCA" | "DI">("IPCA");
   // Métrica do gráfico Por Rating: média ou mediana
@@ -735,7 +734,9 @@ export default function SpreadDashboard() {
         r.emissorNome?.toLowerCase().includes(q) ||
         r.codigoCetip?.toLowerCase().includes(q) ||
         r.isin?.toLowerCase().includes(q) ||
-        r.rating?.toLowerCase().includes(q)
+        r.rating?.toLowerCase().includes(q) ||
+        r.instrumentoMoodys?.toLowerCase().includes(q) ||
+        r.emissorMoodys?.toLowerCase().includes(q)
     );
   }, [analysisData, tableSearch]);
 
@@ -784,9 +785,6 @@ export default function SpreadDashboard() {
 
   return (
     <>
-      {/* Modal de relatório de qualidade */}
-      {showMatchReport && <MatchReportModal onClose={() => setShowMatchReport(false)} />}
-
       <div className="flex h-screen bg-background overflow-hidden">
         {/* ── Sidebar de filtros ─────────────────────────────────────────────── */}
         <aside className="w-64 flex-shrink-0 border-r border-border bg-sidebar flex flex-col">
@@ -1054,17 +1052,6 @@ export default function SpreadDashboard() {
                   </button>
                 ))}
               </div>
-              {/* Botão Relatório de Qualidade */}
-              {allData.length > 0 && (
-                <button
-                  onClick={() => setShowMatchReport(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
-                >
-                  <ClipboardCheck className="h-3.5 w-3.5" />
-                  Relatório de Qualidade
-                </button>
-              )}
-
               {/* Toggle Média/Mediana — apenas na aba Por Rating */}
               {activeView === "bar" && (
                 <div className="flex items-center gap-1 bg-secondary rounded-md p-0.5">
@@ -1502,6 +1489,13 @@ type AnalysisRow = {
   ntnbReferencia: string | null;
   ntnbTaxa: number | null;
   zspread: number | null;
+  // Campos de matching (qualidade)
+  emissorMoodys: string | null;
+  numeroEmissaoSnd: number | null;
+  numeroEmissaoMoodys: string | null;
+  instrumentoMoodys: string | null;
+  scoreMatch: number | null;
+  isOutlier: boolean | null;
 };
 
 function TableView({
@@ -1513,12 +1507,14 @@ function TableView({
   search: string;
   onSearchChange: (v: string) => void;
 }) {
+  const hasMatchData = data.some((r) => r.scoreMatch != null || r.emissorMoodys != null);
+
   return (
     <div className="h-full flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <input
           type="text"
-          placeholder="Buscar por emissor, código, ISIN ou rating..."
+          placeholder="Buscar por emissor, código, ISIN, instrumento Moody's ou rating..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="flex-1 h-8 px-3 text-xs bg-input border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
@@ -1530,38 +1526,92 @@ function TableView({
 
       <div className="flex-1 overflow-auto rounded-lg border border-border">
         <table className="w-full text-xs financial-table">
-          <thead className="sticky top-0 bg-card border-b border-border z-10">
-            <tr>
-              <th className="px-3 py-2.5 text-left">Emissor</th>
-              <th className="px-3 py-2.5 text-left">Código</th>
-              <th className="px-3 py-2.5 text-left">Tipo</th>
-              <th className="px-3 py-2.5 text-left">Indexador</th>
-              <th className="px-3 py-2.5 text-center">Incentivado</th>
-              <th className="px-3 py-2.5 text-left">Rating</th>
-              <th className="px-3 py-2.5 text-right">Duration</th>
-              <th className="px-3 py-2.5 text-right">Taxa Indicativa</th>
-              <th className="px-3 py-2.5 text-left">NTN-B Ref.</th>
-              <th className="px-3 py-2.5 text-right">Z-spread</th>
+          <thead className="sticky top-0 z-10">
+            {/* Linha de agrupamento */}
+            <tr className="bg-muted/30 border-b border-border/60">
+              <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap" colSpan={2}>
+                IDENTIFICAÇÃO
+              </th>
+              <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-blue-400/70 whitespace-nowrap border-l border-blue-500/20" colSpan={4}>
+                ← ANBIMA DATA
+              </th>
+              {hasMatchData && (
+                <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-emerald-400/70 whitespace-nowrap border-l border-emerald-500/20" colSpan={3}>
+                  MOODY'S LOCAL →
+                </th>
+              )}
+              <th className="px-3 py-1.5 text-right text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap border-l border-border/60" colSpan={hasMatchData ? 4 : 3}>
+                SPREAD
+              </th>
+            </tr>
+            {/* Linha de nomes das colunas */}
+            <tr className="bg-card border-b border-border">
+              {/* Identificação */}
+              <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Código</th>
+              <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Tipo</th>
+              {/* ANBIMA */}
+              <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap border-l border-blue-500/20">Emissor</th>
+              <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap">Indexador</th>
+              <th className="px-3 py-2 text-center font-semibold text-blue-400 whitespace-nowrap">Incentivado</th>
+              <th className="px-3 py-2 text-center font-semibold text-blue-400 whitespace-nowrap">Nº Emissão</th>
+              {/* Moody's */}
+              {hasMatchData && (
+                <>
+                  <th className="px-3 py-2 text-left font-semibold text-emerald-400 whitespace-nowrap border-l border-emerald-500/20">Instrumento Moody's</th>
+                  <th className="px-3 py-2 text-left font-semibold text-emerald-400 whitespace-nowrap">Rating</th>
+                  <th className="px-3 py-2 text-center font-semibold text-emerald-400 whitespace-nowrap">Score</th>
+                </>
+              )}
+              {/* Spread */}
+              <th className="px-3 py-2 text-right font-semibold text-muted-foreground whitespace-nowrap border-l border-border/60">Duration</th>
+              <th className="px-3 py-2 text-right font-semibold text-muted-foreground whitespace-nowrap">Taxa Indicativa</th>
+              {!hasMatchData && <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">NTN-B Ref.</th>}
+              <th className="px-3 py-2 text-right font-semibold text-muted-foreground whitespace-nowrap">Z-spread</th>
+              {hasMatchData && <th className="px-3 py-2 text-center font-semibold text-muted-foreground whitespace-nowrap">Status</th>}
             </tr>
           </thead>
           <tbody>
             {data.map((row, i) => {
               const zspreadBps = row.zspread != null ? Math.round(row.zspread * 100) : null;
+              const score = row.scoreMatch;
+              const scoreColor =
+                score == null ? "text-muted-foreground"
+                : score >= 0.9 ? "text-emerald-400"
+                : score >= 0.75 ? "text-yellow-400"
+                : "text-orange-400";
+              const scoreBg =
+                score == null ? ""
+                : score >= 0.9 ? "bg-emerald-500/10"
+                : score >= 0.75 ? "bg-yellow-500/10"
+                : "bg-orange-500/10";
               return (
                 <tr
                   key={row.id}
                   className={`border-b border-border/50 hover:bg-accent/30 transition-colors ${
-                    i % 2 === 0 ? "bg-transparent" : "bg-card/30"
+                    row.isOutlier ? "bg-yellow-500/5" : i % 2 === 0 ? "bg-transparent" : "bg-card/30"
                   }`}
                 >
-                  <td className="px-3 py-2 font-medium text-foreground max-w-[160px] truncate">
-                    {row.emissorNome || "—"}
+                  {/* Identificação */}
+                  <td className="px-3 py-2 font-mono text-foreground whitespace-nowrap font-semibold">
+                    <a
+                      href={`https://data.anbima.com.br/debentures/${row.codigoCetip}/caracteristicas`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-blue-400 hover:underline transition-colors flex items-center gap-1"
+                      title="Ver no ANBIMA Data"
+                    >
+                      {row.codigoCetip}
+                      <ExternalLink className="h-2.5 w-2.5 opacity-50" />
+                    </a>
                   </td>
-                  <td className="px-3 py-2 font-mono text-muted-foreground">{row.codigoCetip}</td>
                   <td className="px-3 py-2">
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground">
                       {row.tipo || "—"}
                     </span>
+                  </td>
+                  {/* ANBIMA */}
+                  <td className="px-3 py-2 font-medium text-blue-300 max-w-[160px] truncate border-l border-blue-500/10" title={row.emissorNome || ""}>
+                    {row.emissorNome || "—"}
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">{row.indexador || "—"}</td>
                   <td className="px-3 py-2 text-center">
@@ -1571,27 +1621,60 @@ function TableView({
                       <span className="text-muted-foreground text-[10px]">Não</span>
                     )}
                   </td>
-                  <td className="px-3 py-2">
-                    {row.rating ? (
-                      <span
-                        className="font-semibold text-[11px]"
-                        style={{ color: getRatingColor(row.rating) }}
-                      >
-                        {row.rating}
+                  <td className="px-3 py-2 text-center">
+                    {row.numeroEmissaoSnd != null ? (
+                      <span className="font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[11px]">
+                        {row.numeroEmissaoSnd}ª
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground/50 text-[10px]">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
+                  {/* Moody's */}
+                  {hasMatchData && (
+                    <>
+                      <td className="px-3 py-2 border-l border-emerald-500/10">
+                        {row.instrumentoMoodys ? (
+                          <a
+                            href={`https://moodyslocal.com.br/?s=${encodeURIComponent((row.emissorMoodys || row.codigoCetip).split(' ').slice(0, 2).join(' '))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-emerald-400 hover:underline transition-colors max-w-[200px] block truncate text-[11px] flex items-center gap-1"
+                            title={`${row.instrumentoMoodys} — verificar na Moody's Local`}
+                          >
+                            <span className="truncate">{row.instrumentoMoodys}</span>
+                            <ExternalLink className="h-2.5 w-2.5 opacity-50 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground/50 text-[10px]">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {row.rating ? (
+                          <span className="font-semibold text-[11px]" style={{ color: getRatingColor(row.rating) }}>
+                            {row.rating}
+                          </span>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className={`px-3 py-2 text-center rounded-sm ${scoreBg}`}>
+                        <span className={`font-mono text-[11px] font-bold ${scoreColor}`}>
+                          {score != null ? score.toFixed(3) : "—"}
+                        </span>
+                      </td>
+                    </>
+                  )}
+                  {/* Spread */}
+                  <td className="px-3 py-2 text-right tabular-nums border-l border-border/60">
                     {formatDuration(row.durationAnos)}
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums text-foreground">
                     {formatRate(row.taxaIndicativa)}
                   </td>
-                  <td className="px-3 py-2 font-mono text-muted-foreground text-[10px]">
-                    {row.ntnbReferencia || "—"}
-                  </td>
+                  {!hasMatchData && (
+                    <td className="px-3 py-2 font-mono text-muted-foreground text-[10px]">
+                      {row.ntnbReferencia || "—"}
+                    </td>
+                  )}
                   <td className="px-3 py-2 text-right tabular-nums font-semibold">
                     {zspreadBps != null ? (
                       <span className={zspreadBps >= 0 ? "text-emerald-400" : "text-red-400"}>
@@ -1601,6 +1684,17 @@ function TableView({
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
+                  {hasMatchData && (
+                    <td className="px-3 py-2 text-center">
+                      {row.isOutlier ? (
+                        <span className="text-[10px] font-semibold text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 px-1.5 py-0.5 rounded">
+                          Outlier
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-emerald-400/70">✓</span>
+                      )}
+                    </td>
+                  )}
                 </tr>
               );
             })}
