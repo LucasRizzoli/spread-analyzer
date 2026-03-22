@@ -205,17 +205,17 @@ function crossByEmissao(
 }
 
 /**
- * Marca outliers por rating:
- * Para cada rating com ≥5 emissões, remove os 10% com maior Z-spread
- * e os 10% com menor Z-spread, marcando-os como isOutlier = true.
+ * Marca outliers por rating usando \u00b13 desvios padr\u00e3o da m\u00e9dia:
+ * Para cada rating com \u22655 emiss\u00f5es, calcula m\u00e9dia e desvio padr\u00e3o do Z-spread.
+ * Pontos a 3 ou mais desvios padr\u00e3o da m\u00e9dia s\u00e3o marcados como isOutlier = true.
  *
- * Os outliers são mantidos no banco para rastreabilidade, mas marcados
- * para serem excluídos do gráfico de dispersão por padrão.
+ * Os outliers s\u00e3o mantidos no banco para rastreabilidade, mas marcados
+ * para serem exclu\u00eddos do gr\u00e1fico de dispers\u00e3o por padr\u00e3o.
  */
 function markOutliers(results: SpreadResult[]): {
   marked: SpreadResult[];
   outlierCount: number;
-  ratingStats: Record<string, { total: number; outliers: number; cutLow: number; cutHigh: number }>;
+  ratingStats: Record<string, { total: number; outliers: number; cutLow: number; cutHigh: number; mean: number; stdDev: number }>;
 } {
   // Agrupar por rating
   const byRating = new Map<string, SpreadResult[]>();
@@ -224,35 +224,40 @@ function markOutliers(results: SpreadResult[]): {
     byRating.get(r.rating)!.push(r);
   }
 
-  const ratingStats: Record<string, { total: number; outliers: number; cutLow: number; cutHigh: number }> = {};
+  const ratingStats: Record<string, { total: number; outliers: number; cutLow: number; cutHigh: number; mean: number; stdDev: number }> = {};
   let outlierCount = 0;
 
   for (const [rating, group] of Array.from(byRating.entries())) {
-    // Apenas grupos com ≥5 emissões recebem tratamento de outlier
+    // Apenas grupos com \u22655 emiss\u00f5es recebem tratamento de outlier
     if (group.length < 5) {
-      ratingStats[rating] = { total: group.length, outliers: 0, cutLow: -Infinity, cutHigh: Infinity };
+      ratingStats[rating] = { total: group.length, outliers: 0, cutLow: -Infinity, cutHigh: Infinity, mean: 0, stdDev: 0 };
       continue;
     }
 
-    // Ordenar por Z-spread
-    const sorted = [...group].sort((a, b) => a.zSpread - b.zSpread);
-    const n = sorted.length;
+    const n = group.length;
+    const spreads = group.map((r) => r.zSpread);
 
-    // Calcular índices de corte (10% de cada lado, mínimo 1)
-    const cutCount = Math.max(1, Math.floor(n * 0.10));
-    const cutLow = sorted[cutCount - 1].zSpread;
-    const cutHigh = sorted[n - cutCount].zSpread;
+    // Calcular m\u00e9dia
+    const mean = spreads.reduce((s, v) => s + v, 0) / n;
+
+    // Calcular desvio padr\u00e3o (popula\u00e7\u00e3o)
+    const variance = spreads.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / n;
+    const stdDev = Math.sqrt(variance);
+
+    // Limites: m\u00e9dia \u00b1 3 * desvio padr\u00e3o
+    const cutLow = mean - 3 * stdDev;
+    const cutHigh = mean + 3 * stdDev;
 
     let outliers = 0;
     for (const item of group) {
-      if (item.zSpread <= cutLow || item.zSpread >= cutHigh) {
+      if (item.zSpread < cutLow || item.zSpread > cutHigh) {
         item.isOutlier = true;
         outliers++;
         outlierCount++;
       }
     }
 
-    ratingStats[rating] = { total: n, outliers, cutLow, cutHigh };
+    ratingStats[rating] = { total: n, outliers, cutLow, cutHigh, mean, stdDev };
   }
 
   return { marked: results, outlierCount, ratingStats };

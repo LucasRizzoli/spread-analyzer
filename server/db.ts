@@ -170,9 +170,34 @@ export async function getSpreadFiltersOptions() {
   };
 }
 
-export async function getZspreadByRating() {
+export async function getZspreadByRating(filters: SpreadFilters = {}) {
   const db = await getDb();
   if (!db) return [];
+
+  const conditions = [
+    isNotNull(spreadAnalysis.rating),
+    isNotNull(spreadAnalysis.zspread),
+  ];
+  if (filters.durationMin !== undefined || filters.durationMax !== undefined) {
+    const min = filters.durationMin ?? 0;
+    const max = filters.durationMax ?? 100;
+    conditions.push(between(spreadAnalysis.durationAnos, String(min), String(max)));
+  }
+  if (filters.indexadores?.length) {
+    conditions.push(inArray(spreadAnalysis.indexador, filters.indexadores));
+  }
+  if (filters.incentivado !== undefined) {
+    conditions.push(eq(spreadAnalysis.incentivado, filters.incentivado));
+  }
+  if (filters.ratings?.length) {
+    conditions.push(inArray(spreadAnalysis.rating, filters.ratings));
+  }
+  if (filters.setores?.length) {
+    conditions.push(inArray(spreadAnalysis.setor, filters.setores));
+  }
+  if (filters.tipos?.length) {
+    conditions.push(inArray(spreadAnalysis.tipo, filters.tipos as ("DEB" | "CRI" | "CRA")[]));
+  }
 
   return db
     .select({
@@ -183,7 +208,7 @@ export async function getZspreadByRating() {
       maxZspread: sql<number>`MAX(CAST(${spreadAnalysis.zspread} AS DECIMAL(10,6)))`,
     })
     .from(spreadAnalysis)
-    .where(and(isNotNull(spreadAnalysis.rating), isNotNull(spreadAnalysis.zspread)))
+    .where(and(...conditions))
     .groupBy(spreadAnalysis.rating)
     .orderBy(asc(spreadAnalysis.rating));
 }

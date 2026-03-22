@@ -55,8 +55,8 @@ export const spreadRouter = router({
    */
   getZspreadByRating: publicProcedure
     .input(SpreadFiltersSchema.optional())
-    .query(async () => {
-      const data = await getZspreadByRating();
+    .query(async ({ input }) => {
+      const data = await getZspreadByRating(input);
       return data
         .filter((r) => r.rating)
         .map((r) => ({

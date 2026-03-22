@@ -361,7 +361,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                   <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-emerald-400/70 whitespace-nowrap border-l border-emerald-500/20" colSpan={3}>
                     MOODY'S LOCAL →
                   </th>
-                  <th className="px-3 py-1.5 text-center text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap border-l border-border/60" colSpan={4}>
+                    <th className="px-3 py-2 text-center text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap border-l border-border/60" colSpan={3}>
                     RESULTADO
                   </th>
                 </tr>
@@ -369,7 +369,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                 <tr className="bg-card border-b border-border">
                   {/* Identificação */}
                   <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Código CETIP</th>
-                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">ISIN</th>
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Tipo</th>
                   {/* ANBIMA */}
                   <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap border-l border-blue-500/20">Emissor (ANBIMA)</th>
                   <th className="px-3 py-2 text-center font-semibold text-blue-400 whitespace-nowrap">Nº Emissão (SND)</th>
@@ -380,7 +380,6 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                   {/* Resultado */}
                   <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap border-l border-border/60">Rating</th>
                   <th className="px-3 py-2 text-center font-semibold text-muted-foreground whitespace-nowrap">Score</th>
-                  <th className="px-3 py-2 text-right font-semibold text-muted-foreground whitespace-nowrap">Z-spread</th>
                   <th className="px-3 py-2 text-center font-semibold text-muted-foreground whitespace-nowrap">Status</th>
                 </tr>
               </thead>
@@ -423,10 +422,19 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                     >
                       {/* Identificação */}
                       <td className="px-3 py-2.5 font-mono text-foreground whitespace-nowrap font-semibold">
-                        {row.codigoCetip}
+                        <a
+                          href={`https://www.debentures.com.br/exploreosnd/consultaadados/emissoesdedebentures/caracteristicas_e.asp?op_exc=False&ativo=${row.codigoCetip}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-blue-400 hover:underline transition-colors flex items-center gap-1"
+                          title="Verificar no SND (debentures.com.br)"
+                        >
+                          {row.codigoCetip}
+                          <ExternalLink className="h-2.5 w-2.5 opacity-50" />
+                        </a>
                       </td>
-                      <td className="px-3 py-2.5 font-mono text-[10px] text-muted-foreground whitespace-nowrap">
-                        {row.isin || "—"}
+                      <td className="px-3 py-2.5 text-[11px] text-muted-foreground whitespace-nowrap">
+                        {row.tipo || "—"}
                       </td>
                       {/* ANBIMA */}
                       <td className="px-3 py-2.5 border-l border-blue-500/10">
@@ -468,9 +476,20 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        <span className="text-muted-foreground max-w-[240px] block truncate text-[11px]" title={row.instrumentoMoodys || ""}>
-                          {row.instrumentoMoodys || "—"}
-                        </span>
+                        {row.instrumentoMoodys ? (
+                          <a
+                            href={`https://www.moodyslocal.com.br/ratings/search?q=${encodeURIComponent(row.emissorMoodys || row.codigoCetip)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-emerald-400 hover:underline transition-colors max-w-[240px] block truncate text-[11px] flex items-center gap-1"
+                            title={`${row.instrumentoMoodys} — verificar na Moody's Local`}
+                          >
+                            <span className="truncate">{row.instrumentoMoodys}</span>
+                            <ExternalLink className="h-2.5 w-2.5 opacity-50 flex-shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground/50 text-[10px]">—</span>
+                        )}
                       </td>
                       {/* Resultado */}
                       <td className="px-3 py-2.5 border-l border-border/40">
@@ -484,15 +503,6 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                         <span className={`font-mono text-[11px] font-bold ${scoreColor}`}>
                           {score != null ? score.toFixed(3) : "—"}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">
-                        {zspreadBps != null ? (
-                          <span className={`font-semibold text-[11px] ${
-                            zspreadBps >= 0 ? "text-emerald-400" : "text-red-400"
-                          }`}>
-                            {zspreadBps > 0 ? "+" : ""}{zspreadBps} bps
-                          </span>
-                        ) : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         {row.isOutlier ? (
@@ -537,7 +547,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Nomes compatíveis</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> Verificar manualmente</span>
           </div>
-          <span className="ml-auto">Outliers: 10% superior e inferior por rating (mín. 5 emissões)</span>
+          <span className="ml-auto">Outliers: pontos a ±3σ da média por rating (mín. 5 emissões)</span>
         </div>
       </div>
     </div>
@@ -577,7 +587,18 @@ export default function SpreadDashboard() {
     tipos: filters.tipos.length ? filters.tipos : undefined,
   });
 
-  const zspreadByRating = trpc.spread.getZspreadByRating.useQuery();
+  const zspreadByRating = trpc.spread.getZspreadByRating.useQuery({
+    durationMin: filters.durationRange[0],
+    durationMax: filters.durationRange[1],
+    indexadores: filters.indexadores.length ? filters.indexadores : undefined,
+    incentivado:
+      filters.incentivado === "todos"
+        ? undefined
+        : filters.incentivado === "sim",
+    ratings: filters.ratings.length ? filters.ratings : undefined,
+    setores: filters.setores.length ? filters.setores : undefined,
+    tipos: filters.tipos.length ? filters.tipos : undefined,
+  });
   const triggerSync = trpc.spread.triggerSync.useMutation({
     onSuccess: () => {
       toast.success("Sincronização iniciada", {
@@ -1427,7 +1448,7 @@ function TableView({
           </thead>
           <tbody>
             {data.map((row, i) => {
-              const zspreadBps = row.zspread != null ? Math.round(row.zspread * 10000) : null;
+              const zspreadBps = row.zspread != null ? Math.round(row.zspread * 100) : null;
               return (
                 <tr
                   key={row.id}

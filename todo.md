@@ -92,3 +92,13 @@
 - [x] Corrigir frontend: multiplicar por 100 (não 10000) em todos os pontos de exibição
 - [x] Corrigir CSV: exportar com 2 casas decimais em bps
 - [x] 28 testes passando
+
+## v1.7 — Filtros globais, escala correta e relatório aprimorado (CONCLUÍDO)
+- [x] Corrigir escala Z-spread na aba "Tabela" (10000 → 100)
+- [x] Conectar filtros laterais à aba "Por Rating" (getZspreadByRating agora aceita SpreadFilters)
+- [x] Mudar outliers para ±3σ da média por rating (desvio padrão populacional)
+- [x] Relatório de qualidade: remover coluna Z-spread, adicionar link SND por código CETIP
+- [x] Link para Moody's Local no instrumento de cada linha
+- [x] Coluna "Tipo" (DEB/CRI/CRA) em vez de ISIN no relatório
+- [x] Legenda atualizada: ±3σ da média por rating (mín. 5 emissões)
+- [x] 28 testes passando
