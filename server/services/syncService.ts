@@ -5,7 +5,7 @@
  * Fluxo:
  * 1. Parsear planilha Moody's → ratings por emissão específica
  * 2. Parsear planilha ANBIMA Data → ativos com Z-spread (data mais recente)
- * 3. Enriquecer cada código CETIP via SND (debentures.com.br) → número de emissão real
+ * 3. Enriquecer cada código CETIP via ANBIMA Data (data.anbima.com.br) → número de emissão real
  * 4. Cruzar por emissor normalizado (Dice ≥ 0.90) + número de emissão exato
  * 5. Marcar outliers: por rating, quando ≥5 emissões, remover 10% superior e 10% inferior de Z-spread
  * 6. Persistir resultados com scoreMatch, isOutlier e campos de rastreabilidade
@@ -24,7 +24,7 @@ import {
   MoodysRatingRow,
   AnbimaAsset,
 } from "./moodysScraperService";
-import { enrichBatch, clearSndCache, SndRecord } from "./sndEnrichmentService";
+import { enrichBatch, clearAnbimaDataCache, AnbimaDataRecord as SndRecord } from "./anbimaDataService";
 import { eq } from "drizzle-orm";
 
 export interface SyncProgress {
@@ -115,7 +115,7 @@ function diceCoefficient(a: string, b: string): number {
 
 /**
  * Realiza o cruzamento emissão-a-emissão:
- * Para cada ativo ANBIMA que foi enriquecido com número de emissão via SND,
+ * Para cada ativo ANBIMA que foi enriquecido com número de emissão via ANBIMA Data,
  * busca na Moody's o rating de emissão com mesmo emissor (fuzzy ≥ 0.90) e
  * mesmo número de emissão.
  *
@@ -276,7 +276,7 @@ export async function runFullSync(
 
   currentSyncStatus = "running";
   lastSyncError = null;
-  clearSndCache();
+  clearAnbimaDataCache();
 
   let logId: number | null = null;
 
@@ -323,19 +323,20 @@ export async function runFullSync(
     }
     report(`${anbimaData.length} ativos ANBIMA processados`, 1, 1);
 
-    // ── 3. Enriquecer via SND ─────────────────────────────────────────────────
+    // ── 3. Enriquecer via ANBIMA Data ─────────────────────────────────────────────────
     report(
-      `Consultando SND para ${anbimaData.length} ativos...`,
+      `Consultando ANBIMA Data para ${anbimaData.length} ativos...`,
       0,
       anbimaData.length
     );
     const codigos = anbimaData.map((a) => a.codigoAtivo);
-    const sndMap = await enrichBatch(codigos, 8, (done, total) => {
-      report(`Consultando SND (${done}/${total})...`, done, total);
+    // ANBIMA Data usa Playwright (browser headless) — batchSize 3 para não sobrecarregar
+    const sndMap = await enrichBatch(codigos, 3, (done, total) => {
+      report(`Consultando ANBIMA Data (${done}/${total})...`, done, total);
     });
     const enriquecidos = sndMap.size;
     report(
-      `${enriquecidos} de ${anbimaData.length} ativos enriquecidos via SND`,
+      `${enriquecidos} de ${anbimaData.length} ativos enriquecidos via ANBIMA Data`,
       enriquecidos,
       anbimaData.length
     );
@@ -374,16 +375,17 @@ export async function runFullSync(
             codigoCetip: a.codigoAtivo,
             isin: snd?.isin || null,
             tipo: "DEB" as const,
-            emissorNome: a.emissor,
-            emissorCnpj: null,
-            setor: null,
+            // Preferir dados do ANBIMA Data quando disponíveis (mais ricos que a planilha)
+            emissorNome: snd?.empresa || a.emissor,
+            emissorCnpj: snd?.cnpj || null,
+            setor: snd?.setor || null,
             numeroEmissao: snd ? String(snd.numeroEmissao) : null,
             numeroSerie: snd?.serie || null,
-            dataEmissao: null,
-            dataVencimento: a.dataVencimento || null,
-            remuneracao: a.remuneracao || null,
+            dataEmissao: snd?.dataEmissao || null,
+            dataVencimento: snd?.dataVencimento || a.dataVencimento || null,
+            remuneracao: snd?.remuneracao || a.remuneracao || null,
             indexador: a.tipoRemuneracao || null,
-            incentivado: a.lei12431,
+            incentivado: snd?.lei12431 ?? a.lei12431,
             taxaIndicativa:
               a.taxaIndicativa !== null ? String(a.taxaIndicativa) : null,
             taxaCompra: null,
@@ -476,7 +478,7 @@ export async function runFullSync(
         .update(syncLog)
         .set({
           status: "success",
-          mensagem: `Concluído: ${moodysData.length} ratings Moody's, ${anbimaData.length} ativos ANBIMA, ${enriquecidos} enriquecidos via SND, ${comRating} com match de emissão, ${outlierCount} outliers marcados`,
+          mensagem: `Concluído: ${moodysData.length} ratings Moody's, ${anbimaData.length} ativos ANBIMA, ${enriquecidos} enriquecidos via ANBIMA Data, ${comRating} com match de emissão, ${outlierCount} outliers marcados`,
           totalProcessados: marked.length,
           finalizadoEm: new Date(),
         })

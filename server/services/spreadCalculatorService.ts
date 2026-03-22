@@ -265,7 +265,7 @@ export function calculateSpreads(
         codigoCetip: cetip,
         isin: dataAsset?.isin || null,
         emissorNome: dataAsset?.emissorNome || deb.emissor,
-        numeroEmissao: dataAsset?.numeroEmissao || null,
+        numeroEmissao: dataAsset?.numeroEmissao != null ? String(dataAsset.numeroEmissao) : null,
       },
       moodysRatings
     );
@@ -316,7 +316,7 @@ export function calculateSpreads(
         codigoCetip: cetip,
         isin: dataAsset?.isin || null,
         emissorNome: dataAsset?.emissorNome || cri.emissor,
-        numeroEmissao: dataAsset?.numeroEmissao || null,
+        numeroEmissao: dataAsset?.numeroEmissao != null ? String(dataAsset.numeroEmissao) : null,
       },
       moodysRatings
     );
