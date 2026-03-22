@@ -791,7 +791,7 @@ export default function SpreadDashboard() {
           {/* Logo / Header */}
           <div className="px-4 py-4 border-b border-sidebar-border">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663462519828/ibSgD3x7K24f8UHUmWHZV3/apex-logo_b7fcd665.webp"
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663462519828/ibSgD3x7K24f8UHUmWHZV3/apex-logo-white_aff8676f.webp"
               alt="Apex"
               className="h-8 w-auto object-contain"
             />
