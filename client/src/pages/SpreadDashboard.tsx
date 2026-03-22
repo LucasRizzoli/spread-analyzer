@@ -562,6 +562,8 @@ export default function SpreadDashboard() {
   const [tableSearch, setTableSearch] = useState("");
   const [showOutliers, setShowOutliers] = useState(false);
   const [showMatchReport, setShowMatchReport] = useState(false);
+  // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B) ou DI SPREAD (spread sobre CDI)
+  const [universo, setUniverso] = useState<"IPCA" | "DI" | "todos">("todos");
 
   // Estado dos dois arquivos de upload
   const [moodysFile, setMoodysFile] = useState<File | null>(null);
@@ -673,20 +675,51 @@ export default function SpreadDashboard() {
     }
   };
 
-  // Dados processados
+   // Dados processados
   const allData = analysisQuery.data || [];
   const isSyncing = syncState.data?.status === "running";
 
-  // Filtrar outliers (por padrão, ocultar outliers)
-  const analysisData = useMemo(() => {
-    if (showOutliers) return allData;
-    return allData.filter((r) => !(r as { isOutlier?: boolean }).isOutlier);
-  }, [allData, showOutliers]);
+  // 1. Filtrar por score mínimo 0.85 (nunca exibir matches de baixa confiança)
+  const highScoreData = useMemo(() => {
+    return allData.filter((r) => {
+      const score = (r as { scoreMatch?: number | null }).scoreMatch;
+      // Se scoreMatch é null (dados antigos), manter; se preenchido, exigir ≥ 0.85
+      return score == null || score >= 0.85;
+    });
+  }, [allData]);
 
+  // 2. Filtrar por universo (IPCA SPREAD vs DI SPREAD)
+  const universoData = useMemo(() => {
+    if (universo === "todos") return highScoreData;
+    if (universo === "IPCA") {
+      return highScoreData.filter((r) => {
+        const idx = (r as { indexador?: string | null }).indexador;
+        return idx === "IPCA SPREAD";
+      });
+    }
+    // DI: inclui DI SPREAD e DI PERCENTUAL
+    return highScoreData.filter((r) => {
+      const idx = (r as { indexador?: string | null }).indexador;
+      return idx === "DI SPREAD" || idx === "DI PERCENTUAL";
+    });
+  }, [highScoreData, universo]);
+
+  // 3. Filtrar outliers (por padrão, ocultar outliers)
+  const analysisData = useMemo(() => {
+    if (showOutliers) return universoData;
+    return universoData.filter((r) => !(r as { isOutlier?: boolean }).isOutlier);
+  }, [universoData, showOutliers]);
   const outlierCount = useMemo(
-    () => allData.filter((r) => (r as { isOutlier?: boolean }).isOutlier).length,
-    [allData]
+    () => universoData.filter((r) => (r as { isOutlier?: boolean }).isOutlier).length,
+    [universoData]
   );
+
+  // Rótulo do eixo Y conforme universo
+  const yAxisLabel = universo === "IPCA"
+    ? "Z-Spread sobre NTN-B (bps)"
+    : universo === "DI"
+    ? "Spread sobre CDI (bps)"
+    : "Z-Spread / Spread (bps)";
 
   // Filtrar tabela por busca
   const filteredTableData = useMemo(() => {
@@ -1000,16 +1033,37 @@ export default function SpreadDashboard() {
           {/* Header */}
           <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-card">
             <div>
-              <h2 className="text-base font-semibold text-foreground">Análise de Z-Spread</h2>
+              <h2 className="text-base font-semibold text-foreground">
+                {universo === "IPCA" ? "Z-Spread sobre NTN-B" : universo === "DI" ? "Spread sobre CDI" : "Análise de Spread"}
+              </h2>
               <p className="text-xs text-muted-foreground">
-                {analysisData.length} ativos{" "}
-                {analysisData.filter((r) => r.zspread != null).length} com Z-spread calculado
+                {analysisData.length} ativos com spread calculado
                 {!showOutliers && outlierCount > 0 && (
                   <span className="ml-1 text-yellow-500/80">· {outlierCount} outliers ocultos</span>
                 )}
               </p>
             </div>
             <div className="flex items-center gap-2">
+              {/* Seletor de universo */}
+              <div className="flex items-center gap-0.5 bg-secondary rounded-md p-0.5">
+                {([
+                  { key: "todos", label: "Todos" },
+                  { key: "IPCA", label: "IPCA+" },
+                  { key: "DI", label: "DI+" },
+                ] as const).map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setUniverso(key)}
+                    className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
+                      universo === key
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
               {/* Botão Relatório de Qualidade */}
               {allData.length > 0 && (
                 <button
@@ -1079,9 +1133,9 @@ export default function SpreadDashboard() {
                 anbimaFile={anbimaFile}
               />
             ) : activeView === "scatter" ? (
-              <ScatterView data={scatterData} ratingGroups={ratingGroups} />
+              <ScatterView data={scatterData} ratingGroups={ratingGroups} yAxisLabel={yAxisLabel} />
             ) : activeView === "bar" ? (
-              <BarView data={zspreadByRating.data || []} />
+              <BarView data={zspreadByRating.data || []} yAxisLabel={yAxisLabel} />
             ) : (
               <TableView
                 data={filteredTableData}
@@ -1201,9 +1255,11 @@ interface ScatterPoint {
 function ScatterView({
   data,
   ratingGroups,
+  yAxisLabel = "Z-Spread (bps)",
 }: {
   data: ScatterPoint[];
   ratingGroups: string[];
+  yAxisLabel?: string;
 }) {
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: ScatterPoint }[] }) => {
     if (!active || !payload?.length) return null;
@@ -1263,7 +1319,7 @@ function ScatterView({
             dataKey="y"
             name="Z-spread"
             label={{
-              value: "Z-spread (bps)",
+              value: yAxisLabel,
               angle: -90,
               position: "insideLeft",
               offset: 10,
@@ -1303,8 +1359,10 @@ function ScatterView({
 
 function BarView({
   data,
+  yAxisLabel = "Spread médio (bps)",
 }: {
   data: { rating: string; avgZspread: number; count: number; minZspread: number; maxZspread: number }[];
+  yAxisLabel?: string;
 }) {
   const sorted = useMemo(() => {
     return [...data].sort((a, b) => {
@@ -1365,7 +1423,7 @@ function BarView({
         <YAxis
           tick={{ fill: "oklch(0.55 0.02 240)", fontSize: 11 }}
           label={{
-            value: "Z-spread médio (bps)",
+            value: yAxisLabel,
             angle: -90,
             position: "insideLeft",
             offset: 10,

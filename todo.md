@@ -109,3 +109,13 @@
 - [x] Corrigir link Moody's Local: URL de busca `moodyslocal.com.br/?s=EMISSOR` (verificado no browser)
 - [x] Atualizar testes: limiar 0.90 em todos os casos de matching
 - [x] 28 testes passando
+
+## v1.9 — Separação IPCA/DI e filtro de score mínimo 0.85 (CONCLUÍDO)
+
+- [x] Separar análise em dois universos: IPCA SPREAD (Z-spread sobre NTN-B) e DI SPREAD (spread sobre CDI)
+- [x] Adicionar seletor de universo no header (Todos / IPCA+ / DI+)
+- [x] Rótulo do eixo Y dinâmico conforme universo selecionado
+- [x] Título do header dinâmico: "Z-Spread sobre NTN-B" / "Spread sobre CDI" / "Análise de Spread"
+- [x] Filtrar automaticamente no frontend registros com scoreMatch < 0.85 (não exibir, não contar)
+- [x] Outliers calculados dentro do universo filtrado
+- [x] 28 testes passando
