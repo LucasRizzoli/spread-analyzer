@@ -119,3 +119,10 @@
 - [x] Filtrar automaticamente no frontend registros com scoreMatch < 0.85 (não exibir, não contar)
 - [x] Outliers calculados dentro do universo filtrado
 - [x] 28 testes passando
+
+## v2.0 — Simplificação de UI (CONCLUÍDO)
+- [x] Remover filtro de indexador da sidebar
+- [x] Seletor de universo: apenas DI+ e IPCA+ (sem "Todos"), padrão IPCA+
+- [x] Relatório de qualidade: ocultar linhas com scoreMatch < 0.90
+- [x] Rótulo do eixo Y simplificado para "Spread (bps)" em todos os gráficos
+- [x] Título dinâmico: "IPCA+ — Z-Spread sobre NTN-B" / "DI+ — Spread sobre CDI"

@@ -247,7 +247,8 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
   const data = reportQuery.data || [];
 
   const filtered = useMemo(() => {
-    let rows = data;
+    // Nunca exibir matches com score < 0.90 no relatório de qualidade
+    let rows = data.filter((r) => r.scoreMatch == null || r.scoreMatch >= 0.90);
     if (showOutliersOnly) rows = rows.filter((r) => r.isOutlier);
     if (search) {
       const q = search.toLowerCase();
@@ -563,7 +564,7 @@ export default function SpreadDashboard() {
   const [showOutliers, setShowOutliers] = useState(false);
   const [showMatchReport, setShowMatchReport] = useState(false);
   // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B) ou DI SPREAD (spread sobre CDI)
-  const [universo, setUniverso] = useState<"IPCA" | "DI" | "todos">("todos");
+  const [universo, setUniverso] = useState<"IPCA" | "DI">("IPCA");
 
   // Estado dos dois arquivos de upload
   const [moodysFile, setMoodysFile] = useState<File | null>(null);
@@ -690,7 +691,6 @@ export default function SpreadDashboard() {
 
   // 2. Filtrar por universo (IPCA SPREAD vs DI SPREAD)
   const universoData = useMemo(() => {
-    if (universo === "todos") return highScoreData;
     if (universo === "IPCA") {
       return highScoreData.filter((r) => {
         const idx = (r as { indexador?: string | null }).indexador;
@@ -715,11 +715,7 @@ export default function SpreadDashboard() {
   );
 
   // Rótulo do eixo Y conforme universo
-  const yAxisLabel = universo === "IPCA"
-    ? "Z-Spread sobre NTN-B (bps)"
-    : universo === "DI"
-    ? "Spread sobre CDI (bps)"
-    : "Z-Spread / Spread (bps)";
+  const yAxisLabel = "Spread (bps)";
 
   // Filtrar tabela por busca
   const filteredTableData = useMemo(() => {
@@ -766,7 +762,6 @@ export default function SpreadDashboard() {
   const clearFilters = () => setFilters(DEFAULT_FILTERS);
 
   const hasActiveFilters =
-    filters.indexadores.length > 0 ||
     filters.ratings.length > 0 ||
     filters.setores.length > 0 ||
     filters.tipos.length > 0 ||
@@ -996,20 +991,7 @@ export default function SpreadDashboard() {
 
             <Separator className="my-3 bg-sidebar-border" />
 
-            {/* Indexador */}
-            <FilterSection title="Indexador" defaultOpen={false}>
-              {(filterOptions.data?.indexadores || []).map((idx) => (
-                <CheckItem
-                  key={idx}
-                  id={`idx-${idx}`}
-                  label={idx}
-                  checked={filters.indexadores.includes(idx)}
-                  onToggle={() => toggleFilter("indexadores", idx, filters.indexadores)}
-                />
-              ))}
-            </FilterSection>
-
-            <Separator className="my-3 bg-sidebar-border" />
+ 
 
             {/* Setor */}
             <FilterSection title="Setor" defaultOpen={false}>
@@ -1034,7 +1016,7 @@ export default function SpreadDashboard() {
           <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-card">
             <div>
               <h2 className="text-base font-semibold text-foreground">
-                {universo === "IPCA" ? "Z-Spread sobre NTN-B" : universo === "DI" ? "Spread sobre CDI" : "Análise de Spread"}
+                {universo === "IPCA" ? "IPCA+ — Z-Spread sobre NTN-B" : "DI+ — Spread sobre CDI"}
               </h2>
               <p className="text-xs text-muted-foreground">
                 {analysisData.length} ativos com spread calculado
@@ -1047,7 +1029,6 @@ export default function SpreadDashboard() {
               {/* Seletor de universo */}
               <div className="flex items-center gap-0.5 bg-secondary rounded-md p-0.5">
                 {([
-                  { key: "todos", label: "Todos" },
                   { key: "IPCA", label: "IPCA+" },
                   { key: "DI", label: "DI+" },
                 ] as const).map(({ key, label }) => (
