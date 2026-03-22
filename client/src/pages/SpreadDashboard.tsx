@@ -790,13 +790,11 @@ export default function SpreadDashboard() {
         <aside className="w-64 flex-shrink-0 border-r border-border bg-sidebar flex flex-col">
           {/* Logo / Header */}
           <div className="px-4 py-4 border-b border-sidebar-border">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <div>
-                <h1 className="text-sm font-bold text-sidebar-foreground">Spread Analyzer</h1>
-                <p className="text-xs text-muted-foreground">Crédito Corporativo</p>
-              </div>
-            </div>
+            <img
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663462519828/ibSgD3x7K24f8UHUmWHZV3/apex-logo_b7fcd665.webp"
+              alt="Apex"
+              className="h-8 w-auto object-contain"
+            />
           </div>
 
           {/* Status de sincronização */}
@@ -1023,7 +1021,7 @@ export default function SpreadDashboard() {
           <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-card">
             <div>
               <h2 className="text-base font-semibold text-foreground">
-                {universo === "IPCA" ? "IPCA+ — Z-Spread sobre NTN-B" : "DI+ — Spread sobre CDI"}
+                {universo === "IPCA" ? "Spread sobre NTN-B de mesma Duration" : "Spread sobre o CDI"}
               </h2>
               <p className="text-xs text-muted-foreground">
                 {analysisData.length} ativos com spread calculado

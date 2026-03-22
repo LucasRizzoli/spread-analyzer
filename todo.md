@@ -158,3 +158,8 @@
 - [x] Busca na tabela inclui instrumentoMoodys e emissorMoodys
 - [x] scoreMatch exposto no getAnalysis (conversão numérica no router)
 - [x] 28 testes passando
+
+## v2.5 — Logo Apex e títulos atualizados (CONCLUÍDO)
+- [x] Substituir logo "Spread Analyzer / Crédito Corporativo" pelo logo da Apex no sidebar
+- [x] Título IPCA+: "Spread sobre NTN-B de mesma Duration"
+- [x] Título DI+: "Spread sobre o CDI"
