@@ -19,6 +19,7 @@ const SpreadFiltersSchema = z.object({
   ratings: z.array(z.string()).optional(),
   setores: z.array(z.string()).optional(),
   tipos: z.array(z.string()).optional(),
+  excludeOutliers: z.boolean().optional(),
 });
 
 export const spreadRouter = router({

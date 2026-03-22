@@ -131,3 +131,8 @@
 - [x] Corrigir gráfico "Por Rating": getZspreadByRating agora recebe indexadores do universo selecionado
 - [x] Linha de tendência linear (regressão simples por índice ordinal de rating) no gráfico Por Rating
 - [x] BarChart substituído por ComposedChart para suportar Bar + Line simultaneamente
+
+## v2.2 — Aba "Por Rating" filtrável por outliers (CONCLUÍDO)
+- [x] SpreadFilters e SpreadFiltersSchema recebem excludeOutliers: boolean
+- [x] getZspreadByRating aplica WHERE is_outlier = false quando excludeOutliers = true
+- [x] Frontend passa excludeOutliers: !showOutliers ao getZspreadByRating

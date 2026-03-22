@@ -110,6 +110,7 @@ export interface SpreadFilters {
   ratings?: string[];
   setores?: string[];
   tipos?: string[];
+  excludeOutliers?: boolean;
 }
 
 export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
@@ -197,6 +198,9 @@ export async function getZspreadByRating(filters: SpreadFilters = {}) {
   }
   if (filters.tipos?.length) {
     conditions.push(inArray(spreadAnalysis.tipo, filters.tipos as ("DEB" | "CRI" | "CRA")[]));
+  }
+  if (filters.excludeOutliers) {
+    conditions.push(eq(spreadAnalysis.isOutlier, false));
   }
 
   return db
