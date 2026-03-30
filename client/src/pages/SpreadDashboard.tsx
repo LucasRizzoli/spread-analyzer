@@ -250,7 +250,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
 
   const filtered = useMemo(() => {
     // Nunca exibir matches com score < 0.90 no relatório de qualidade
-    let rows = data.filter((r) => r.scoreMatch == null || r.scoreMatch >= 0.90);
+    let rows = data.filter((r) => r.scoreMatch == null || r.scoreMatch >= 0.90); // limiar único: 0.90
     if (showOutliersOnly) rows = rows.filter((r) => r.isOutlier);
     if (search) {
       const q = search.toLowerCase();
@@ -541,7 +541,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 px-6 py-3 border-t border-border flex-shrink-0 text-[10px] text-muted-foreground">
           <div className="flex items-center gap-3">
             <span className="font-semibold text-foreground">Score:</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> ≥ 0.90 Excelente</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> ≥ 0.90 Confiável</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> 0.75–0.89 Bom</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> 0.65–0.74 Limiar</span>
           </div>
@@ -609,7 +609,7 @@ export default function SpreadDashboard() {
     setores: filters.setores.length ? filters.setores : undefined,
     tipos: filters.tipos.length ? filters.tipos : undefined,
     excludeOutliers: !showOutliers,
-    scoreMin: 0.85,
+    scoreMin: 0.90,
   });
   const triggerSync = trpc.spread.triggerSync.useMutation({
     onSuccess: () => {
@@ -689,12 +689,12 @@ export default function SpreadDashboard() {
   const allData = analysisQuery.data || [];
   const isSyncing = syncState.data?.status === "running";
 
-  // 1. Filtrar por score mínimo 0.85 (nunca exibir matches de baixa confiança)
+  // 1. Filtrar por score mínimo 0.90 (nunca exibir matches de baixa confiança)
   const highScoreData = useMemo(() => {
     return allData.filter((r) => {
       const score = (r as { scoreMatch?: number | null }).scoreMatch;
-      // Se scoreMatch é null (dados antigos), manter; se preenchido, exigir ≥ 0.85
-      return score == null || score >= 0.85;
+      // Se scoreMatch é null (dados antigos), manter; se preenchido, exigir ≥ 0.90
+      return score == null || score >= 0.90;
     });
   }, [allData]);
 

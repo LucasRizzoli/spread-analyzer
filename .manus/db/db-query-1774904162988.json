@@ -1,0 +1,170 @@
+{
+  "query": "\nSELECT \n  rating,\n  indexador,\n  incentivado,\n  COUNT(*) as total,\n  ROUND(AVG(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as avg_bps,\n  ROUND(MIN(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as min_bps,\n  ROUND(MAX(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as max_bps,\n  SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END) as outliers\nFROM spread_analysis\nWHERE rating IS NOT NULL \n  AND zspread IS NOT NULL\n  AND CAST(scoreMatch AS DECIMAL(5,4)) >= 0.85\nGROUP BY rating, indexador, incentivado\nORDER BY indexador, rating, incentivado;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  rating,\n  indexador,\n  incentivado,\n  COUNT(*) as total,\n  ROUND(AVG(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as avg_bps,\n  ROUND(MIN(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as min_bps,\n  ROUND(MAX(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as max_bps,\n  SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END) as outliers\nFROM spread_analysis\nWHERE rating IS NOT NULL \n  AND zspread IS NOT NULL\n  AND CAST(scoreMatch AS DECIMAL(5,4)) >= 0.85\nGROUP BY rating, indexador, incentivado\nORDER BY indexador, rating, incentivado;\n",
+  "rows": [
+    {
+      "rating": "AAA.br",
+      "indexador": "DI PERCENTUAL",
+      "incentivado": "0",
+      "total": "1",
+      "avg_bps": "3551.0",
+      "min_bps": "3551.0",
+      "max_bps": "3551.0",
+      "outliers": "1"
+    },
+    {
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "incentivado": "0",
+      "total": "6",
+      "avg_bps": "20381.0",
+      "min_bps": "13167.0",
+      "max_bps": "43390.0",
+      "outliers": "1"
+    },
+    {
+      "rating": "A+.br",
+      "indexador": "DI SPREAD",
+      "incentivado": "0",
+      "total": "3",
+      "avg_bps": "20600.3",
+      "min_bps": "16054.0",
+      "max_bps": "25892.0",
+      "outliers": "0"
+    },
+    {
+      "rating": "AA-.br",
+      "indexador": "DI SPREAD",
+      "incentivado": "0",
+      "total": "1",
+      "avg_bps": "5224.0",
+      "min_bps": "5224.0",
+      "max_bps": "5224.0",
+      "outliers": "1"
+    },
+    {
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "incentivado": "0",
+      "total": "9",
+      "avg_bps": "16002.9",
+      "min_bps": "8054.0",
+      "max_bps": "23788.0",
+      "outliers": "1"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "incentivado": "0",
+      "total": "11",
+      "avg_bps": "17532.1",
+      "min_bps": "8258.0",
+      "max_bps": "26748.0",
+      "outliers": "0"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "incentivado": "0",
+      "total": "56",
+      "avg_bps": "9228.0",
+      "min_bps": "4464.0",
+      "max_bps": "15478.0",
+      "outliers": "5"
+    },
+    {
+      "rating": "BBB+.br",
+      "indexador": "DI SPREAD",
+      "incentivado": "0",
+      "total": "1",
+      "avg_bps": "41964.0",
+      "min_bps": "41964.0",
+      "max_bps": "41964.0",
+      "outliers": "0"
+    },
+    {
+      "rating": "A-.br",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "total": "1",
+      "avg_bps": "38702.0",
+      "min_bps": "38702.0",
+      "max_bps": "38702.0",
+      "outliers": "0"
+    },
+    {
+      "rating": "A+.br",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "total": "4",
+      "avg_bps": "29702.0",
+      "min_bps": "12468.0",
+      "max_bps": "53760.0",
+      "outliers": "1"
+    },
+    {
+      "rating": "AA-.br",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "total": "4",
+      "avg_bps": "21117.8",
+      "min_bps": "11300.0",
+      "max_bps": "29810.0",
+      "outliers": "1"
+    },
+    {
+      "rating": "AA.br",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "total": "5",
+      "avg_bps": "16981.4",
+      "min_bps": "9963.0",
+      "max_bps": "24382.0",
+      "outliers": "1"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "0",
+      "total": "2",
+      "avg_bps": "27982.0",
+      "min_bps": "10282.0",
+      "max_bps": "45682.0",
+      "outliers": "1"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "total": "5",
+      "avg_bps": "12594.8",
+      "min_bps": "6296.0",
+      "max_bps": "21655.0",
+      "outliers": "1"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "0",
+      "total": "1",
+      "avg_bps": "15025.0",
+      "min_bps": "15025.0",
+      "max_bps": "15025.0",
+      "outliers": "1"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "total": "56",
+      "avg_bps": "7887.3",
+      "min_bps": "2306.0",
+      "max_bps": "21528.0",
+      "outliers": "8"
+    }
+  ],
+  "messages": [],
+  "stdout": "rating\tindexador\tincentivado\ttotal\tavg_bps\tmin_bps\tmax_bps\toutliers\nAAA.br\tDI PERCENTUAL\t0\t1\t3551.0\t3551.0\t3551.0\t1\nA.br\tDI SPREAD\t0\t6\t20381.0\t13167.0\t43390.0\t1\nA+.br\tDI SPREAD\t0\t3\t20600.3\t16054.0\t25892.0\t0\nAA-.br\tDI SPREAD\t0\t1\t5224.0\t5224.0\t5224.0\t1\nAA.br\tDI SPREAD\t0\t9\t16002.9\t8054.0\t23788.0\t1\nAA+.br\tDI SPREAD\t0\t11\t17532.1\t8258.0\t26748.0\t0\nAAA.br\tDI SPREAD\t0\t56\t9228.0\t4464.0\t15478.0\t5\nBBB+.br\tDI SPREAD\t0\t1\t41964.0\t41964.0\t41964.0\t0\nA-.br\tIPCA SPREAD\t1\t1\t38702.0\t38702.0\t38702.0\t0\nA+.br\tIPCA SPREAD\t1\t4\t29702.0\t12468.0\t53760.0\t1\nAA-.br\tIPCA SPREAD\t1\t4\t21117.8\t11300.0\t29810.0\t1\nAA.br\tIPCA SPREAD\t1\t5\t16981.4\t9963.0\t24382.0\t1\nAA+.br\tIPCA SPREAD\t0\t2\t27982.0\t10282.0\t45682.0\t1\nAA+.br\tIPCA SPREAD\t1\t5\t12594.8\t6296.0\t21655.0\t1\nAAA.br\tIPCA SPREAD\t0\t1\t15025.0\t15025.0\t15025.0\t1\nAAA.br\tIPCA SPREAD\t1\t56\t7887.3\t2306.0\t21528.0\t8\n",
+  "stderr": "",
+  "execution_time_ms": 66
+}

@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT \n  rating,\n  indexador,\n  incentivado,\n  COUNT(*) as total,\n  ROUND(AVG(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as avg_bps,\n  ROUND(MIN(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as min_bps,\n  ROUND(MAX(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as max_bps,\n  SUM(CASE WHEN is_outlier = 1 THEN 1 ELSE 0 END) as outliers\nFROM spread_analysis\nWHERE rating IS NOT NULL \n  AND zspread IS NOT NULL\n  AND CAST(score_match AS DECIMAL(5,4)) >= 0.85\nGROUP BY rating, indexador, incentivado\nORDER BY indexador, rating, incentivado;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  rating,\n  indexador,\n  incentivado,\n  COUNT(*) as total,\n  ROUND(AVG(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as avg_bps,\n  ROUND(MIN(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as min_bps,\n  ROUND(MAX(CAST(zspread AS DECIMAL(10,6))) * 10000, 1) as max_bps,\n  SUM(CASE WHEN is_outlier = 1 THEN 1 ELSE 0 END) as outliers\nFROM spread_analysis\nWHERE rating IS NOT NULL \n  AND zspread IS NOT NULL\n  AND CAST(score_match AS DECIMAL(5,4)) >= 0.85\nGROUP BY rating, indexador, incentivado\nORDER BY indexador, rating, incentivado;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'score_match' in 'where clause'"
+  ]
+}
