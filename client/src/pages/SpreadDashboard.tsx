@@ -86,7 +86,6 @@ interface FiltersState {
   indexadores: string[];
   ratings: string[];
   setores: string[];
-  tipos: string[];
 }
 
 const DEFAULT_FILTERS: FiltersState = {
@@ -94,7 +93,6 @@ const DEFAULT_FILTERS: FiltersState = {
   indexadores: [],
   ratings: [],
   setores: [],
-  tipos: [],
 };
 
 function FilterSection({
@@ -156,7 +154,6 @@ type MatchReportRow = {
   id: number;
   codigoCetip: string;
   isin: string | null;
-  tipo: "DEB" | "CRI" | "CRA" | null;
   dataReferencia: string | null;
   emissorAnbima: string | null;
   emissorMoodys: string | null;
@@ -177,7 +174,6 @@ function downloadCsv(rows: MatchReportRow[]) {
   const headers = [
     "Código CETIP",
     "ISIN",
-    "Tipo",
     "Data Referência",
     "Emissor ANBIMA",
     "Emissor Moody's",
@@ -209,7 +205,6 @@ function downloadCsv(rows: MatchReportRow[]) {
       [
         escape(r.codigoCetip),
         escape(r.isin),
-        escape(r.tipo),
         escape(r.dataReferencia),
         escape(r.emissorAnbima),
         escape(r.emissorMoodys),
@@ -350,7 +345,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
               <thead className="sticky top-0 z-10">
                 {/* Linha de agrupamento de colunas */}
                 <tr className="bg-muted/30 border-b border-border/60">
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap" colSpan={2}>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap" colSpan={1}>
                     IDENTIFICAÇÃO
                   </th>
                   <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-blue-400/70 whitespace-nowrap border-l border-blue-500/20" colSpan={2}>
@@ -367,7 +362,6 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                 <tr className="bg-card border-b border-border">
                   {/* Identificação */}
                   <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Código CETIP</th>
-                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Tipo</th>
                   {/* ANBIMA */}
                   <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap border-l border-blue-500/20">Emissor (ANBIMA)</th>
                   <th className="px-3 py-2 text-center font-semibold text-blue-400 whitespace-nowrap">Nº Emissão (ANBIMA)</th>
@@ -430,9 +424,6 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                           {row.codigoCetip}
                           <ExternalLink className="h-2.5 w-2.5 opacity-50" />
                         </a>
-                      </td>
-                      <td className="px-3 py-2.5 text-[11px] text-muted-foreground whitespace-nowrap">
-                        {row.tipo || "—"}
                       </td>
                       {/* ANBIMA */}
                       <td className="px-3 py-2.5 border-l border-blue-500/10">
@@ -581,7 +572,6 @@ export default function SpreadDashboard() {
     indexadores: filters.indexadores.length ? filters.indexadores : undefined,
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
-    tipos: filters.tipos.length ? filters.tipos : undefined,
   });
 
   // Mapear universo para indexadores correspondentes
@@ -594,7 +584,6 @@ export default function SpreadDashboard() {
     indexadores: universoIndexadores,
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
-    tipos: filters.tipos.length ? filters.tipos : undefined,
     excludeOutliers: !showOutliers,
     scoreMin: 0.90,
   });
@@ -762,7 +751,6 @@ export default function SpreadDashboard() {
   const hasActiveFilters =
     filters.ratings.length > 0 ||
     filters.setores.length > 0 ||
-    filters.tipos.length > 0 ||
     filters.durationRange[0] > 0 ||
     filters.durationRange[1] < 20;
 
@@ -940,19 +928,6 @@ export default function SpreadDashboard() {
             </FilterSection>
 
             <Separator className="my-3 bg-sidebar-border" />
-
-            {/* Produto */}
-            <FilterSection title="Produto" defaultOpen={false}>
-              {(filterOptions.data?.tipos || []).map((t) => (
-                <CheckItem
-                  key={t}
-                  id={`tipo-${t}`}
-                  label={t === "DEB" ? "Debênture" : t === "CRI" ? "CRI" : "CRA"}
-                  checked={filters.tipos.includes(t)}
-                  onToggle={() => toggleFilter("tipos", t, filters.tipos)}
-                />
-              ))}
-            </FilterSection>
 
             {/* Setor */}
             <FilterSection title="Setor" defaultOpen={false}>
@@ -1430,7 +1405,6 @@ type AnalysisRow = {
   id: number;
   codigoCetip: string;
   isin: string | null;
-  tipo: "DEB" | "CRI" | "CRA" | null;
   emissorNome: string | null;
   setor: string | null;
   indexador: string | null;
@@ -1482,7 +1456,7 @@ function TableView({
           <thead className="sticky top-0 z-10">
             {/* Linha de agrupamento */}
             <tr className="bg-muted/30 border-b border-border/60">
-              <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap" colSpan={2}>
+              <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap" colSpan={1}>
                 IDENTIFICAÇÃO
               </th>
               <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-blue-400/70 whitespace-nowrap border-l border-blue-500/20" colSpan={3}>
@@ -1501,7 +1475,6 @@ function TableView({
             <tr className="bg-card border-b border-border">
               {/* Identificação */}
               <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Código</th>
-              <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Tipo</th>
               {/* ANBIMA */}
               <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap border-l border-blue-500/20">Emissor</th>
               <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap">Indexador</th>
@@ -1555,11 +1528,6 @@ function TableView({
                       {row.codigoCetip}
                       <ExternalLink className="h-2.5 w-2.5 opacity-50" />
                     </a>
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground">
-                      {row.tipo || "—"}
-                    </span>
                   </td>
                   {/* ANBIMA */}
                   <td className="px-3 py-2 font-medium text-blue-300 max-w-[160px] truncate border-l border-blue-500/10" title={row.emissorNome || ""}>

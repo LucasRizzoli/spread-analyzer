@@ -176,3 +176,10 @@
 - [x] Remover badge/coluna "Incentivado" da tabela de resultados
 - [x] Remover coluna `incentivado` do relatório de qualidade/tabela unificada
 - [x] Manter campo `incentivado` no banco de dados (para rastreabilidade), apenas não expor no filtro
+
+## v2.9 — Remoção do filtro de Produto
+- [x] Remover filtro "Produto" (DEB/CRI/CRA) da sidebar do frontend
+- [x] Remover parâmetro `tipos` do FiltersState e SpreadFilters no frontend
+- [x] Remover parâmetro `tipos` do backend (SpreadFiltersSchema, SpreadFilters, queries)
+- [x] Remover coluna "Tipo" da tabela de resultados
+- [x] Remover coluna "Tipo" do relatório de qualidade/verificação manual
