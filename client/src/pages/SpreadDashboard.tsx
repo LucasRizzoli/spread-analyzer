@@ -84,7 +84,6 @@ function getRatingColor(rating: string | null | undefined): string {
 interface FiltersState {
   durationRange: [number, number];
   indexadores: string[];
-  incentivado: "todos" | "sim" | "nao";
   ratings: string[];
   setores: string[];
   tipos: string[];
@@ -93,7 +92,6 @@ interface FiltersState {
 const DEFAULT_FILTERS: FiltersState = {
   durationRange: [0, 20],
   indexadores: [],
-  incentivado: "todos",
   ratings: [],
   setores: [],
   tipos: [],
@@ -169,7 +167,6 @@ type MatchReportRow = {
   setor: string | null;
   scoreMatch: number | null;
   indexador: string | null;
-  incentivado: boolean | null;
   durationAnos: number | null;
   taxaIndicativa: number | null;
   zspread: number | null;
@@ -191,7 +188,6 @@ function downloadCsv(rows: MatchReportRow[]) {
     "Setor",
     "Score Match",
     "Indexador",
-    "Incentivado",
     "Duration (anos)",
     "Taxa Indicativa",
     "Z-spread (bps)",
@@ -224,7 +220,6 @@ function downloadCsv(rows: MatchReportRow[]) {
         escape(r.setor),
         escape(r.scoreMatch != null ? r.scoreMatch.toFixed(4) : null),
         escape(r.indexador),
-        escape(r.incentivado ? "Sim" : "Não"),
         escape(r.durationAnos != null ? r.durationAnos.toFixed(2) : null),
         escape(r.taxaIndicativa != null ? (r.taxaIndicativa * 100).toFixed(4) : null),
         escape(r.zspread != null ? (r.zspread * 100).toFixed(2) : null),
@@ -584,10 +579,6 @@ export default function SpreadDashboard() {
     durationMin: filters.durationRange[0],
     durationMax: filters.durationRange[1],
     indexadores: filters.indexadores.length ? filters.indexadores : undefined,
-    incentivado:
-      filters.incentivado === "todos"
-        ? undefined
-        : filters.incentivado === "sim",
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
     tipos: filters.tipos.length ? filters.tipos : undefined,
@@ -601,10 +592,6 @@ export default function SpreadDashboard() {
     durationMin: filters.durationRange[0],
     durationMax: filters.durationRange[1],
     indexadores: universoIndexadores,
-    incentivado:
-      filters.incentivado === "todos"
-        ? undefined
-        : filters.incentivado === "sim",
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
     tipos: filters.tipos.length ? filters.tipos : undefined,
@@ -776,7 +763,6 @@ export default function SpreadDashboard() {
     filters.ratings.length > 0 ||
     filters.setores.length > 0 ||
     filters.tipos.length > 0 ||
-    filters.incentivado !== "todos" ||
     filters.durationRange[0] > 0 ||
     filters.durationRange[1] < 20;
 
@@ -967,37 +953,6 @@ export default function SpreadDashboard() {
                 />
               ))}
             </FilterSection>
-
-            <Separator className="my-3 bg-sidebar-border" />
-
-            {/* Isenção fiscal */}
-            <FilterSection title="Isenção Fiscal">
-              {[
-                { value: "todos", label: "Todos" },
-                { value: "sim", label: "Incentivado (Lei 12.431)" },
-                { value: "nao", label: "Não incentivado" },
-              ].map((opt) => (
-                <div key={opt.value} className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    id={`isencao-${opt.value}`}
-                    name="isencao"
-                    checked={filters.incentivado === opt.value}
-                    onChange={() =>
-                      setFilters((f) => ({ ...f, incentivado: opt.value as FiltersState["incentivado"] }))
-                    }
-                    className="h-3.5 w-3.5 accent-primary"
-                  />
-                  <Label htmlFor={`isencao-${opt.value}`} className="text-xs cursor-pointer">
-                    {opt.label}
-                  </Label>
-                </div>
-              ))}
-            </FilterSection>
-
-            <Separator className="my-3 bg-sidebar-border" />
-
- 
 
             {/* Setor */}
             <FilterSection title="Setor" defaultOpen={false}>
@@ -1479,7 +1434,6 @@ type AnalysisRow = {
   emissorNome: string | null;
   setor: string | null;
   indexador: string | null;
-  incentivado: boolean | null;
   rating: string | null;
   tipoMatch: "emissao" | "emissor" | "sem_match" | null;
   taxaIndicativa: number | null;
@@ -1531,7 +1485,7 @@ function TableView({
               <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap" colSpan={2}>
                 IDENTIFICAÇÃO
               </th>
-              <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-blue-400/70 whitespace-nowrap border-l border-blue-500/20" colSpan={4}>
+              <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-blue-400/70 whitespace-nowrap border-l border-blue-500/20" colSpan={3}>
                 ← ANBIMA DATA
               </th>
               {hasMatchData && (
@@ -1551,7 +1505,6 @@ function TableView({
               {/* ANBIMA */}
               <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap border-l border-blue-500/20">Emissor</th>
               <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap">Indexador</th>
-              <th className="px-3 py-2 text-center font-semibold text-blue-400 whitespace-nowrap">Incentivado</th>
               <th className="px-3 py-2 text-center font-semibold text-blue-400 whitespace-nowrap">Nº Emissão</th>
               {/* Moody's */}
               {hasMatchData && (
@@ -1613,13 +1566,6 @@ function TableView({
                     {row.emissorNome || "—"}
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">{row.indexador || "—"}</td>
-                  <td className="px-3 py-2 text-center">
-                    {row.incentivado ? (
-                      <span className="text-emerald-400 text-[10px] font-medium">Sim</span>
-                    ) : (
-                      <span className="text-muted-foreground text-[10px]">Não</span>
-                    )}
-                  </td>
                   <td className="px-3 py-2 text-center">
                     {row.numeroEmissaoSnd != null ? (
                       <span className="font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded text-[11px]">

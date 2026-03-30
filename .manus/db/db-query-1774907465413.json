@@ -1,0 +1,90 @@
+{
+  "query": "\nSELECT \n  codigoCetip, rating, indexador,\n  zspread,\n  taxaIndicativa,\n  CAST(zspread AS DECIMAL(12,6)) as zspread_num\nFROM spread_analysis\nWHERE zspread IS NOT NULL AND rating IS NOT NULL\nORDER BY CAST(zspread AS DECIMAL(12,6)) ASC\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  codigoCetip, rating, indexador,\n  zspread,\n  taxaIndicativa,\n  CAST(zspread AS DECIMAL(12,6)) as zspread_num\nFROM spread_analysis\nWHERE zspread IS NOT NULL AND rating IS NOT NULL\nORDER BY CAST(zspread AS DECIMAL(12,6)) ASC\nLIMIT 10;\n",
+  "rows": [
+    {
+      "codigoCetip": "CCPV11",
+      "rating": "A-.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.128900",
+      "taxaIndicativa": "7.285700",
+      "zspread_num": "0.128900"
+    },
+    {
+      "codigoCetip": "CTEE18",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.191900",
+      "taxaIndicativa": "7.265100",
+      "zspread_num": "0.191900"
+    },
+    {
+      "codigoCetip": "ALIG12",
+      "rating": "A.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.197800",
+      "taxaIndicativa": "7.316700",
+      "zspread_num": "0.197800"
+    },
+    {
+      "codigoCetip": "RIPR22",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.230600",
+      "taxaIndicativa": "7.151300",
+      "zspread_num": "0.230600"
+    },
+    {
+      "codigoCetip": "JTEE11",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.353300",
+      "taxaIndicativa": "7.312200",
+      "zspread_num": "0.353300"
+    },
+    {
+      "codigoCetip": "TAEE16",
+      "rating": "AAA.br",
+      "indexador": "DI PERCENTUAL",
+      "zspread": "0.355100",
+      "taxaIndicativa": "102.817300",
+      "zspread_num": "0.355100"
+    },
+    {
+      "codigoCetip": "XNGU17",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.381000",
+      "taxaIndicativa": "7.199100",
+      "zspread_num": "0.381000"
+    },
+    {
+      "codigoCetip": "CSMGB8",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.404300",
+      "taxaIndicativa": "8.602300",
+      "zspread_num": "0.404300"
+    },
+    {
+      "codigoCetip": "TAEE18",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.424600",
+      "taxaIndicativa": "7.223900",
+      "zspread_num": "0.424600"
+    },
+    {
+      "codigoCetip": "ENMTB3",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.433400",
+      "taxaIndicativa": "7.291300",
+      "zspread_num": "0.433400"
+    }
+  ],
+  "messages": [],
+  "stdout": "codigoCetip\trating\tindexador\tzspread\ttaxaIndicativa\tzspread_num\nCCPV11\tA-.br\tIPCA SPREAD\t0.128900\t7.285700\t0.128900\nCTEE18\tAAA.br\tIPCA SPREAD\t0.191900\t7.265100\t0.191900\nALIG12\tA.br\tIPCA SPREAD\t0.197800\t7.316700\t0.197800\nRIPR22\tAAA.br\tIPCA SPREAD\t0.230600\t7.151300\t0.230600\nJTEE11\tAAA.br\tIPCA SPREAD\t0.353300\t7.312200\t0.353300\nTAEE16\tAAA.br\tDI PERCENTUAL\t0.355100\t102.817300\t0.355100\nXNGU17\tAAA.br\tIPCA SPREAD\t0.381000\t7.199100\t0.381000\nCSMGB8\tAAA.br\tIPCA SPREAD\t0.404300\t8.602300\t0.404300\nTAEE18\tAAA.br\tIPCA SPREAD\t0.424600\t7.223900\t0.424600\nENMTB3\tAAA.br\tIPCA SPREAD\t0.433400\t7.291300\t0.433400\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

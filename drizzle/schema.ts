@@ -133,8 +133,12 @@ export const spreadAnalysis = mysqlTable(
     ntnbReferencia: varchar("ntnbReferencia", { length: 16 }),
     ntnbTaxa: decimal("ntnbTaxa", { precision: 10, scale: 6 }),
     ntnbDuration: decimal("ntnbDuration", { precision: 8, scale: 4 }),
+    // Data de vencimento do ativo
+    dataVencimento: varchar("dataVencimento", { length: 16 }),
     // Z-spread calculado (em pontos percentuais)
     zspread: decimal("zspread", { precision: 10, scale: 6 }),
+    // Spread incentivados sem gross-up (coluna da ANBIMA, apenas para Lei 12.431)
+    spreadIncentivadoSemGrossUp: decimal("spreadIncentivadoSemGrossUp", { precision: 10, scale: 6 }),
     // Qualidade do match e outlier
     scoreMatch: decimal("scoreMatch", { precision: 5, scale: 4 }),
     isOutlier: boolean("isOutlier").default(false),

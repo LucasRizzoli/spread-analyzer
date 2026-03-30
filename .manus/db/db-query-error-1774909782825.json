@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT \n  emissor_nome,\n  codigo_cetip,\n  indexador,\n  incentivado,\n  CAST(taxa_indicativa AS DECIMAL(10,4)) as taxa_indicativa,\n  CAST(zspread AS DECIMAL(10,2)) as zspread,\n  CAST(spread_incentivado_sem_gross_up AS DECIMAL(10,2)) as spread_gross_up,\n  CAST(duration_anos AS DECIMAL(10,2)) as duration_anos,\n  data_vencimento,\n  rating\nFROM spread_analysis\nWHERE incentivado = 1 \n  AND spread_incentivado_sem_gross_up IS NOT NULL\n  AND spread_incentivado_sem_gross_up > 0\n  AND zspread IS NOT NULL\nORDER BY spread_incentivado_sem_gross_up DESC\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  emissor_nome,\n  codigo_cetip,\n  indexador,\n  incentivado,\n  CAST(taxa_indicativa AS DECIMAL(10,4)) as taxa_indicativa,\n  CAST(zspread AS DECIMAL(10,2)) as zspread,\n  CAST(spread_incentivado_sem_gross_up AS DECIMAL(10,2)) as spread_gross_up,\n  CAST(duration_anos AS DECIMAL(10,2)) as duration_anos,\n  data_vencimento,\n  rating\nFROM spread_analysis\nWHERE incentivado = 1 \n  AND spread_incentivado_sem_gross_up IS NOT NULL\n  AND spread_incentivado_sem_gross_up > 0\n  AND zspread IS NOT NULL\nORDER BY spread_incentivado_sem_gross_up DESC\nLIMIT 10;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'spread_incentivado_sem_gross_up' in 'order clause'"
+  ]
+}

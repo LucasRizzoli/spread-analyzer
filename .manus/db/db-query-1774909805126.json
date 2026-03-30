@@ -1,0 +1,16 @@
+{
+  "query": "\nSELECT \n  COUNT(*) as total,\n  SUM(CASE WHEN incentivado = 1 THEN 1 ELSE 0 END) as incentivados,\n  SUM(CASE WHEN spreadIncentivadoSemGrossUp IS NOT NULL AND spreadIncentivadoSemGrossUp > 0 THEN 1 ELSE 0 END) as com_gross_up,\n  SUM(CASE WHEN zspread IS NOT NULL THEN 1 ELSE 0 END) as com_zspread\nFROM spread_analysis;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  COUNT(*) as total,\n  SUM(CASE WHEN incentivado = 1 THEN 1 ELSE 0 END) as incentivados,\n  SUM(CASE WHEN spreadIncentivadoSemGrossUp IS NOT NULL AND spreadIncentivadoSemGrossUp > 0 THEN 1 ELSE 0 END) as com_gross_up,\n  SUM(CASE WHEN zspread IS NOT NULL THEN 1 ELSE 0 END) as com_zspread\nFROM spread_analysis;\n",
+  "rows": [
+    {
+      "total": "249",
+      "incentivados": "134",
+      "com_gross_up": "0",
+      "com_zspread": "249"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tincentivados\tcom_gross_up\tcom_zspread\n249\t134\t0\t249\n",
+  "stderr": "",
+  "execution_time_ms": 59
+}

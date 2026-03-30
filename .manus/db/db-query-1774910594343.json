@@ -1,0 +1,120 @@
+{
+  "query": "\nSELECT \n  emissorNome,\n  codigoCetip,\n  indexador,\n  incentivado,\n  CAST(taxaIndicativa AS DECIMAL(10,4)) as taxa,\n  CAST(zspread AS DECIMAL(10,4)) as zspread,\n  CAST(durationAnos AS DECIMAL(10,2)) as duration,\n  ntnbReferencia,\n  rating\nFROM spread_analysis\nWHERE zspread IS NOT NULL\n  AND indexador LIKE '%IPCA%'\n  AND taxaIndicativa IS NOT NULL\nORDER BY incentivado DESC, zspread DESC\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  emissorNome,\n  codigoCetip,\n  indexador,\n  incentivado,\n  CAST(taxaIndicativa AS DECIMAL(10,4)) as taxa,\n  CAST(zspread AS DECIMAL(10,4)) as zspread,\n  CAST(durationAnos AS DECIMAL(10,2)) as duration,\n  ntnbReferencia,\n  rating\nFROM spread_analysis\nWHERE zspread IS NOT NULL\n  AND indexador LIKE '%IPCA%'\n  AND taxaIndicativa IS NOT NULL\nORDER BY incentivado DESC, zspread DESC\nLIMIT 10;\n",
+  "rows": [
+    {
+      "emissorNome": "AGUAS DO SERTAO S.A. (*)",
+      "codigoCetip": "ASER12",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "taxa": "11.3588",
+      "zspread": "5.3760",
+      "duration": "7.13",
+      "ntnbReferencia": "15/05/2035",
+      "rating": "A+.br"
+    },
+    {
+      "emissorNome": "ELETROPAULO METROP. ELETRIC. DE S.P. S/A (*)",
+      "codigoCetip": "ELPLA5",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "taxa": "12.4498",
+      "zspread": "5.2841",
+      "duration": "3.56",
+      "ntnbReferencia": "15/08/2030",
+      "rating": "AAA.br"
+    },
+    {
+      "emissorNome": "ELETROPAULO METROP. ELETRIC. DE S.P. S/A",
+      "codigoCetip": "ELPLB4",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "taxa": "10.2076",
+      "zspread": "4.7172",
+      "duration": "0.15",
+      "ntnbReferencia": "NULL",
+      "rating": "AAA.br"
+    },
+    {
+      "emissorNome": "VIA BRASIL BR 163 CONCESSIONARIA DE RODOVIAS S.A. (*)",
+      "codigoCetip": "VBRR11",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "taxa": "10.0040",
+      "zspread": "3.8702",
+      "duration": "2.76",
+      "ntnbReferencia": "15/05/2029",
+      "rating": "A-.br"
+    },
+    {
+      "emissorNome": "APIUNA PARTICIPACOES S/A (*)",
+      "codigoCetip": "APPT11",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "taxa": "9.1915",
+      "zspread": "2.9947",
+      "duration": "6.50",
+      "ntnbReferencia": "15/05/2035",
+      "rating": "AAA.br"
+    },
+    {
+      "emissorNome": "PAX INVESTIMENTOS EM AEROPORTOS S.A (*)",
+      "codigoCetip": "PAXA12",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "taxa": "9.1574",
+      "zspread": "2.9810",
+      "duration": "6.67",
+      "ntnbReferencia": "15/05/2035",
+      "rating": "AA-.br"
+    },
+    {
+      "emissorNome": "COMPANHIA CATARINENSE DE AGUAS E SANEAMENTO - CASAN (*)",
+      "codigoCetip": "CASN34",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "taxa": "8.5902",
+      "zspread": "2.6779",
+      "duration": "4.66",
+      "ntnbReferencia": "15/05/2031",
+      "rating": "A+.br"
+    },
+    {
+      "emissorNome": "ENAUTA PARTICIPACOES S.A. (*)",
+      "codigoCetip": "ENAT11",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "taxa": "8.4066",
+      "zspread": "2.6411",
+      "duration": "1.76",
+      "ntnbReferencia": "15/08/2028",
+      "rating": "AAA.br"
+    },
+    {
+      "emissorNome": "COMPANHIA CATARINENSE DE AGUAS E SANEAMENTO - CASAN (*)",
+      "codigoCetip": "CASN24",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "taxa": "8.4331",
+      "zspread": "2.5801",
+      "duration": "3.28",
+      "ntnbReferencia": "15/05/2029",
+      "rating": "A+.br"
+    },
+    {
+      "emissorNome": "COMPANHIA AGUAS DE ITAPEMA (*)",
+      "codigoCetip": "ITPE13",
+      "indexador": "IPCA SPREAD",
+      "incentivado": "1",
+      "taxa": "8.6901",
+      "zspread": "2.4382",
+      "duration": "8.03",
+      "ntnbReferencia": "15/05/2037",
+      "rating": "AA.br"
+    }
+  ],
+  "messages": [],
+  "stdout": "emissorNome\tcodigoCetip\tindexador\tincentivado\ttaxa\tzspread\tduration\tntnbReferencia\trating\nAGUAS DO SERTAO S.A. (*)\tASER12\tIPCA SPREAD\t1\t11.3588\t5.3760\t7.13\t15/05/2035\tA+.br\nELETROPAULO METROP. ELETRIC. DE S.P. S/A (*)\tELPLA5\tIPCA SPREAD\t1\t12.4498\t5.2841\t3.56\t15/08/2030\tAAA.br\nELETROPAULO METROP. ELETRIC. DE S.P. S/A\tELPLB4\tIPCA SPREAD\t1\t10.2076\t4.7172\t0.15\tNULL\tAAA.br\nVIA BRASIL BR 163 CONCESSIONARIA DE RODOVIAS S.A. (*)\tVBRR11\tIPCA SPREAD\t1\t10.0040\t3.8702\t2.76\t15/05/2029\tA-.br\nAPIUNA PARTICIPACOES S/A (*)\tAPPT11\tIPCA SPREAD\t1\t9.1915\t2.9947\t6.50\t15/05/2035\tAAA.br\nPAX INVESTIMENTOS EM AEROPORTOS S.A (*)\tPAXA12\tIPCA SPREAD\t1\t9.1574\t2.9810\t6.67\t15/05/2035\tAA-.br\nCOMPANHIA CATARINENSE DE AGUAS E SANEAMENTO - CASAN (*)\tCASN34\tIPCA SPREAD\t1\t8.5902\t2.6779\t4.66\t15/05/2031\tA+.br\nENAUTA PARTICIPACOES S.A. (*)\tENAT11\tIPCA SPREAD\t1\t8.4066\t2.6411\t1.76\t15/08/2028\tAAA.br\nCOMPANHIA CATARINENSE DE AGUAS E SANEAMENTO - CASAN (*)\tCASN24\tIPCA SPREAD\t1\t8.4331\t2.5801\t3.28\t15/05/2029\tA+.br\nCOMPANHIA AGUAS DE ITAPEMA (*)\tITPE13\tIPCA SPREAD\t1\t8.6901\t2.4382\t8.03\t15/05/2037\tAA.br\n",
+  "stderr": "",
+  "execution_time_ms": 115
+}

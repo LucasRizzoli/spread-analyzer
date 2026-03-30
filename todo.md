@@ -168,3 +168,11 @@
 - [x] Verificar se falsos positivos (score < 0.90) distorcem médias/medianas na aba Por Rating
 - [x] Corrigir parser de taxa indicativa com formato decimal errado (taxa > 100 na planilha — confirmado que é DI PERCENTUAL, não bug)
 - [x] Garantir que markOutliers por rating+universo está correto para próxima sincronização (AA-.br DI+)
+
+## v2.8 — Unificação da base (remoção de filtros incentivado/não incentivado)
+- [x] Remover filtro "Incentivado (Lei 12.431)" da sidebar do frontend
+- [x] Remover parâmetro `incentivado` do FiltersState e SpreadFilters no frontend
+- [x] Remover parâmetro `incentivado` do backend (getAnalysis, getZspreadByRating, SpreadFiltersSchema)
+- [x] Remover badge/coluna "Incentivado" da tabela de resultados
+- [x] Remover coluna `incentivado` do relatório de qualidade/tabela unificada
+- [x] Manter campo `incentivado` no banco de dados (para rastreabilidade), apenas não expor no filtro

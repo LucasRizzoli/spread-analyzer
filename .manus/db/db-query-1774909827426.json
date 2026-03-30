@@ -1,0 +1,70 @@
+{
+  "query": "\nSELECT \n  emissorNome, codigoCetip, indexador,\n  CAST(taxaIndicativa AS DECIMAL(10,4)) as taxa,\n  CAST(zspread AS DECIMAL(10,2)) as zspread_bps,\n  CAST(ntnbTaxa AS DECIMAL(10,4)) as ntnbTaxa,\n  ntnbReferencia,\n  CAST(durationAnos AS DECIMAL(10,2)) as duration,\n  incentivado, rating\nFROM spread_analysis\nWHERE zspread IS NOT NULL\n  AND indexador LIKE '%IPCA%'\nORDER BY zspread DESC\nLIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  emissorNome, codigoCetip, indexador,\n  CAST(taxaIndicativa AS DECIMAL(10,4)) as taxa,\n  CAST(zspread AS DECIMAL(10,2)) as zspread_bps,\n  CAST(ntnbTaxa AS DECIMAL(10,4)) as ntnbTaxa,\n  ntnbReferencia,\n  CAST(durationAnos AS DECIMAL(10,2)) as duration,\n  incentivado, rating\nFROM spread_analysis\nWHERE zspread IS NOT NULL\n  AND indexador LIKE '%IPCA%'\nORDER BY zspread DESC\nLIMIT 5;\n",
+  "rows": [
+    {
+      "emissorNome": "AGUAS DO SERTAO S.A. (*)",
+      "codigoCetip": "ASER12",
+      "indexador": "IPCA SPREAD",
+      "taxa": "11.3588",
+      "zspread_bps": "5.38",
+      "ntnbTaxa": "NULL",
+      "ntnbReferencia": "15/05/2035",
+      "duration": "7.13",
+      "incentivado": "1",
+      "rating": "A+.br"
+    },
+    {
+      "emissorNome": "ELETROPAULO METROP. ELETRIC. DE S.P. S/A (*)",
+      "codigoCetip": "ELPLA5",
+      "indexador": "IPCA SPREAD",
+      "taxa": "12.4498",
+      "zspread_bps": "5.28",
+      "ntnbTaxa": "NULL",
+      "ntnbReferencia": "15/08/2030",
+      "duration": "3.56",
+      "incentivado": "1",
+      "rating": "AAA.br"
+    },
+    {
+      "emissorNome": "ELETROPAULO METROP. ELETRIC. DE S.P. S/A",
+      "codigoCetip": "ELPLB4",
+      "indexador": "IPCA SPREAD",
+      "taxa": "10.2076",
+      "zspread_bps": "4.72",
+      "ntnbTaxa": "NULL",
+      "ntnbReferencia": "NULL",
+      "duration": "0.15",
+      "incentivado": "1",
+      "rating": "AAA.br"
+    },
+    {
+      "emissorNome": "MOVIDA PARTICIPACOES S/A (*)",
+      "codigoCetip": "MOVI18",
+      "indexador": "IPCA SPREAD",
+      "taxa": "12.9337",
+      "zspread_bps": "4.57",
+      "ntnbTaxa": "NULL",
+      "ntnbReferencia": "15/05/2029",
+      "duration": "2.81",
+      "incentivado": "0",
+      "rating": "AA+.br"
+    },
+    {
+      "emissorNome": "VIA BRASIL BR 163 CONCESSIONARIA DE RODOVIAS S.A. (*)",
+      "codigoCetip": "VBRR11",
+      "indexador": "IPCA SPREAD",
+      "taxa": "10.0040",
+      "zspread_bps": "3.87",
+      "ntnbTaxa": "NULL",
+      "ntnbReferencia": "15/05/2029",
+      "duration": "2.76",
+      "incentivado": "1",
+      "rating": "A-.br"
+    }
+  ],
+  "messages": [],
+  "stdout": "emissorNome\tcodigoCetip\tindexador\ttaxa\tzspread_bps\tntnbTaxa\tntnbReferencia\tduration\tincentivado\trating\nAGUAS DO SERTAO S.A. (*)\tASER12\tIPCA SPREAD\t11.3588\t5.38\tNULL\t15/05/2035\t7.13\t1\tA+.br\nELETROPAULO METROP. ELETRIC. DE S.P. S/A (*)\tELPLA5\tIPCA SPREAD\t12.4498\t5.28\tNULL\t15/08/2030\t3.56\t1\tAAA.br\nELETROPAULO METROP. ELETRIC. DE S.P. S/A\tELPLB4\tIPCA SPREAD\t10.2076\t4.72\tNULL\tNULL\t0.15\t1\tAAA.br\nMOVIDA PARTICIPACOES S/A (*)\tMOVI18\tIPCA SPREAD\t12.9337\t4.57\tNULL\t15/05/2029\t2.81\t0\tAA+.br\nVIA BRASIL BR 163 CONCESSIONARIA DE RODOVIAS S.A. (*)\tVBRR11\tIPCA SPREAD\t10.0040\t3.87\tNULL\t15/05/2029\t2.76\t1\tA-.br\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

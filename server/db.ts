@@ -106,7 +106,6 @@ export interface SpreadFilters {
   durationMin?: number;
   durationMax?: number;
   indexadores?: string[];
-  incentivado?: boolean;
   ratings?: string[];
   setores?: string[];
   tipos?: string[];
@@ -128,10 +127,6 @@ export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
 
   if (filters.indexadores?.length) {
     conditions.push(inArray(spreadAnalysis.indexador, filters.indexadores));
-  }
-
-  if (filters.incentivado !== undefined) {
-    conditions.push(eq(spreadAnalysis.incentivado, filters.incentivado));
   }
 
   if (filters.ratings?.length) {
@@ -187,9 +182,6 @@ export async function getZspreadByRating(filters: SpreadFilters = {}) {
   }
   if (filters.indexadores?.length) {
     conditions.push(inArray(spreadAnalysis.indexador, filters.indexadores));
-  }
-  if (filters.incentivado !== undefined) {
-    conditions.push(eq(spreadAnalysis.incentivado, filters.incentivado));
   }
   if (filters.ratings?.length) {
     conditions.push(inArray(spreadAnalysis.rating, filters.ratings));
@@ -292,7 +284,9 @@ export async function getMatchQualityReport() {
       incentivado: spreadAnalysis.incentivado,
       durationAnos: spreadAnalysis.durationAnos,
       taxaIndicativa: spreadAnalysis.taxaIndicativa,
+      dataVencimento: spreadAnalysis.dataVencimento,
       zspread: spreadAnalysis.zspread,
+      spreadIncentivadoSemGrossUp: spreadAnalysis.spreadIncentivadoSemGrossUp,
       // Outlier
       isOutlier: spreadAnalysis.isOutlier,
     })

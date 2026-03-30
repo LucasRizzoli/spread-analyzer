@@ -15,7 +15,6 @@ const SpreadFiltersSchema = z.object({
   durationMin: z.number().min(0).max(100).optional(),
   durationMax: z.number().min(0).max(100).optional(),
   indexadores: z.array(z.string()).optional(),
-  incentivado: z.boolean().optional(),
   ratings: z.array(z.string()).optional(),
   setores: z.array(z.string()).optional(),
   tipos: z.array(z.string()).optional(),
@@ -38,6 +37,7 @@ export const spreadRouter = router({
         ntnbTaxa: row.ntnbTaxa ? Number(row.ntnbTaxa) : null,
         ntnbDuration: row.ntnbDuration ? Number(row.ntnbDuration) : null,
         zspread: row.zspread ? Number(row.zspread) : null,
+        spreadIncentivadoSemGrossUp: row.spreadIncentivadoSemGrossUp ? Number(row.spreadIncentivadoSemGrossUp) : null,
         scoreMatch: row.scoreMatch ? Number(row.scoreMatch) : null,
       }));
     }),
@@ -112,6 +112,8 @@ export const spreadRouter = router({
       durationAnos: row.durationAnos ? Number(row.durationAnos) : null,
       taxaIndicativa: row.taxaIndicativa ? Number(row.taxaIndicativa) : null,
       zspread: row.zspread ? Number(row.zspread) : null,
+      spreadIncentivadoSemGrossUp: row.spreadIncentivadoSemGrossUp ? Number(row.spreadIncentivadoSemGrossUp) : null,
+      dataVencimento: row.dataVencimento || null,
     }));
   }),
 

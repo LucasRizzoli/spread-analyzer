@@ -1,0 +1,234 @@
+{
+  "query": "SHOW COLUMNS FROM spread_analysis;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute SHOW COLUMNS FROM spread_analysis;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "codigoCetip",
+      "Type": "varchar(16)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "isin",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "tipo",
+      "Type": "enum('DEB','CRI','CRA')",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "emissorNome",
+      "Type": "varchar(256)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "setor",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "indexador",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "incentivado",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "rating",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "tipoMatch",
+      "Type": "enum('emissao','emissor','sem_match')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "sem_match",
+      "Extra": ""
+    },
+    {
+      "Field": "moodysRatingId",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "taxaIndicativa",
+      "Type": "decimal(10,6)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "durationAnos",
+      "Type": "decimal(8,4)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "dataReferencia",
+      "Type": "varchar(16)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "dataVencimento",
+      "Type": "varchar(16)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "ntnbReferencia",
+      "Type": "varchar(16)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "ntnbTaxa",
+      "Type": "decimal(10,6)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "ntnbDuration",
+      "Type": "decimal(8,4)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "zspread",
+      "Type": "decimal(10,6)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "spreadIncentivadoSemGrossUp",
+      "Type": "decimal(10,6)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "updatedAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    },
+    {
+      "Field": "scoreMatch",
+      "Type": "decimal(5,4)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "isOutlier",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "emissorMoodys",
+      "Type": "varchar(256)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "numeroEmissaoSnd",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "numeroEmissaoMoodys",
+      "Type": "varchar(16)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "instrumentoMoodys",
+      "Type": "varchar(256)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\ncodigoCetip\tvarchar(16)\tNO\tMUL\tNULL\t\nisin\tvarchar(32)\tYES\t\tNULL\t\ntipo\tenum('DEB','CRI','CRA')\tYES\tMUL\tNULL\t\nemissorNome\tvarchar(256)\tYES\t\tNULL\t\nsetor\tvarchar(128)\tYES\t\tNULL\t\nindexador\tvarchar(32)\tYES\tMUL\tNULL\t\nincentivado\ttinyint(1)\tYES\t\t0\t\nrating\tvarchar(32)\tYES\tMUL\tNULL\t\ntipoMatch\tenum('emissao','emissor','sem_match')\tYES\t\tsem_match\t\nmoodysRatingId\tint\tYES\t\tNULL\t\ntaxaIndicativa\tdecimal(10,6)\tYES\t\tNULL\t\ndurationAnos\tdecimal(8,4)\tYES\t\tNULL\t\ndataReferencia\tvarchar(16)\tYES\t\tNULL\t\ndataVencimento\tvarchar(16)\tYES\t\tNULL\t\nntnbReferencia\tvarchar(16)\tYES\t\tNULL\t\nntnbTaxa\tdecimal(10,6)\tYES\t\tNULL\t\nntnbDuration\tdecimal(8,4)\tYES\t\tNULL\t\nzspread\tdecimal(10,6)\tYES\t\tNULL\t\nspreadIncentivadoSemGrossUp\tdecimal(10,6)\tYES\t\tNULL\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nupdatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\nscoreMatch\tdecimal(5,4)\tYES\t\tNULL\t\nisOutlier\ttinyint(1)\tYES\t\t0\t\nemissorMoodys\tvarchar(256)\tYES\t\tNULL\t\nnumeroEmissaoSnd\tint\tYES\t\tNULL\t\nnumeroEmissaoMoodys\tvarchar(16)\tYES\t\tNULL\t\ninstrumentoMoodys\tvarchar(256)\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 108
+}

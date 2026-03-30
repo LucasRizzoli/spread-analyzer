@@ -1,0 +1,9 @@
+{
+  "query": "\nSELECT \n  sa.emissorNome,\n  sa.codigoCetip,\n  sa.indexador,\n  CAST(sa.taxaIndicativa AS DECIMAL(10,4)) as taxaIndicativa,\n  CAST(sa.zspread AS DECIMAL(10,2)) as zspread_bps,\n  CAST(sa.ntnbTaxa AS DECIMAL(10,4)) as ntnbTaxa,\n  CAST(sa.ntnbDuration AS DECIMAL(10,2)) as ntnbDuration,\n  CAST(sa.durationAnos AS DECIMAL(10,2)) as duration,\n  sa.ntnbReferencia,\n  sa.rating\nFROM spread_analysis sa\nWHERE sa.incentivado = 1 \n  AND sa.zspread IS NOT NULL\n  AND sa.indexador LIKE '%IPCA%'\n  AND sa.ntnbTaxa IS NOT NULL\nORDER BY sa.zspread DESC\nLIMIT 3;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  sa.emissorNome,\n  sa.codigoCetip,\n  sa.indexador,\n  CAST(sa.taxaIndicativa AS DECIMAL(10,4)) as taxaIndicativa,\n  CAST(sa.zspread AS DECIMAL(10,2)) as zspread_bps,\n  CAST(sa.ntnbTaxa AS DECIMAL(10,4)) as ntnbTaxa,\n  CAST(sa.ntnbDuration AS DECIMAL(10,2)) as ntnbDuration,\n  CAST(sa.durationAnos AS DECIMAL(10,2)) as duration,\n  sa.ntnbReferencia,\n  sa.rating\nFROM spread_analysis sa\nWHERE sa.incentivado = 1 \n  AND sa.zspread IS NOT NULL\n  AND sa.indexador LIKE '%IPCA%'\n  AND sa.ntnbTaxa IS NOT NULL\nORDER BY sa.zspread DESC\nLIMIT 3;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 59
+}
