@@ -163,3 +163,8 @@
 - [x] Substituir logo "Spread Analyzer / Crédito Corporativo" pelo logo da Apex no sidebar
 - [x] Título IPCA+: "Spread sobre NTN-B de mesma Duration"
 - [x] Título DI+: "Spread sobre o CDI"
+
+## v2.7 — Correções pós-auditoria
+- [x] Verificar se falsos positivos (score < 0.90) distorcem médias/medianas na aba Por Rating
+- [x] Corrigir parser de taxa indicativa com formato decimal errado (taxa > 100 na planilha — confirmado que é DI PERCENTUAL, não bug)
+- [x] Garantir que markOutliers por rating+universo está correto para próxima sincronização (AA-.br DI+)

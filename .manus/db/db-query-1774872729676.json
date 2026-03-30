@@ -1,0 +1,16 @@
+{
+  "query": "\nSELECT \n  SUM(CASE WHEN ntnbTaxa IS NULL AND indexador LIKE '%IPCA%' THEN 1 ELSE 0 END) as ipca_sem_ntnb,\n  SUM(CASE WHEN ntnbTaxa IS NOT NULL AND indexador LIKE '%IPCA%' THEN 1 ELSE 0 END) as ipca_com_ntnb,\n  SUM(CASE WHEN indexador NOT LIKE '%IPCA%' THEN 1 ELSE 0 END) as di_total,\n  COUNT(*) as total\nFROM spread_analysis;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  SUM(CASE WHEN ntnbTaxa IS NULL AND indexador LIKE '%IPCA%' THEN 1 ELSE 0 END) as ipca_sem_ntnb,\n  SUM(CASE WHEN ntnbTaxa IS NOT NULL AND indexador LIKE '%IPCA%' THEN 1 ELSE 0 END) as ipca_com_ntnb,\n  SUM(CASE WHEN indexador NOT LIKE '%IPCA%' THEN 1 ELSE 0 END) as di_total,\n  COUNT(*) as total\nFROM spread_analysis;\n",
+  "rows": [
+    {
+      "ipca_sem_ntnb": "140",
+      "ipca_com_ntnb": "0",
+      "di_total": "109",
+      "total": "249"
+    }
+  ],
+  "messages": [],
+  "stdout": "ipca_sem_ntnb\tipca_com_ntnb\tdi_total\ttotal\n140\t0\t109\t249\n",
+  "stderr": "",
+  "execution_time_ms": 59
+}

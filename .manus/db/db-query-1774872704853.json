@@ -1,0 +1,31 @@
+{
+  "query": "\n-- Tipo de produto\nSELECT tipo, incentivado,\n  COUNT(*) as total,\n  SUM(CASE WHEN isOutlier=0 THEN 1 ELSE 0 END) as limpos,\n  CASE WHEN indexador LIKE '%IPCA%' THEN 'IPCA+' ELSE 'DI+' END as universo\nFROM spread_analysis\nGROUP BY tipo, incentivado, universo\nORDER BY tipo, universo, incentivado;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- Tipo de produto\nSELECT tipo, incentivado,\n  COUNT(*) as total,\n  SUM(CASE WHEN isOutlier=0 THEN 1 ELSE 0 END) as limpos,\n  CASE WHEN indexador LIKE '%IPCA%' THEN 'IPCA+' ELSE 'DI+' END as universo\nFROM spread_analysis\nGROUP BY tipo, incentivado, universo\nORDER BY tipo, universo, incentivado;\n",
+  "rows": [
+    {
+      "tipo": "DEB",
+      "incentivado": "0",
+      "total": "109",
+      "limpos": "97",
+      "universo": "DI+"
+    },
+    {
+      "tipo": "DEB",
+      "incentivado": "0",
+      "total": "6",
+      "limpos": "3",
+      "universo": "IPCA+"
+    },
+    {
+      "tipo": "DEB",
+      "incentivado": "1",
+      "total": "134",
+      "limpos": "103",
+      "universo": "IPCA+"
+    }
+  ],
+  "messages": [],
+  "stdout": "tipo\tincentivado\ttotal\tlimpos\tuniverso\nDEB\t0\t109\t97\tDI+\nDEB\t0\t6\t3\tIPCA+\nDEB\t1\t134\t103\tIPCA+\n",
+  "stderr": "",
+  "execution_time_ms": 71
+}

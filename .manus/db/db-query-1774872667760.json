@@ -1,0 +1,190 @@
+{
+  "query": "\n-- Outliers com detalhes — os mais extremos\nSELECT \n  codigoCetip,\n  emissorNome,\n  emissorMoodys,\n  rating,\n  ROUND(scoreMatch, 3) as score,\n  ROUND(zspread*10000, 0) as spread_bps,\n  CASE WHEN indexador LIKE '%IPCA%' THEN 'IPCA+' ELSE 'DI+' END as universo\nFROM spread_analysis\nWHERE isOutlier = 1\nORDER BY universo, rating, zspread DESC\nLIMIT 20;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- Outliers com detalhes — os mais extremos\nSELECT \n  codigoCetip,\n  emissorNome,\n  emissorMoodys,\n  rating,\n  ROUND(scoreMatch, 3) as score,\n  ROUND(zspread*10000, 0) as spread_bps,\n  CASE WHEN indexador LIKE '%IPCA%' THEN 'IPCA+' ELSE 'DI+' END as universo\nFROM spread_analysis\nWHERE isOutlier = 1\nORDER BY universo, rating, zspread DESC\nLIMIT 20;\n",
+  "rows": [
+    {
+      "codigoCetip": "LVTC22",
+      "emissorNome": "LIVETECH DA BAHIA INDUSTRIA E COMERCIO S/A (*)",
+      "emissorMoodys": "Livetech da Bahia Indústria e Comércio S.A.",
+      "rating": "A.br",
+      "score": "1.000",
+      "spread_bps": "43390",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "MTRO12",
+      "emissorNome": "COMPANHIA DO METROPOLITANO DE SAO PAULO",
+      "emissorMoodys": "Companhia do Metropolitano de São Paulo – Metrô",
+      "rating": "AA-.br",
+      "score": "0.927",
+      "spread_bps": "5224",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "RECV12",
+      "emissorNome": "PETRORECONCAVO S.A. (*)",
+      "emissorMoodys": "PetroReconcavo S.A.",
+      "rating": "AA.br",
+      "score": "1.000",
+      "spread_bps": "8054",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "RHOL11",
+      "emissorNome": "INFRA BR V RODOVIAS HOLDING LLL SA (*) (**)",
+      "emissorMoodys": "Rodovias do Brasil Holding S.A.",
+      "rating": "AA+.br",
+      "score": "0.655",
+      "spread_bps": "32860",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "BRMLA1",
+      "emissorNome": "BR MALLS PARTICIPAÇÕES S/A (*)",
+      "emissorMoodys": "Movida Participações S.A.",
+      "rating": "AA+.br",
+      "score": "0.650",
+      "spread_bps": "5536",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "TIGR12",
+      "emissorNome": "TIGRE S.A PARTICIPACOES (*)",
+      "emissorMoodys": "Auren Participações S.A.",
+      "rating": "AAA.br",
+      "score": "0.700",
+      "spread_bps": "16992",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "LORTB2",
+      "emissorNome": "LOCALIZA RENT A CAR (*)",
+      "emissorMoodys": "Localiza Rent a Car S.A.",
+      "rating": "AAA.br",
+      "score": "1.000",
+      "spread_bps": "15478",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "HBSA14",
+      "emissorNome": "HIDROVIAS DO BRASIL S.A. (*)",
+      "emissorMoodys": "Hidrovias do Brasil S.A.",
+      "rating": "AAA.br",
+      "score": "1.000",
+      "spread_bps": "5246",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "SNGOA1",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "emissorMoodys": "Saneamento De Goiás S.A. - Saneago",
+      "rating": "AAA.br",
+      "score": "0.929",
+      "spread_bps": "5041",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "TSSG14",
+      "emissorNome": "TRANSPORTADORA ASSOCIADA DE GAS S.A. - TAG (*)",
+      "emissorMoodys": "Transportadora Associada de Gás S.A. - TAG",
+      "rating": "AAA.br",
+      "score": "1.000",
+      "spread_bps": "4835",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "SNGO10",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "emissorMoodys": "Saneamento De Goiás S.A. - Saneago",
+      "rating": "AAA.br",
+      "score": "0.929",
+      "spread_bps": "4464",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "TAEE16",
+      "emissorNome": "TRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*) (**)",
+      "emissorMoodys": "Transmissora Aliança de Energia Elétrica S.A. (TAESA)",
+      "rating": "AAA.br",
+      "score": "0.873",
+      "spread_bps": "3551",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "ALIG12",
+      "emissorNome": "ALIANCA GERACAO DE ENERGIA S.A",
+      "emissorMoodys": "PCH BV II Geração de Energia S.A.",
+      "rating": "A.br",
+      "score": "0.692",
+      "spread_bps": "1978",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "ASER12",
+      "emissorNome": "AGUAS DO SERTAO S.A. (*)",
+      "emissorMoodys": "Águas do Sertão S.A.",
+      "rating": "A+.br",
+      "score": "1.000",
+      "spread_bps": "53760",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "COMT11",
+      "emissorNome": "CONCESSIONARIA DE RODOVIA SUL - MATOGROSSENSE S.A",
+      "emissorMoodys": "Concessionária de Rodovias Rota dos Grãos S.A.",
+      "rating": "A+.br",
+      "score": "0.683",
+      "spread_bps": "7311",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "PAXA12",
+      "emissorNome": "PAX INVESTIMENTOS EM AEROPORTOS S.A (*)",
+      "emissorMoodys": "PAX Investimentos em Aeroportos S.A",
+      "rating": "AA-.br",
+      "score": "1.000",
+      "spread_bps": "29810",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "ITPE13",
+      "emissorNome": "COMPANHIA AGUAS DE ITAPEMA (*)",
+      "emissorMoodys": "Companhia Águas de Itapema",
+      "rating": "AA.br",
+      "score": "1.000",
+      "spread_bps": "24382",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "MOVI18",
+      "emissorNome": "MOVIDA PARTICIPACOES S/A (*)",
+      "emissorMoodys": "Movida Participações S.A.",
+      "rating": "AA+.br",
+      "score": "1.000",
+      "spread_bps": "45682",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "RDOE18",
+      "emissorNome": "CONCESSIONÁRIA DO RODOANEL OESTE S/A (*)",
+      "emissorMoodys": "Concessionaria do Rodoanel Oeste S.A. (CCR)",
+      "rating": "AA+.br",
+      "score": "1.000",
+      "spread_bps": "6296",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "ELPLA5",
+      "emissorNome": "ELETROPAULO METROP. ELETRIC. DE S.P. S/A (*)",
+      "emissorMoodys": "Eletropaulo Metropolitana de Eletricidade de São Paulo S.A. (Enel Distribuição São Paulo)",
+      "rating": "AAA.br",
+      "score": "0.682",
+      "spread_bps": "52841",
+      "universo": "IPCA+"
+    }
+  ],
+  "messages": [],
+  "stdout": "codigoCetip\temissorNome\temissorMoodys\trating\tscore\tspread_bps\tuniverso\nLVTC22\tLIVETECH DA BAHIA INDUSTRIA E COMERCIO S/A (*)\tLivetech da Bahia Indústria e Comércio S.A.\tA.br\t1.000\t43390\tDI+\nMTRO12\tCOMPANHIA DO METROPOLITANO DE SAO PAULO\tCompanhia do Metropolitano de São Paulo – Metrô\tAA-.br\t0.927\t5224\tDI+\nRECV12\tPETRORECONCAVO S.A. (*)\tPetroReconcavo S.A.\tAA.br\t1.000\t8054\tDI+\nRHOL11\tINFRA BR V RODOVIAS HOLDING LLL SA (*) (**)\tRodovias do Brasil Holding S.A.\tAA+.br\t0.655\t32860\tDI+\nBRMLA1\tBR MALLS PARTICIPAÇÕES S/A (*)\tMovida Participações S.A.\tAA+.br\t0.650\t5536\tDI+\nTIGR12\tTIGRE S.A PARTICIPACOES (*)\tAuren Participações S.A.\tAAA.br\t0.700\t16992\tDI+\nLORTB2\tLOCALIZA RENT A CAR (*)\tLocaliza Rent a Car S.A.\tAAA.br\t1.000\t15478\tDI+\nHBSA14\tHIDROVIAS DO BRASIL S.A. (*)\tHidrovias do Brasil S.A.\tAAA.br\t1.000\t5246\tDI+\nSNGOA1\tSANEAMENTO DE GOIÁS - SANEAGO\tSaneamento De Goiás S.A. - Saneago\tAAA.br\t0.929\t5041\tDI+\nTSSG14\tTRANSPORTADORA ASSOCIADA DE GAS S.A. - TAG (*)\tTransportadora Associada de Gás S.A. - TAG\tAAA.br\t1.000\t4835\tDI+\nSNGO10\tSANEAMENTO DE GOIÁS - SANEAGO\tSaneamento De Goiás S.A. - Saneago\tAAA.br\t0.929\t4464\tDI+\nTAEE16\tTRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*) (**)\tTransmissora Aliança de Energia Elétrica S.A. (TAESA)\tAAA.br\t0.873\t3551\tDI+\nALIG12\tALIANCA GERACAO DE ENERGIA S.A\tPCH BV II Geração de Energia S.A.\tA.br\t0.692\t1978\tIPCA+\nASER12\tAGUAS DO SERTAO S.A. (*)\tÁguas do Sertão S.A.\tA+.br\t1.000\t53760\tIPCA+\nCOMT11\tCONCESSIONARIA DE RODOVIA SUL - MATOGROSSENSE S.A\tConcessionária de Rodovias Rota dos Grãos S.A.\tA+.br\t0.683\t7311\tIPCA+\nPAXA12\tPAX INVESTIMENTOS EM AEROPORTOS S.A (*)\tPAX Investimentos em Aeroportos S.A\tAA-.br\t1.000\t29810\tIPCA+\nITPE13\tCOMPANHIA AGUAS DE ITAPEMA (*)\tCompanhia Águas de Itapema\tAA.br\t1.000\t24382\tIPCA+\nMOVI18\tMOVIDA PARTICIPACOES S/A (*)\tMovida Participações S.A.\tAA+.br\t1.000\t45682\tIPCA+\nRDOE18\tCONCESSIONÁRIA DO RODOANEL OESTE S/A (*)\tConcessionaria do Rodoanel Oeste S.A. (CCR)\tAA+.br\t1.000\t6296\tIPCA+\nELPLA5\tELETROPAULO METROP. ELETRIC. DE S.P. S/A (*)\tEletropaulo Metropolitana de Eletricidade de São Paulo S.A. (Enel Distribuição São Paulo)\tAAA.br\t0.682\t52841\tIPCA+\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}

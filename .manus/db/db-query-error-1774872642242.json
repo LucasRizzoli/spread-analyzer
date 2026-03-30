@@ -1,0 +1,8 @@
+{
+  "query": "\n-- 3. Matchings com score baixo (< 0.85) — candidatos a falso positivo\nSELECT \n  codigoCetip,\n  emissor,\n  emissorMoodys,\n  numeroEmissaoAnbima,\n  instrumentoMoodys,\n  rating,\n  ROUND(scoreMatch, 3) as score,\n  ROUND(zspread*10000, 0) as spread_bps,\n  CASE WHEN indexador LIKE '%IPCA%' THEN 'IPCA+' ELSE 'DI+' END as universo,\n  isOutlier\nFROM spread_analysis\nWHERE scoreMatch < 0.85\nORDER BY scoreMatch ASC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- 3. Matchings com score baixo (< 0.85) — candidatos a falso positivo\nSELECT \n  codigoCetip,\n  emissor,\n  emissorMoodys,\n  numeroEmissaoAnbima,\n  instrumentoMoodys,\n  rating,\n  ROUND(scoreMatch, 3) as score,\n  ROUND(zspread*10000, 0) as spread_bps,\n  CASE WHEN indexador LIKE '%IPCA%' THEN 'IPCA+' ELSE 'DI+' END as universo,\n  isOutlier\nFROM spread_analysis\nWHERE scoreMatch < 0.85\nORDER BY scoreMatch ASC;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 3: Unknown column 'emissor' in 'field list'"
+  ]
+}

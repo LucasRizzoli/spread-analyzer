@@ -1,0 +1,35 @@
+{
+  "query": "\nSELECT \n  CASE \n    WHEN scoreMatch >= 0.95 THEN '0.95-1.00 (excelente)'\n    WHEN scoreMatch >= 0.90 THEN '0.90-0.95 (bom)'\n    WHEN scoreMatch >= 0.85 THEN '0.85-0.90 (aceitável)'\n    WHEN scoreMatch >= 0.75 THEN '0.75-0.85 (suspeito)'\n    ELSE '< 0.75 (provável falso positivo)'\n  END as faixa_score,\n  COUNT(*) as total,\n  ROUND(COUNT(*)*100.0/(SELECT COUNT(*) FROM spread_analysis),1) as pct\nFROM spread_analysis\nGROUP BY faixa_score\nORDER BY MIN(scoreMatch) DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  CASE \n    WHEN scoreMatch >= 0.95 THEN '0.95-1.00 (excelente)'\n    WHEN scoreMatch >= 0.90 THEN '0.90-0.95 (bom)'\n    WHEN scoreMatch >= 0.85 THEN '0.85-0.90 (aceitável)'\n    WHEN scoreMatch >= 0.75 THEN '0.75-0.85 (suspeito)'\n    ELSE '< 0.75 (provável falso positivo)'\n  END as faixa_score,\n  COUNT(*) as total,\n  ROUND(COUNT(*)*100.0/(SELECT COUNT(*) FROM spread_analysis),1) as pct\nFROM spread_analysis\nGROUP BY faixa_score\nORDER BY MIN(scoreMatch) DESC;\n",
+  "rows": [
+    {
+      "faixa_score": "0.95-1.00 (excelente)",
+      "total": "151",
+      "pct": "60.6"
+    },
+    {
+      "faixa_score": "0.90-0.95 (bom)",
+      "total": "6",
+      "pct": "2.4"
+    },
+    {
+      "faixa_score": "0.85-0.90 (aceitável)",
+      "total": "9",
+      "pct": "3.6"
+    },
+    {
+      "faixa_score": "0.75-0.85 (suspeito)",
+      "total": "20",
+      "pct": "8.0"
+    },
+    {
+      "faixa_score": "< 0.75 (provável falso positivo)",
+      "total": "63",
+      "pct": "25.3"
+    }
+  ],
+  "messages": [],
+  "stdout": "faixa_score\ttotal\tpct\n0.95-1.00 (excelente)\t151\t60.6\n0.90-0.95 (bom)\t6\t2.4\n0.85-0.90 (aceitável)\t9\t3.6\n0.75-0.85 (suspeito)\t20\t8.0\n< 0.75 (provável falso positivo)\t63\t25.3\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

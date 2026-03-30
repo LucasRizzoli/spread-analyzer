@@ -609,6 +609,7 @@ export default function SpreadDashboard() {
     setores: filters.setores.length ? filters.setores : undefined,
     tipos: filters.tipos.length ? filters.tipos : undefined,
     excludeOutliers: !showOutliers,
+    scoreMin: 0.85,
   });
   const triggerSync = trpc.spread.triggerSync.useMutation({
     onSuccess: () => {

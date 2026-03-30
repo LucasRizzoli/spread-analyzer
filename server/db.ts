@@ -93,7 +93,7 @@ export async function getUserByOpenId(openId: string) {
 
 // ─── Spread Analysis Queries ──────────────────────────────────────────────────
 
-import { and, asc, between, desc, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, between, desc, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import {
   anbimaAssets,
   moodysRatings,
@@ -111,6 +111,7 @@ export interface SpreadFilters {
   setores?: string[];
   tipos?: string[];
   excludeOutliers?: boolean;
+  scoreMin?: number;
 }
 
 export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
@@ -201,6 +202,9 @@ export async function getZspreadByRating(filters: SpreadFilters = {}) {
   }
   if (filters.excludeOutliers) {
     conditions.push(eq(spreadAnalysis.isOutlier, false));
+  }
+  if (filters.scoreMin !== undefined) {
+    conditions.push(gte(spreadAnalysis.scoreMatch, String(filters.scoreMin)));
   }
 
   // Buscar todos os valores brutos para calcular mediana no servidor

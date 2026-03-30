@@ -1,0 +1,18 @@
+{
+  "query": "\n-- 1. Totais gerais\nSELECT \n  COUNT(*) as total_ativos,\n  SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END) as total_outliers,\n  SUM(CASE WHEN isOutlier = 0 THEN 1 ELSE 0 END) as total_limpos,\n  ROUND(AVG(scoreMatch), 3) as score_medio,\n  MIN(scoreMatch) as score_min,\n  MAX(scoreMatch) as score_max\nFROM spread_analysis;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- 1. Totais gerais\nSELECT \n  COUNT(*) as total_ativos,\n  SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END) as total_outliers,\n  SUM(CASE WHEN isOutlier = 0 THEN 1 ELSE 0 END) as total_limpos,\n  ROUND(AVG(scoreMatch), 3) as score_medio,\n  MIN(scoreMatch) as score_min,\n  MAX(scoreMatch) as score_max\nFROM spread_analysis;\n",
+  "rows": [
+    {
+      "total_ativos": "249",
+      "total_outliers": "46",
+      "total_limpos": "203",
+      "score_medio": "0.899",
+      "score_min": "0.6500",
+      "score_max": "1.0000"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_ativos\ttotal_outliers\ttotal_limpos\tscore_medio\tscore_min\tscore_max\n249\t46\t203\t0.899\t0.6500\t1.0000\n",
+  "stderr": "",
+  "execution_time_ms": 68
+}

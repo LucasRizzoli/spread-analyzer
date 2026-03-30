@@ -1,0 +1,190 @@
+{
+  "query": "\nSELECT \n  codigoCetip,\n  emissorNome,\n  emissorMoodys,\n  numeroEmissaoSnd as emissao,\n  rating,\n  ROUND(scoreMatch,3) as score,\n  CASE WHEN indexador LIKE '%IPCA%' THEN 'IPCA+' ELSE 'DI+' END as universo\nFROM spread_analysis\nWHERE scoreMatch < 0.75\nORDER BY scoreMatch ASC\nLIMIT 20;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  codigoCetip,\n  emissorNome,\n  emissorMoodys,\n  numeroEmissaoSnd as emissao,\n  rating,\n  ROUND(scoreMatch,3) as score,\n  CASE WHEN indexador LIKE '%IPCA%' THEN 'IPCA+' ELSE 'DI+' END as universo\nFROM spread_analysis\nWHERE scoreMatch < 0.75\nORDER BY scoreMatch ASC\nLIMIT 20;\n",
+  "rows": [
+    {
+      "codigoCetip": "BRMLB1",
+      "emissorNome": "BR MALLS PARTICIPAÇÕES S/A (*)",
+      "emissorMoodys": "Movida Participações S.A.",
+      "emissao": "11",
+      "rating": "AA+.br",
+      "score": "0.650",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "BRMLA1",
+      "emissorNome": "BR MALLS PARTICIPAÇÕES S/A (*)",
+      "emissorMoodys": "Movida Participações S.A.",
+      "emissao": "11",
+      "rating": "AA+.br",
+      "score": "0.650",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "FRAG14",
+      "emissorNome": "FERRARI AGROINDUSTRIA S/A (*)",
+      "emissorMoodys": "Inpasa Agroindustrial S.A.",
+      "emissao": "4",
+      "rating": "AA-.br",
+      "score": "0.650",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "RHOL11",
+      "emissorNome": "INFRA BR V RODOVIAS HOLDING LLL SA (*) (**)",
+      "emissorMoodys": "Rodovias do Brasil Holding S.A.",
+      "emissao": "1",
+      "rating": "AA+.br",
+      "score": "0.655",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "CNRD12",
+      "emissorNome": "CONCESSIONARIA DA RODOVIA MS 306 S.A. (*)",
+      "emissorMoodys": "Concessionária Rota do Oeste S.A.",
+      "emissao": "2",
+      "rating": "AA-.br",
+      "score": "0.655",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "BLMN12",
+      "emissorNome": "BELO MONTE TRANSMISSORA DE ENERGIA SPE S.A.",
+      "emissorMoodys": "Janaúba Transmissora de Energia Elétrica S.A.",
+      "emissao": "2",
+      "rating": "AAA.br",
+      "score": "0.658",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "IBPB11",
+      "emissorNome": "SERRA DE IBIAPABA TRANSMISSORA DE ENERGIA S.A. (*) (**)",
+      "emissorMoodys": "Janaúba Transmissora de Energia Elétrica S.A.",
+      "emissao": "1",
+      "rating": "AAA.br",
+      "score": "0.658",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "CRTR12",
+      "emissorNome": "CONCESSIONARIA RODOVIAS DO TRIANGULO SPE S.A. (*)",
+      "emissorMoodys": "Concessionária do Sistema Rodoviário Rio - São Paulo S.A. (CCR Riosp)",
+      "emissao": "2",
+      "rating": "AA.br",
+      "score": "0.659",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "ECHP12",
+      "emissorNome": "ECHOENERGIA PARTICIPACOES S/A (*)",
+      "emissorMoodys": "Auren Participações S.A.",
+      "emissao": "2",
+      "rating": "AAA.br",
+      "score": "0.667",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "ENMTB3",
+      "emissorNome": "ENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.",
+      "emissorMoodys": "RGE Sul Distribuidora de Energia S.A.",
+      "emissao": "13",
+      "rating": "AAA.br",
+      "score": "0.667",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "ENMTA7",
+      "emissorNome": "ENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.",
+      "emissorMoodys": "RGE Sul Distribuidora de Energia S.A.",
+      "emissao": "17",
+      "rating": "AAA.br",
+      "score": "0.667",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "ENMTA5",
+      "emissorNome": "ENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.",
+      "emissorMoodys": "RGE Sul Distribuidora de Energia S.A.",
+      "emissao": "15",
+      "rating": "AAA.br",
+      "score": "0.667",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "BRIT11",
+      "emissorNome": "BRISANET PARTICIPACOES S.A.",
+      "emissorMoodys": "Auren Participações S.A.",
+      "emissao": "2",
+      "rating": "AAA.br",
+      "score": "0.667",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "ENMTA3",
+      "emissorNome": "ENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.",
+      "emissorMoodys": "RGE Sul Distribuidora de Energia S.A.",
+      "emissao": "13",
+      "rating": "AAA.br",
+      "score": "0.667",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "ENMTB0",
+      "emissorNome": "ENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.",
+      "emissorMoodys": "RGE Sul Distribuidora de Energia S.A.",
+      "emissao": "20",
+      "rating": "AAA.br",
+      "score": "0.667",
+      "universo": "DI+"
+    },
+    {
+      "codigoCetip": "ECHP22",
+      "emissorNome": "ECHOENERGIA PARTICIPACOES S/A (*)",
+      "emissorMoodys": "Auren Participações S.A.",
+      "emissao": "2",
+      "rating": "AAA.br",
+      "score": "0.667",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "ENMTB5",
+      "emissorNome": "ENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.",
+      "emissorMoodys": "RGE Sul Distribuidora de Energia S.A.",
+      "emissao": "15",
+      "rating": "AAA.br",
+      "score": "0.667",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "TPNO12",
+      "emissorNome": "MATRINCHA TRANSMISSORA DE ENERGIA  TP NORTE SA",
+      "emissorMoodys": "Janaúba Transmissora de Energia Elétrica S.A.",
+      "emissao": "2",
+      "rating": "AAA.br",
+      "score": "0.675",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "TPNO13",
+      "emissorNome": "MATRINCHA TRANSMISSORA DE ENERGIA  TP NORTE SA (*)",
+      "emissorMoodys": "Tropicália Transmissora de Energia S.A.",
+      "emissao": "3",
+      "rating": "AAA.br",
+      "score": "0.676",
+      "universo": "IPCA+"
+    },
+    {
+      "codigoCetip": "ELPLA5",
+      "emissorNome": "ELETROPAULO METROP. ELETRIC. DE S.P. S/A (*)",
+      "emissorMoodys": "Eletropaulo Metropolitana de Eletricidade de São Paulo S.A. (Enel Distribuição São Paulo)",
+      "emissao": "25",
+      "rating": "AAA.br",
+      "score": "0.682",
+      "universo": "IPCA+"
+    }
+  ],
+  "messages": [],
+  "stdout": "codigoCetip\temissorNome\temissorMoodys\temissao\trating\tscore\tuniverso\nBRMLB1\tBR MALLS PARTICIPAÇÕES S/A (*)\tMovida Participações S.A.\t11\tAA+.br\t0.650\tDI+\nBRMLA1\tBR MALLS PARTICIPAÇÕES S/A (*)\tMovida Participações S.A.\t11\tAA+.br\t0.650\tDI+\nFRAG14\tFERRARI AGROINDUSTRIA S/A (*)\tInpasa Agroindustrial S.A.\t4\tAA-.br\t0.650\tIPCA+\nRHOL11\tINFRA BR V RODOVIAS HOLDING LLL SA (*) (**)\tRodovias do Brasil Holding S.A.\t1\tAA+.br\t0.655\tDI+\nCNRD12\tCONCESSIONARIA DA RODOVIA MS 306 S.A. (*)\tConcessionária Rota do Oeste S.A.\t2\tAA-.br\t0.655\tIPCA+\nBLMN12\tBELO MONTE TRANSMISSORA DE ENERGIA SPE S.A.\tJanaúba Transmissora de Energia Elétrica S.A.\t2\tAAA.br\t0.658\tIPCA+\nIBPB11\tSERRA DE IBIAPABA TRANSMISSORA DE ENERGIA S.A. (*) (**)\tJanaúba Transmissora de Energia Elétrica S.A.\t1\tAAA.br\t0.658\tIPCA+\nCRTR12\tCONCESSIONARIA RODOVIAS DO TRIANGULO SPE S.A. (*)\tConcessionária do Sistema Rodoviário Rio - São Paulo S.A. (CCR Riosp)\t2\tAA.br\t0.659\tIPCA+\nECHP12\tECHOENERGIA PARTICIPACOES S/A (*)\tAuren Participações S.A.\t2\tAAA.br\t0.667\tIPCA+\nENMTB3\tENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.\tRGE Sul Distribuidora de Energia S.A.\t13\tAAA.br\t0.667\tIPCA+\nENMTA7\tENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.\tRGE Sul Distribuidora de Energia S.A.\t17\tAAA.br\t0.667\tIPCA+\nENMTA5\tENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.\tRGE Sul Distribuidora de Energia S.A.\t15\tAAA.br\t0.667\tIPCA+\nBRIT11\tBRISANET PARTICIPACOES S.A.\tAuren Participações S.A.\t2\tAAA.br\t0.667\tDI+\nENMTA3\tENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.\tRGE Sul Distribuidora de Energia S.A.\t13\tAAA.br\t0.667\tIPCA+\nENMTB0\tENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.\tRGE Sul Distribuidora de Energia S.A.\t20\tAAA.br\t0.667\tDI+\nECHP22\tECHOENERGIA PARTICIPACOES S/A (*)\tAuren Participações S.A.\t2\tAAA.br\t0.667\tIPCA+\nENMTB5\tENERGISA MATO GROSSO - DISTRIBUIDORA DE ENERGIA S.A.\tRGE Sul Distribuidora de Energia S.A.\t15\tAAA.br\t0.667\tIPCA+\nTPNO12\tMATRINCHA TRANSMISSORA DE ENERGIA  TP NORTE SA\tJanaúba Transmissora de Energia Elétrica S.A.\t2\tAAA.br\t0.675\tIPCA+\nTPNO13\tMATRINCHA TRANSMISSORA DE ENERGIA  TP NORTE SA (*)\tTropicália Transmissora de Energia S.A.\t3\tAAA.br\t0.676\tIPCA+\nELPLA5\tELETROPAULO METROP. ELETRIC. DE S.P. S/A (*)\tEletropaulo Metropolitana de Eletricidade de São Paulo S.A. (Enel Distribuição São Paulo)\t25\tAAA.br\t0.682\tIPCA+\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}
