@@ -576,10 +576,28 @@ export default function SpreadDashboard() {
   const windowSummary = trpc.spread.getWindowSummary.useQuery();
   const historicalSnapshots = trpc.spread.getHistoricalSnapshots.useQuery({ limit: 90 });
 
+  // Mapear universo para o indexador correto no banco
+  const universoIndexador = useMemo(() => {
+    if (universo === "IPCA") return "IPCA SPREAD";
+    if (universo === "DI") return "DI SPREAD";
+    return "DI PERCENTUAL";
+  }, [universo]);
+
+  // Indexadores efetivos: se o usuário selecionou filtro manual de indexador,
+  // intersectar com o universo atual; caso contrário, usar apenas o universo.
+  const indexadoresEfetivos = useMemo(() => {
+    if (filters.indexadores.length > 0) {
+      // Respeitar seleção manual do usuário, mas restringir ao universo ativo
+      const filtered = filters.indexadores.filter((i) => i === universoIndexador);
+      return filtered.length > 0 ? filtered : [universoIndexador];
+    }
+    return [universoIndexador];
+  }, [filters.indexadores, universoIndexador]);
+
   const analysisQuery = trpc.spread.getAnalysis.useQuery({
     durationMin: filters.durationRange[0],
     durationMax: filters.durationRange[1],
-    indexadores: filters.indexadores.length ? filters.indexadores : undefined,
+    indexadores: indexadoresEfetivos,
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
     excludeOutliers: !showOutliers,
@@ -591,7 +609,7 @@ export default function SpreadDashboard() {
   const outlierCountQuery = trpc.spread.getAnalysis.useQuery({
     durationMin: filters.durationRange[0],
     durationMax: filters.durationRange[1],
-    indexadores: filters.indexadores.length ? filters.indexadores : undefined,
+    indexadores: indexadoresEfetivos,
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
     excludeOutliers: false,
@@ -673,60 +691,20 @@ export default function SpreadDashboard() {
     }
   };
 
-   // Dados processados
-  const allData = analysisQuery.data || [];
+  // Dados processados — universo e outliers já filtrados no backend pela query.
+  // O frontend não precisa mais filtrar por universo: a query já envia indexadoresEfetivos.
+  const analysisData = analysisQuery.data || [];
   const isSyncing = syncState.data?.status === "running";
 
-  // 1. Filtrar por score mínimo 0.80 (nunca exibir matches de baixa confiança)
-  const highScoreData = useMemo(() => {
-    return allData.filter((r) => {
-      const score = (r as { scoreMatch?: number | null }).scoreMatch;
-      // Se scoreMatch é null (dados antigos), manter; se preenchido, exigir ≥ 0.80
-      return score == null || score >= 0.80;
-    });
-  }, [allData]);
-
-  // 2. Filtrar por universo (IPCA SPREAD vs DI SPREAD vs DI PERCENTUAL)
-  const universoData = useMemo(() => {
-    if (universo === "IPCA") {
-      return highScoreData.filter((r) => {
-        const idx = (r as { indexador?: string | null }).indexador;
-        return idx === "IPCA SPREAD";
-      });
-    }
-    if (universo === "DI") {
-      // DI+: spread sobre CDI em bps (ex: CDI + 1,5% a.a.)
-      return highScoreData.filter((r) => {
-        const idx = (r as { indexador?: string | null }).indexador;
-        return idx === "DI SPREAD";
-      });
-    }
-    // % DI: percentual do CDI (ex: 110% do CDI) — métrica diferente, eixo diferente
-    return highScoreData.filter((r) => {
-      const idx = (r as { indexador?: string | null }).indexador;
-      return idx === "DI PERCENTUAL";
-    });
-  }, [highScoreData, universo]);
-
-  // 3. Outliers já filtrados no backend via excludeOutliers.
-  // isOutlier pode chegar como boolean ou 0/1 do banco — normalizar para boolean.
+  // Contagem de outliers: outlierCountQuery sempre retorna com excludeOutliers=false,
+  // mas já filtrada pelo universo correto via indexadoresEfetivos.
   const isOutlierTrue = (r: unknown) => {
     const val = (r as { isOutlier?: boolean | number | null }).isOutlier;
     return val === true || val === 1;
   };
-  const analysisData = universoData;
-  // Contagem de outliers filtrada pelo universo atual — garante que o número bate com os gráficos.
   const outlierCount = useMemo(() => {
-    const raw = outlierCountQuery.data || [];
-    // Aplicar o mesmo filtro de universo que é aplicado em universoData
-    const inUniverse = raw.filter((r) => {
-      const idx = (r as { indexador?: string | null }).indexador;
-      if (universo === "IPCA") return idx === "IPCA SPREAD";
-      if (universo === "DI") return idx === "DI SPREAD";
-      return idx === "DI PERCENTUAL";
-    });
-    return inUniverse.filter(isOutlierTrue).length;
-  }, [outlierCountQuery.data, universo]);
+    return (outlierCountQuery.data || []).filter(isOutlierTrue).length;
+  }, [outlierCountQuery.data]);
 
   // Rótulo do eixo Y conforme universo
   const yAxisLabel = "Spread (bps)";
@@ -1050,7 +1028,7 @@ export default function SpreadDashboard() {
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : allData.length === 0 ? (
+            ) : analysisData.length === 0 && !analysisQuery.isLoading ? (
               <EmptyState
                 onSync={handleSync}
                 isSyncing={isSyncing}

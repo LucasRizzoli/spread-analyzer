@@ -324,3 +324,8 @@
 - [x] Layout novo: scatter + barras lado a lado (mesma altura, topo), calculadora full-width (embaixo, layout horizontal)
 - [x] Corrigir contagem de outliers para refletir apenas o universo atual
 - [x] Verificar que excludeOutliers no backend garante diferença exata de N pontos nos gráficos
+
+## v4.3 — Auditoria e Correções
+- [x] Corrigir bug crítico: filtro de outliers não propagava universo ao backend
+- [x] Corrigir scoreMin comparação string vs decimal (CAST SQL em db.ts)
+- [x] Gerar relatório de auditoria completo (AUDITORIA.md)

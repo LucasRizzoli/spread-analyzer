@@ -173,7 +173,8 @@ export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
     conditions.push(sql`${spreadAnalysis.isOutlier} = 0`);
   }
   if (filters.scoreMin !== undefined) {
-    conditions.push(gte(spreadAnalysis.scoreMatch, String(filters.scoreMin)));
+    // CAST para DECIMAL evita comparação lexicográfica de strings (DECIMAL(5,4) armazenado como texto)
+    conditions.push(sql`CAST(${spreadAnalysis.scoreMatch} AS DECIMAL(5,4)) >= ${filters.scoreMin}`);
   }
   return db
     .select()
@@ -237,7 +238,8 @@ export async function getZspreadByRating(filters: SpreadFilters = {}) {
     conditions.push(sql`${spreadAnalysis.isOutlier} = 0`);
   }
   if (filters.scoreMin !== undefined) {
-    conditions.push(gte(spreadAnalysis.scoreMatch, String(filters.scoreMin)));
+    // CAST para DECIMAL evita comparação lexicográfica de strings (DECIMAL(5,4) armazenado como texto)
+    conditions.push(sql`CAST(${spreadAnalysis.scoreMatch} AS DECIMAL(5,4)) >= ${filters.scoreMin}`);
   }
 
   // Buscar todos os valores brutos para calcular mediana no servidor
