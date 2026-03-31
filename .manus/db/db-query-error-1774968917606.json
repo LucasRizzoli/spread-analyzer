@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT \n  COUNT(*) as total,\n  SUM(CASE WHEN ratingMoodys IS NOT NULL THEN 1 ELSE 0 END) as comRating,\n  MAX(dataReferencia) as ultimaData,\n  MIN(dataReferencia) as primeiraData\nFROM ativoSpread;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  COUNT(*) as total,\n  SUM(CASE WHEN ratingMoodys IS NOT NULL THEN 1 ELSE 0 END) as comRating,\n  MAX(dataReferencia) as ultimaData,\n  MIN(dataReferencia) as primeiraData\nFROM ativoSpread;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 2: Table 'ibsgd3x7k24f8uhumwhzv3.ativoSpread' doesn't exist"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "query": "\n-- Verificar quantos duplicados existem antes\nSELECT COUNT(*) as total_antes FROM spread_analysis;\n\n-- Deletar duplicados: manter apenas o registro de maior id por codigoCetip\nDELETE sa FROM spread_analysis sa\nINNER JOIN (\n  SELECT codigoCetip, MAX(id) AS maxId\n  FROM spread_analysis\n  GROUP BY codigoCetip\n) latest ON sa.codigoCetip = latest.codigoCetip\nWHERE sa.id < latest.maxId;\n\n-- Verificar resultado\nSELECT COUNT(*) as total_depois FROM spread_analysis;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- Verificar quantos duplicados existem antes\nSELECT COUNT(*) as total_antes FROM spread_analysis;\n\n-- Deletar duplicados: manter apenas o registro de maior id por codigoCetip\nDELETE sa FROM spread_analysis sa\nINNER JOIN (\n  SELECT codigoCetip, MAX(id) AS maxId\n  FROM spread_analysis\n  GROUP BY codigoCetip\n) latest ON sa.codigoCetip = latest.codigoCetip\nWHERE sa.id < latest.maxId;\n\n-- Verificar resultado\nSELECT COUNT(*) as total_depois FROM spread_analysis;\n",
+  "rows": [
+    {
+      "total_antes": "323"
+    },
+    {
+      "total_antes": "total_depois"
+    },
+    {
+      "total_antes": "166"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_antes\n323\ntotal_depois\n166\n",
+  "stderr": "",
+  "execution_time_ms": 138
+}

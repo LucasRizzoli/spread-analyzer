@@ -1,0 +1,19 @@
+{
+  "query": "\nSELECT \n  COUNT(*) as total,\n  SUM(CASE WHEN rating IS NOT NULL THEN 1 ELSE 0 END) as comRating,\n  MAX(dataReferencia) as ultimaData,\n  MIN(dataReferencia) as primeiraData\nFROM spread_analysis;\n\nSELECT DISTINCT dataReferencia, COUNT(*) as qtd \nFROM spread_analysis \nGROUP BY dataReferencia \nORDER BY dataReferencia DESC \nLIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  COUNT(*) as total,\n  SUM(CASE WHEN rating IS NOT NULL THEN 1 ELSE 0 END) as comRating,\n  MAX(dataReferencia) as ultimaData,\n  MIN(dataReferencia) as primeiraData\nFROM spread_analysis;\n\nSELECT DISTINCT dataReferencia, COUNT(*) as qtd \nFROM spread_analysis \nGROUP BY dataReferencia \nORDER BY dataReferencia DESC \nLIMIT 5;\n",
+  "rows": [
+    {
+      "total": "323",
+      "comRating": "323",
+      "ultimaData": "2026-03-30",
+      "primeiraData": "2026-03-30"
+    }
+  ],
+  "messages": [
+    "dataReferencia\tqtd",
+    "2026-03-30\t323"
+  ],
+  "stdout": "total\tcomRating\tultimaData\tprimeiraData\n323\t323\t2026-03-30\t2026-03-30\ndataReferencia\tqtd\n2026-03-30\t323\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

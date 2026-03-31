@@ -241,3 +241,9 @@
 - [x] Corrigir fetchOne: substituir domcontentloaded + waitForTimeout(3s) por commit + waitForResponse (reativo, API responde em ~1-2s)
 - [x] Corrigir enrichBatch: inicialização da homepage usa commit + 1s (não-fatal)
 - [x] 40 testes passando
+
+## v3.10 — Correção de duplicação de registros no banco
+- [x] Diagnosticar: dedup usava dataReferencia < maxData, não removendo duplicados da mesma data
+- [x] Corrigir syncService: dedup agora usa id < maxId (mantém o registro mais recente por codigoCetip)
+- [x] Limpar banco: 323 → 166 registros (157 duplicados removidos)
+- [x] 40 testes passando

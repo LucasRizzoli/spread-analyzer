@@ -1,0 +1,29 @@
+{
+  "query": "\nSELECT id, status, mensagem, iniciadoEm, finalizadoEm FROM sync_log ORDER BY iniciadoEm DESC LIMIT 3;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT id, status, mensagem, iniciadoEm, finalizadoEm FROM sync_log ORDER BY iniciadoEm DESC LIMIT 3;\n",
+  "rows": [
+    {
+      "id": "90001",
+      "status": "success",
+      "mensagem": "Concluído: 808 ratings Moody's, 1221 ativos ANBIMA, 293 enriquecidos via ANBIMA Data, 166 com match de emissão, 21 outliers marcados",
+      "iniciadoEm": "2026-03-31 14:50:40",
+      "finalizadoEm": "2026-03-31 14:53:27"
+    },
+    {
+      "id": "60004",
+      "status": "error",
+      "mensagem": "Nenhuma emissão com match foi produzida neste sync. Verifique se as planilhas estão corretas e se o enriquecimento via ANBIMA Data funcionou. Os dados existentes no banco foram preservados.",
+      "iniciadoEm": "2026-03-31 13:16:35",
+      "finalizadoEm": "2026-03-31 13:49:40"
+    }
+  ],
+  "messages": [
+    "60003\terror\tpage.goto: Timeout 20000ms exceeded.",
+    "Call log:",
+    "  - navigating to \"https://data.anbima.com.br/\", waiting until \"networkidle\"",
+    "\t2026-03-31 13:11:12\t2026-03-31 13:11:39"
+  ],
+  "stdout": "id\tstatus\tmensagem\tiniciadoEm\tfinalizadoEm\n90001\tsuccess\tConcluído: 808 ratings Moody's, 1221 ativos ANBIMA, 293 enriquecidos via ANBIMA Data, 166 com match de emissão, 21 outliers marcados\t2026-03-31 14:50:40\t2026-03-31 14:53:27\n60004\terror\tNenhuma emissão com match foi produzida neste sync. Verifique se as planilhas estão corretas e se o enriquecimento via ANBIMA Data funcionou. Os dados existentes no banco foram preservados.\t2026-03-31 13:16:35\t2026-03-31 13:49:40\n60003\terror\tpage.goto: Timeout 20000ms exceeded.\nCall log:\n  - navigating to \"https://data.anbima.com.br/\", waiting until \"networkidle\"\n\t2026-03-31 13:11:12\t2026-03-31 13:11:39\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

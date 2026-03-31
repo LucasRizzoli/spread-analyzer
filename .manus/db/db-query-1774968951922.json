@@ -1,0 +1,80 @@
+{
+  "query": "\nSELECT rating, indexador, COUNT(*) as qtd \nFROM spread_analysis \nWHERE dataReferencia = '2026-03-30'\nGROUP BY rating, indexador \nORDER BY rating, indexador\nLIMIT 20;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT rating, indexador, COUNT(*) as qtd \nFROM spread_analysis \nWHERE dataReferencia = '2026-03-30'\nGROUP BY rating, indexador \nORDER BY rating, indexador\nLIMIT 20;\n",
+  "rows": [
+    {
+      "rating": "A-.br",
+      "indexador": "IPCA SPREAD",
+      "qtd": "2"
+    },
+    {
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "qtd": "12"
+    },
+    {
+      "rating": "A+.br",
+      "indexador": "DI SPREAD",
+      "qtd": "6"
+    },
+    {
+      "rating": "A+.br",
+      "indexador": "IPCA SPREAD",
+      "qtd": "8"
+    },
+    {
+      "rating": "AA-.br",
+      "indexador": "DI SPREAD",
+      "qtd": "2"
+    },
+    {
+      "rating": "AA-.br",
+      "indexador": "IPCA SPREAD",
+      "qtd": "8"
+    },
+    {
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "qtd": "18"
+    },
+    {
+      "rating": "AA.br",
+      "indexador": "IPCA SPREAD",
+      "qtd": "9"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "qtd": "22"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "qtd": "14"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "DI PERCENTUAL",
+      "qtd": "1"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "qtd": "111"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "qtd": "108"
+    },
+    {
+      "rating": "BBB+.br",
+      "indexador": "DI SPREAD",
+      "qtd": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "rating\tindexador\tqtd\nA-.br\tIPCA SPREAD\t2\nA.br\tDI SPREAD\t12\nA+.br\tDI SPREAD\t6\nA+.br\tIPCA SPREAD\t8\nAA-.br\tDI SPREAD\t2\nAA-.br\tIPCA SPREAD\t8\nAA.br\tDI SPREAD\t18\nAA.br\tIPCA SPREAD\t9\nAA+.br\tDI SPREAD\t22\nAA+.br\tIPCA SPREAD\t14\nAAA.br\tDI PERCENTUAL\t1\nAAA.br\tDI SPREAD\t111\nAAA.br\tIPCA SPREAD\t108\nBBB+.br\tDI SPREAD\t2\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}

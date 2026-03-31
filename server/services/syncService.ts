@@ -575,16 +575,17 @@ export async function runFullSync(
 
     // ── 10. Deduplicação: manter apenas o registro mais recente por codigoCetip ──
     report("Deduplicando registros por papel...", 0, 1);
-    // Para cada codigoCetip com múltiplos registros, deletar todos exceto o de maior dataReferencia
-    // (em caso de empate na data, manter o de maior id)
+    // Para cada codigoCetip, manter apenas o registro de MAIOR id (o mais recentemente inserido).
+    // Isso garante que syncs repetidos na mesma dataReferencia também sejam deduplicados.
+    // Estratégia: encontrar o max(id) por codigoCetip e deletar todos os outros.
     await db.execute(sql`
       DELETE sa FROM spread_analysis sa
       INNER JOIN (
-        SELECT codigoCetip, MAX(dataReferencia) AS maxData
+        SELECT codigoCetip, MAX(id) AS maxId
         FROM spread_analysis
         GROUP BY codigoCetip
       ) latest ON sa.codigoCetip = latest.codigoCetip
-      WHERE sa.dataReferencia < latest.maxData
+      WHERE sa.id < latest.maxId
     `);
     report("Deduplicação concluída", 1, 1);
 
