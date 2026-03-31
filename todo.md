@@ -310,3 +310,17 @@
 - [x] Implementar SpreadCalculator inline (spread esperado por rating e duration)
 - [x] Ajustar toggle Média/Mediana para ficar dentro da nova view unificada (não no header)
 - [x] Manter abas "Tabela" e "Dados" separadas como estão
+
+## v4.2 — Reorganização do layout e correção de outliers
+- [ ] Remover painel de upload (Moody's/ANBIMA) da sidebar lateral
+- [ ] Remover tabelas "Inclinação da curva" e "Spread previsto pela tendência" do BarView
+- [ ] Novo layout AnaliseView: scatter + barras lado a lado (mesma altura, topo), calculadora full-width embaixo
+- [ ] Aumentar altura do gráfico de barras
+- [ ] Corrigir bug: toggle de outliers não remove exatamente 21 pontos dos gráficos
+
+## v4.2 — Reorganização do layout da aba Análise
+- [x] Remover upload da sidebar (mantido apenas no EmptyState e aba Dados)
+- [x] Remover tabelas de inclinação da curva e spread previsto pela tendência do BarView
+- [x] Layout novo: scatter + barras lado a lado (mesma altura, topo), calculadora full-width (embaixo, layout horizontal)
+- [x] Corrigir contagem de outliers para refletir apenas o universo atual
+- [x] Verificar que excludeOutliers no backend garante diferença exata de N pontos nos gráficos
