@@ -113,14 +113,31 @@ export interface SpreadFilters {
 }
 
 /**
+ * Cache in-memory para getLatestDataReferencia.
+ * TTL de 60 segundos para evitar N queries desnecessárias por request.
+ */
+let _latestDateCache: { value: string | null; expiresAt: number } | null = null;
+
+/** Invalida o cache (chamar após cada sync bem-sucedido) */
+export function invalidateLatestDateCache(): void {
+  _latestDateCache = null;
+}
+
+/**
  * Retorna a data de referência mais recente disponível no banco.
- * Usado para filtrar todas as queries por padrão.
+ * Resultado é cacheado por 60 segundos para reduzir queries repetidas.
  */
 async function getLatestDataReferencia(db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<string | null> {
+  const now = Date.now();
+  if (_latestDateCache && now < _latestDateCache.expiresAt) {
+    return _latestDateCache.value;
+  }
   const result = await db
     .select({ maxDate: sql<string>`MAX(${spreadAnalysis.dataReferencia})` })
     .from(spreadAnalysis);
-  return result[0]?.maxDate ?? null;
+  const value = result[0]?.maxDate ?? null;
+  _latestDateCache = { value, expiresAt: now + 60_000 };
+  return value;
 }
 
 export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
@@ -135,7 +152,10 @@ export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
   if (filters.durationMin !== undefined || filters.durationMax !== undefined) {
     const min = filters.durationMin ?? 0;
     const max = filters.durationMax ?? 100;
-    conditions.push(between(spreadAnalysis.durationAnos, String(min), String(max)));
+    // CAST para DECIMAL evita comparação lexicográfica de strings ("9.5" > "10.0" seria errado)
+    conditions.push(
+      sql`CAST(${spreadAnalysis.durationAnos} AS DECIMAL(10,4)) BETWEEN ${min} AND ${max}`
+    );
   }
 
   if (filters.indexadores?.length) {
@@ -159,7 +179,7 @@ export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
     .select()
     .from(spreadAnalysis)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(asc(spreadAnalysis.durationAnos));
+    .orderBy(sql`CAST(${spreadAnalysis.durationAnos} AS DECIMAL(10,4)) ASC`);
 }
 
 export async function getSpreadFiltersOptions() {
@@ -199,7 +219,10 @@ export async function getZspreadByRating(filters: SpreadFilters = {}) {
   if (filters.durationMin !== undefined || filters.durationMax !== undefined) {
     const min = filters.durationMin ?? 0;
     const max = filters.durationMax ?? 100;
-    conditions.push(between(spreadAnalysis.durationAnos, String(min), String(max)));
+    // CAST para DECIMAL evita comparação lexicográfica de strings
+    conditions.push(
+      sql`CAST(${spreadAnalysis.durationAnos} AS DECIMAL(10,4)) BETWEEN ${min} AND ${max}`
+    );
   }
   if (filters.indexadores?.length) {
     conditions.push(inArray(spreadAnalysis.indexador, filters.indexadores));

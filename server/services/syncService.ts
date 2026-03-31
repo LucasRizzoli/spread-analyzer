@@ -10,7 +10,7 @@
  * 5. Marcar outliers: por rating, quando ≥5 emissões, remover 10% superior e 10% inferior de Z-spread
  * 6. Persistir resultados com scoreMatch, isOutlier e campos de rastreabilidade
  */
-import { getDb } from "../db";
+import { getDb, invalidateLatestDateCache } from "../db";
 import {
   moodysRatings,
   anbimaAssets,
@@ -444,7 +444,16 @@ export async function runFullSync(
     }
     report(`${outlierCount} outliers identificados`, 1, 1);
 
-    // ── 8. Persistir resultados de spread ─────────────────────────────────────
+    // ── 8. Guard: abortar se nenhum resultado foi produzido ────────────────────
+    if (marked.length === 0) {
+      throw new Error(
+        "Nenhuma emissão com match foi produzida neste sync. " +
+        "Verifique se as planilhas estão corretas e se o enriquecimento via ANBIMA Data funcionou. " +
+        "Os dados existentes no banco foram preservados."
+      );
+    }
+
+    // ── 9. Persistir resultados de spread ─────────────────────────────────────
     report("Salvando análise de spread...", 0, 1);
 
     // Normalizar dataReferencia para YYYY-MM-DD (de DD/MM/YYYY)
@@ -495,7 +504,7 @@ export async function runFullSync(
       );
     }
 
-    // ── 9. Deduplicação: manter apenas o registro mais recente por codigoCetip ──
+    // ── 10. Deduplicação: manter apenas o registro mais recente por codigoCetip ──
     report("Deduplicando registros por papel...", 0, 1);
     // Para cada codigoCetip com múltiplos registros, deletar todos exceto o de maior dataReferencia
     // (em caso de empate na data, manter o de maior id)
@@ -510,19 +519,19 @@ export async function runFullSync(
     `);
     report("Deduplicação concluída", 1, 1);
 
-    // ── 10. Limpeza de janela: deletar registros com mais de 30 dias ─────────
+    // ── 11. Limpeza de janela: deletar registros com mais de 30 dias ─────────
+    // Usa tabela derivada para evitar self-reference (erro MySQL: can't specify target table)
     report("Aplicando janela de 30 dias...", 0, 1);
     await db.execute(sql`
       DELETE FROM spread_analysis
-      WHERE dataReferencia < DATE_FORMAT(
-        DATE_SUB(
-          STR_TO_DATE(
-            (SELECT MAX(dataReferencia) FROM spread_analysis AS sa2),
+      WHERE dataReferencia < (
+        SELECT cutoff FROM (
+          SELECT DATE_FORMAT(
+            DATE_SUB(MAX(dataReferencia), INTERVAL 30 DAY),
             '%Y-%m-%d'
-          ),
-          INTERVAL 30 DAY
-        ),
-        '%Y-%m-%d'
+          ) AS cutoff
+          FROM spread_analysis
+        ) AS tmp
       )
     `);
     report("Janela de 30 dias aplicada", 1, 1);
@@ -549,6 +558,7 @@ export async function runFullSync(
         .where(eq(syncLog.id, logId));
     }
 
+    invalidateLatestDateCache();
     currentSyncStatus = "success";
     lastSyncAt = new Date();
 

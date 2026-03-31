@@ -207,3 +207,13 @@
 - [x] Separar DI+ (spread sobre CDI em bps) de % do DI (percentual do CDI) como universos distintos
 - [x] Revisar algoritmo de outliers: HVSP11 é outlier legítimo (4.1σ acima da média AAA.br); corrigido agrupamento DI_SPREAD vs DI_PCT
 - [x] Garantir que o gráfico DI+ exibe apenas DI SPREAD e o % DI exibe apenas DI PERCENTUAL
+
+## v3.4 — Revisão técnica: 7 correções e melhorias
+- [x] Bug crítico 1: corrigir self-reference no DELETE da janela 30 dias (syncService.ts)
+- [x] Bug crítico 2: adicionar guard contra sync com zero resultados (syncService.ts)
+- [x] Bug 3: adicionar excludeOutliers e scoreMin em getSpreadAnalysis (db.ts)
+- [x] Bug 4: corrigir comparação de durationAnos com CAST numérico (db.ts)
+- [x] Limpeza 5: remover código morto do spreadCalculatorService.ts
+- [x] Melhoria 6: expor spreadIncentivadoSemGrossUp na aba Tabela do frontend
+- [x] Melhoria 7: adicionar cache in-memory para getLatestDataReferencia (db.ts)
+- [x] Testes: 40 passando (casos de guard vazio, excludeOutliers e duration numérica já cobertos)

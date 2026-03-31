@@ -1451,6 +1451,8 @@ type AnalysisRow = {
   instrumentoMoodys: string | null;
   scoreMatch: number | null;
   isOutlier: boolean | null;
+  incentivado: boolean | null;
+  spreadIncentivadoSemGrossUp: number | null;
 };
 
 function TableView({
@@ -1495,7 +1497,7 @@ function TableView({
                   MOODY'S LOCAL →
                 </th>
               )}
-              <th className="px-3 py-1.5 text-right text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap border-l border-border/60" colSpan={hasMatchData ? 4 : 3}>
+              <th className="px-3 py-1.5 text-right text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap border-l border-border/60" colSpan={hasMatchData ? 5 : 4}>
                 SPREAD
               </th>
             </tr>
@@ -1520,6 +1522,12 @@ function TableView({
               <th className="px-3 py-2 text-right font-semibold text-muted-foreground whitespace-nowrap">Taxa Indicativa</th>
               {!hasMatchData && <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">NTN-B Ref.</th>}
               <th className="px-3 py-2 text-right font-semibold text-muted-foreground whitespace-nowrap">Z-spread</th>
+              <th
+                className="px-3 py-2 text-right font-semibold text-amber-400/80 whitespace-nowrap"
+                title="Spread ajustado pelo benefício fiscal da isenção de IR, conforme metodologia ANBIMA. Disponível apenas para debêntures incentivadas (Lei 12.431)."
+              >
+                Spread Ajustado
+              </th>
               {hasMatchData && <th className="px-3 py-2 text-center font-semibold text-muted-foreground whitespace-nowrap">Status</th>}
             </tr>
           </thead>
@@ -1623,6 +1631,19 @@ function TableView({
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  {/* Spread Ajustado (só para incentivadas) */}
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {row.incentivado && row.spreadIncentivadoSemGrossUp != null ? (
+                      <span
+                        className="text-amber-400 font-semibold"
+                        title="Spread s/ gross-up (ANBIMA): spread calculado sobre a taxa líquida equivalente, já ajustado pelo benefício fiscal da isenção de IR"
+                      >
+                        {(row.spreadIncentivadoSemGrossUp * 100) > 0 ? "+" : ""}{Math.round(row.spreadIncentivadoSemGrossUp * 100)} bps
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/40 text-[10px]">—</span>
                     )}
                   </td>
                   {hasMatchData && (

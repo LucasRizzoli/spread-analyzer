@@ -39,6 +39,7 @@ export const spreadRouter = router({
         zspread: row.zspread ? Number(row.zspread) : null,
         spreadIncentivadoSemGrossUp: row.spreadIncentivadoSemGrossUp ? Number(row.spreadIncentivadoSemGrossUp) : null,
         scoreMatch: row.scoreMatch ? Number(row.scoreMatch) : null,
+        incentivado: row.incentivado ?? null,
       }));
     }),
 
