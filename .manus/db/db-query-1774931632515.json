@@ -1,0 +1,80 @@
+{
+  "query": "\nSELECT codigoCetip, rating, indexador, CAST(zspread AS DECIMAL(10,4)) as zspread, isOutlier\nFROM spread_analysis\nWHERE rating = 'AAA.br' AND indexador = 'DI SPREAD'\nAND dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\nORDER BY CAST(zspread AS DECIMAL(10,4)) DESC\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT codigoCetip, rating, indexador, CAST(zspread AS DECIMAL(10,4)) as zspread, isOutlier\nFROM spread_analysis\nWHERE rating = 'AAA.br' AND indexador = 'DI SPREAD'\nAND dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\nORDER BY CAST(zspread AS DECIMAL(10,4)) DESC\nLIMIT 10;\n",
+  "rows": [
+    {
+      "codigoCetip": "LORTB2",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.5989",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "RENTE3",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.5712",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "SAPRC1",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.5557",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "RENTA5",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.5390",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "TFLED0",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.4852",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "TFLEA6",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.4367",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "RENTE4",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.4327",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "TFLEA9",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.4128",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "RENTC8",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.3871",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "TFLEB5",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.3709",
+      "isOutlier": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "codigoCetip\trating\tindexador\tzspread\tisOutlier\nLORTB2\tAAA.br\tDI SPREAD\t1.5989\t0\nRENTE3\tAAA.br\tDI SPREAD\t1.5712\t0\nSAPRC1\tAAA.br\tDI SPREAD\t1.5557\t0\nRENTA5\tAAA.br\tDI SPREAD\t1.5390\t0\nTFLED0\tAAA.br\tDI SPREAD\t1.4852\t0\nTFLEA6\tAAA.br\tDI SPREAD\t1.4367\t0\nRENTE4\tAAA.br\tDI SPREAD\t1.4327\t0\nTFLEA9\tAAA.br\tDI SPREAD\t1.4128\t0\nRENTC8\tAAA.br\tDI SPREAD\t1.3871\t0\nTFLEB5\tAAA.br\tDI SPREAD\t1.3709\t0\n",
+  "stderr": "",
+  "execution_time_ms": 83
+}

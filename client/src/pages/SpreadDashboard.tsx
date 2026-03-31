@@ -997,7 +997,16 @@ export default function SpreadDashboard() {
                   { key: "IPCA", label: "IPCA+" },
                   { key: "DI", label: "DI+" },
                   { key: "DI_PCT", label: "% DI" },
-                ] as const).map(({ key, label }) => (
+                ] as const)
+                  .filter(({ key }) => {
+                    // Ocultar % DI se não há ativos DI PERCENTUAL no banco
+                    if (key === "DI_PCT") {
+                      const available = filterOptions.data?.indexadores || [];
+                      return available.some((idx) => idx.toUpperCase().includes("DI PERCENTUAL"));
+                    }
+                    return true;
+                  })
+                  .map(({ key, label }) => (
                   <button
                     key={key}
                     onClick={() => setUniverso(key)}

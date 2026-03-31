@@ -1,0 +1,18 @@
+{
+  "query": "\n-- Verificar se existe DI PERCENTUAL\nSELECT indexador, COUNT(*) as total FROM spread_analysis GROUP BY indexador;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- Verificar se existe DI PERCENTUAL\nSELECT indexador, COUNT(*) as total FROM spread_analysis GROUP BY indexador;\n",
+  "rows": [
+    {
+      "indexador": "DI SPREAD",
+      "total": "86"
+    },
+    {
+      "indexador": "IPCA SPREAD",
+      "total": "71"
+    }
+  ],
+  "messages": [],
+  "stdout": "indexador\ttotal\nDI SPREAD\t86\nIPCA SPREAD\t71\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

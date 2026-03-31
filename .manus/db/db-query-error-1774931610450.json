@@ -1,0 +1,8 @@
+{
+  "query": "\n-- 1. Quantos outliers existem e em quais grupos\nSELECT rating, indexador, COUNT(*) as total, SUM(is_outlier) as outliers\nFROM spread_analysis\nWHERE data_referencia = (SELECT MAX(data_referencia) FROM spread_analysis)\nGROUP BY rating, indexador\nORDER BY indexador, rating;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- 1. Quantos outliers existem e em quais grupos\nSELECT rating, indexador, COUNT(*) as total, SUM(is_outlier) as outliers\nFROM spread_analysis\nWHERE data_referencia = (SELECT MAX(data_referencia) FROM spread_analysis)\nGROUP BY rating, indexador\nORDER BY indexador, rating;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 3: Unknown column 'data_referencia' in 'where clause'"
+  ]
+}

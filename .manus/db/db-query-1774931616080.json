@@ -1,0 +1,88 @@
+{
+  "query": "\nSELECT rating, indexador, COUNT(*) as total, SUM(isOutlier) as outliers\nFROM spread_analysis\nWHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\nGROUP BY rating, indexador\nORDER BY indexador, rating;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT rating, indexador, COUNT(*) as total, SUM(isOutlier) as outliers\nFROM spread_analysis\nWHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\nGROUP BY rating, indexador\nORDER BY indexador, rating;\n",
+  "rows": [
+    {
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "total": "6",
+      "outliers": "0"
+    },
+    {
+      "rating": "A+.br",
+      "indexador": "DI SPREAD",
+      "total": "3",
+      "outliers": "0"
+    },
+    {
+      "rating": "AA-.br",
+      "indexador": "DI SPREAD",
+      "total": "1",
+      "outliers": "0"
+    },
+    {
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "total": "9",
+      "outliers": "0"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "total": "11",
+      "outliers": "0"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "total": "55",
+      "outliers": "0"
+    },
+    {
+      "rating": "BBB+.br",
+      "indexador": "DI SPREAD",
+      "total": "1",
+      "outliers": "0"
+    },
+    {
+      "rating": "A-.br",
+      "indexador": "IPCA SPREAD",
+      "total": "1",
+      "outliers": "0"
+    },
+    {
+      "rating": "A+.br",
+      "indexador": "IPCA SPREAD",
+      "total": "4",
+      "outliers": "0"
+    },
+    {
+      "rating": "AA-.br",
+      "indexador": "IPCA SPREAD",
+      "total": "4",
+      "outliers": "0"
+    },
+    {
+      "rating": "AA.br",
+      "indexador": "IPCA SPREAD",
+      "total": "4",
+      "outliers": "0"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "total": "7",
+      "outliers": "0"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "total": "51",
+      "outliers": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "rating\tindexador\ttotal\toutliers\nA.br\tDI SPREAD\t6\t0\nA+.br\tDI SPREAD\t3\t0\nAA-.br\tDI SPREAD\t1\t0\nAA.br\tDI SPREAD\t9\t0\nAA+.br\tDI SPREAD\t11\t0\nAAA.br\tDI SPREAD\t55\t0\nBBB+.br\tDI SPREAD\t1\t0\nA-.br\tIPCA SPREAD\t1\t0\nA+.br\tIPCA SPREAD\t4\t0\nAA-.br\tIPCA SPREAD\t4\t0\nAA.br\tIPCA SPREAD\t4\t0\nAA+.br\tIPCA SPREAD\t7\t0\nAAA.br\tIPCA SPREAD\t51\t1\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

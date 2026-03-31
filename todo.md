@@ -224,3 +224,8 @@
 - [x] Algoritmo de outliers adaptativo: n≥20 → winsorização 10%, 10≤n<20 → ±2,5σ, 5≤n<10 → ±2σ, n<5 → sem remoção
 - [x] Exibir valor da tendência por rating na aba Por Rating (spread previsto pela reta de regressão)
 - [x] Exibir coeficiente angular da reta de tendência (bps por nível de rating)
+
+## v3.6 — Correção de outliers e % DI vazio
+- [x] Re-executar markOutliers sobre dados atuais do banco via script Node.js — 21 outliers marcados
+- [x] Ocultar botão % DI no header quando não há ativos com DI PERCENTUAL no banco
+- [x] Verificar cálculo de winsorização 10% no grupo AAA.br DI SPREAD (55 ativos) — correto

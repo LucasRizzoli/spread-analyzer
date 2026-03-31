@@ -1,0 +1,1109 @@
+{
+  "query": "\nSELECT id, codigoCetip, rating, indexador, CAST(zspread AS DECIMAL(10,6)) as zspread\nFROM spread_analysis\nWHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\nORDER BY rating, indexador, CAST(zspread AS DECIMAL(10,6));\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT id, codigoCetip, rating, indexador, CAST(zspread AS DECIMAL(10,6)) as zspread\nFROM spread_analysis\nWHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\nORDER BY rating, indexador, CAST(zspread AS DECIMAL(10,6));\n",
+  "rows": [
+    {
+      "id": "30167",
+      "codigoCetip": "VBRR11",
+      "rating": "A-.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "3.978700"
+    },
+    {
+      "id": "30184",
+      "codigoCetip": "OPCT15",
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.398800"
+    },
+    {
+      "id": "30226",
+      "codigoCetip": "OPCT17",
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.522100"
+    },
+    {
+      "id": "30163",
+      "codigoCetip": "OPCT16",
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.543100"
+    },
+    {
+      "id": "30193",
+      "codigoCetip": "AEGP17",
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.982200"
+    },
+    {
+      "id": "30202",
+      "codigoCetip": "LVTC12",
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "zspread": "2.057500"
+    },
+    {
+      "id": "30275",
+      "codigoCetip": "LVTC22",
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "zspread": "4.151000"
+    },
+    {
+      "id": "30309",
+      "codigoCetip": "BRKPA0",
+      "rating": "A+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.871800"
+    },
+    {
+      "id": "30180",
+      "codigoCetip": "BRKPA3",
+      "rating": "A+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "2.249800"
+    },
+    {
+      "id": "30220",
+      "codigoCetip": "CASN14",
+      "rating": "A+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "2.588200"
+    },
+    {
+      "id": "30230",
+      "codigoCetip": "BRKP28",
+      "rating": "A+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.422300"
+    },
+    {
+      "id": "30272",
+      "codigoCetip": "CASN24",
+      "rating": "A+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "2.563700"
+    },
+    {
+      "id": "30216",
+      "codigoCetip": "CASN34",
+      "rating": "A+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "2.578800"
+    },
+    {
+      "id": "30255",
+      "codigoCetip": "ASER12",
+      "rating": "A+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "5.250800"
+    },
+    {
+      "id": "30303",
+      "codigoCetip": "MTRO12",
+      "rating": "AA-.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.505200"
+    },
+    {
+      "id": "30223",
+      "codigoCetip": "ITPO15",
+      "rating": "AA-.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.159400"
+    },
+    {
+      "id": "30251",
+      "codigoCetip": "CRTA12",
+      "rating": "AA-.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.895200"
+    },
+    {
+      "id": "30234",
+      "codigoCetip": "RMSA12",
+      "rating": "AA-.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "2.646300"
+    },
+    {
+      "id": "30232",
+      "codigoCetip": "PAXA12",
+      "rating": "AA-.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "3.013200"
+    },
+    {
+      "id": "30229",
+      "codigoCetip": "RECV12",
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.796700"
+    },
+    {
+      "id": "30233",
+      "codigoCetip": "RECV13",
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.117300"
+    },
+    {
+      "id": "30170",
+      "codigoCetip": "INEL12",
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.210200"
+    },
+    {
+      "id": "30185",
+      "codigoCetip": "VLIDA1",
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.252800"
+    },
+    {
+      "id": "30250",
+      "codigoCetip": "ANIM15",
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.634100"
+    },
+    {
+      "id": "30201",
+      "codigoCetip": "CDAR11",
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.710600"
+    },
+    {
+      "id": "30227",
+      "codigoCetip": "OVSAB0",
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "2.148800"
+    },
+    {
+      "id": "30291",
+      "codigoCetip": "OVSAA8",
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "2.387000"
+    },
+    {
+      "id": "30297",
+      "codigoCetip": "OVSAA9",
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "2.653800"
+    },
+    {
+      "id": "30298",
+      "codigoCetip": "RECV11",
+      "rating": "AA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.988900"
+    },
+    {
+      "id": "30165",
+      "codigoCetip": "ITPO14",
+      "rating": "AA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.043000"
+    },
+    {
+      "id": "30160",
+      "codigoCetip": "CLTM14",
+      "rating": "AA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.567500"
+    },
+    {
+      "id": "30310",
+      "codigoCetip": "ITPE13",
+      "rating": "AA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "2.556100"
+    },
+    {
+      "id": "30177",
+      "codigoCetip": "QUNT11",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.815100"
+    },
+    {
+      "id": "30248",
+      "codigoCetip": "VLIDA0",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.214900"
+    },
+    {
+      "id": "30286",
+      "codigoCetip": "CAMLA1",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.294800"
+    },
+    {
+      "id": "30159",
+      "codigoCetip": "CAMLB1",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.309200"
+    },
+    {
+      "id": "30245",
+      "codigoCetip": "LMTP26",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.623600"
+    },
+    {
+      "id": "30283",
+      "codigoCetip": "LMTP18",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.629000"
+    },
+    {
+      "id": "30162",
+      "codigoCetip": "LMTP17",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.944700"
+    },
+    {
+      "id": "30225",
+      "codigoCetip": "MVLVA3",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "2.321000"
+    },
+    {
+      "id": "30261",
+      "codigoCetip": "RODB11",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "2.463800"
+    },
+    {
+      "id": "30246",
+      "codigoCetip": "MVLV19",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "2.542600"
+    },
+    {
+      "id": "30176",
+      "codigoCetip": "JSLGA5",
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "3.220200"
+    },
+    {
+      "id": "30267",
+      "codigoCetip": "RDOE18",
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.590400"
+    },
+    {
+      "id": "30288",
+      "codigoCetip": "MSGT23",
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.795700"
+    },
+    {
+      "id": "30259",
+      "codigoCetip": "MSGT33",
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.857100"
+    },
+    {
+      "id": "30208",
+      "codigoCetip": "MSGT13",
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.021000"
+    },
+    {
+      "id": "30182",
+      "codigoCetip": "CEAD11",
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.931400"
+    },
+    {
+      "id": "30204",
+      "codigoCetip": "NNAE12",
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "2.209600"
+    },
+    {
+      "id": "30171",
+      "codigoCetip": "MOVI18",
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "4.555500"
+    },
+    {
+      "id": "30206",
+      "codigoCetip": "SNGO10",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.443400"
+    },
+    {
+      "id": "30241",
+      "codigoCetip": "TSSG14",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.460600"
+    },
+    {
+      "id": "30172",
+      "codigoCetip": "SNGOA1",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.495100"
+    },
+    {
+      "id": "30295",
+      "codigoCetip": "HBSA14",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.518800"
+    },
+    {
+      "id": "30228",
+      "codigoCetip": "RADLA0",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.556200"
+    },
+    {
+      "id": "30158",
+      "codigoCetip": "BSA319",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.582400"
+    },
+    {
+      "id": "30289",
+      "codigoCetip": "FLRYA0",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.585300"
+    },
+    {
+      "id": "30256",
+      "codigoCetip": "FLRY36",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.603300"
+    },
+    {
+      "id": "30207",
+      "codigoCetip": "SNGOA2",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.606400"
+    },
+    {
+      "id": "30222",
+      "codigoCetip": "FLRY19",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.634000"
+    },
+    {
+      "id": "30284",
+      "codigoCetip": "SNGOA3",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.638400"
+    },
+    {
+      "id": "30194",
+      "codigoCetip": "ANHBA5",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.663200"
+    },
+    {
+      "id": "30294",
+      "codigoCetip": "ANHBA6",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.681500"
+    },
+    {
+      "id": "30266",
+      "codigoCetip": "RADLA1",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.684700"
+    },
+    {
+      "id": "30166",
+      "codigoCetip": "FLRY29",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.691100"
+    },
+    {
+      "id": "30311",
+      "codigoCetip": "ITSA17",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.703900"
+    },
+    {
+      "id": "30169",
+      "codigoCetip": "FLRY25",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.718900"
+    },
+    {
+      "id": "30244",
+      "codigoCetip": "FLRYB0",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.730300"
+    },
+    {
+      "id": "30243",
+      "codigoCetip": "BSA312",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.764200"
+    },
+    {
+      "id": "30240",
+      "codigoCetip": "RADL19",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.775500"
+    },
+    {
+      "id": "30178",
+      "codigoCetip": "RADL15",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.785000"
+    },
+    {
+      "id": "30209",
+      "codigoCetip": "QYAN11",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.797200"
+    },
+    {
+      "id": "30191",
+      "codigoCetip": "TLPP27",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.803600"
+    },
+    {
+      "id": "30173",
+      "codigoCetip": "CMGDA1",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.804700"
+    },
+    {
+      "id": "30281",
+      "codigoCetip": "HYPEA7",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.815900"
+    },
+    {
+      "id": "30257",
+      "codigoCetip": "HYPEA6",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.850500"
+    },
+    {
+      "id": "30301",
+      "codigoCetip": "HYPEA8",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.870800"
+    },
+    {
+      "id": "30188",
+      "codigoCetip": "HYPEB1",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.893800"
+    },
+    {
+      "id": "30210",
+      "codigoCetip": "SAPRB4",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.904400"
+    },
+    {
+      "id": "30282",
+      "codigoCetip": "HYPEA9",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.909900"
+    },
+    {
+      "id": "30237",
+      "codigoCetip": "CBAN22",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.917200"
+    },
+    {
+      "id": "30189",
+      "codigoCetip": "RIPR13",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.926800"
+    },
+    {
+      "id": "30258",
+      "codigoCetip": "HYPEC0",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "0.988100"
+    },
+    {
+      "id": "30192",
+      "codigoCetip": "VBBR14",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.038400"
+    },
+    {
+      "id": "30279",
+      "codigoCetip": "VBBR18",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.056800"
+    },
+    {
+      "id": "30213",
+      "codigoCetip": "VBBR15",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.125200"
+    },
+    {
+      "id": "30306",
+      "codigoCetip": "VBBR16",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.137700"
+    },
+    {
+      "id": "30270",
+      "codigoCetip": "VBBR17",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.145300"
+    },
+    {
+      "id": "30307",
+      "codigoCetip": "VBBR24",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.197600"
+    },
+    {
+      "id": "30300",
+      "codigoCetip": "RENTD5",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.206900"
+    },
+    {
+      "id": "30308",
+      "codigoCetip": "VBBR26",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.264500"
+    },
+    {
+      "id": "30269",
+      "codigoCetip": "RENTE5",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.278000"
+    },
+    {
+      "id": "30299",
+      "codigoCetip": "RENTD0",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.349400"
+    },
+    {
+      "id": "30304",
+      "codigoCetip": "TFLEA3",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.355300"
+    },
+    {
+      "id": "30235",
+      "codigoCetip": "TFLEC0",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.362200"
+    },
+    {
+      "id": "30218",
+      "codigoCetip": "TFLEB5",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.370900"
+    },
+    {
+      "id": "30292",
+      "codigoCetip": "RENTC8",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.387100"
+    },
+    {
+      "id": "30278",
+      "codigoCetip": "TFLEA9",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.412800"
+    },
+    {
+      "id": "30312",
+      "codigoCetip": "RENTE4",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.432700"
+    },
+    {
+      "id": "30305",
+      "codigoCetip": "TFLEA6",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.436700"
+    },
+    {
+      "id": "30190",
+      "codigoCetip": "TFLED0",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.485200"
+    },
+    {
+      "id": "30247",
+      "codigoCetip": "RENTA5",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.539000"
+    },
+    {
+      "id": "30211",
+      "codigoCetip": "SAPRC1",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.555700"
+    },
+    {
+      "id": "30277",
+      "codigoCetip": "RENTE3",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.571200"
+    },
+    {
+      "id": "30296",
+      "codigoCetip": "LORTB2",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "zspread": "1.598900"
+    },
+    {
+      "id": "30260",
+      "codigoCetip": "RIPR22",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.200000"
+    },
+    {
+      "id": "30254",
+      "codigoCetip": "XNGU17",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.325200"
+    },
+    {
+      "id": "30302",
+      "codigoCetip": "JTEE11",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.459100"
+    },
+    {
+      "id": "30313",
+      "codigoCetip": "TAEEB0",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.482100"
+    },
+    {
+      "id": "30198",
+      "codigoCetip": "TSSG21",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.540800"
+    },
+    {
+      "id": "30293",
+      "codigoCetip": "VALEB1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.583700"
+    },
+    {
+      "id": "30253",
+      "codigoCetip": "GASP19",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.611300"
+    },
+    {
+      "id": "30314",
+      "codigoCetip": "VALEB0",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.648300"
+    },
+    {
+      "id": "30262",
+      "codigoCetip": "VALEC1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.650300"
+    },
+    {
+      "id": "30224",
+      "codigoCetip": "JTEE12",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.659700"
+    },
+    {
+      "id": "30217",
+      "codigoCetip": "CBAN52",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.663800"
+    },
+    {
+      "id": "30263",
+      "codigoCetip": "VALED1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.680700"
+    },
+    {
+      "id": "30219",
+      "codigoCetip": "VALEA0",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.684400"
+    },
+    {
+      "id": "30273",
+      "codigoCetip": "CBAN72",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.688200"
+    },
+    {
+      "id": "30164",
+      "codigoCetip": "CBAN32",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.698500"
+    },
+    {
+      "id": "30181",
+      "codigoCetip": "CBAN12",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.703200"
+    },
+    {
+      "id": "30205",
+      "codigoCetip": "SAPR10",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.706400"
+    },
+    {
+      "id": "30196",
+      "codigoCetip": "RIGEA3",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.711700"
+    },
+    {
+      "id": "30175",
+      "codigoCetip": "FBRI13",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.740900"
+    },
+    {
+      "id": "30285",
+      "codigoCetip": "VALE48",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.761800"
+    },
+    {
+      "id": "30231",
+      "codigoCetip": "EEELA0",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.790400"
+    },
+    {
+      "id": "30199",
+      "codigoCetip": "VALEC0",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.791100"
+    },
+    {
+      "id": "30274",
+      "codigoCetip": "CPFPA5",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.795400"
+    },
+    {
+      "id": "30200",
+      "codigoCetip": "AESLA5",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.796100"
+    },
+    {
+      "id": "30212",
+      "codigoCetip": "TAEED2",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.827800"
+    },
+    {
+      "id": "30252",
+      "codigoCetip": "EEELA1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.868700"
+    },
+    {
+      "id": "30264",
+      "codigoCetip": "AESLA7",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.872000"
+    },
+    {
+      "id": "30195",
+      "codigoCetip": "CPFPA7",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.921100"
+    },
+    {
+      "id": "30214",
+      "codigoCetip": "AESLA9",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.935600"
+    },
+    {
+      "id": "30249",
+      "codigoCetip": "ANHBB6",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.949000"
+    },
+    {
+      "id": "30187",
+      "codigoCetip": "GASP29",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.965900"
+    },
+    {
+      "id": "30197",
+      "codigoCetip": "TNHL11",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.983500"
+    },
+    {
+      "id": "30276",
+      "codigoCetip": "PALFA7",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.999800"
+    },
+    {
+      "id": "30221",
+      "codigoCetip": "CPFPB0",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "0.999900"
+    },
+    {
+      "id": "30179",
+      "codigoCetip": "BCPSA7",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.005400"
+    },
+    {
+      "id": "30236",
+      "codigoCetip": "AESLB0",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.027500"
+    },
+    {
+      "id": "30186",
+      "codigoCetip": "CPFPB7",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.049500"
+    },
+    {
+      "id": "30174",
+      "codigoCetip": "EEELB1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.055400"
+    },
+    {
+      "id": "30280",
+      "codigoCetip": "CMGDB1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.065600"
+    },
+    {
+      "id": "30239",
+      "codigoCetip": "CPFPB1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.069000"
+    },
+    {
+      "id": "30287",
+      "codigoCetip": "CMGDA4",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.098600"
+    },
+    {
+      "id": "30183",
+      "codigoCetip": "CGASA1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.104100"
+    },
+    {
+      "id": "30215",
+      "codigoCetip": "AESLB7",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.110300"
+    },
+    {
+      "id": "30271",
+      "codigoCetip": "AURP12",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.136800"
+    },
+    {
+      "id": "30265",
+      "codigoCetip": "CGASB1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.167500"
+    },
+    {
+      "id": "30168",
+      "codigoCetip": "CMGDB4",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.212000"
+    },
+    {
+      "id": "30161",
+      "codigoCetip": "CMGTB1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.218600"
+    },
+    {
+      "id": "30242",
+      "codigoCetip": "AEAB11",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.235200"
+    },
+    {
+      "id": "30238",
+      "codigoCetip": "CMGTA1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.261100"
+    },
+    {
+      "id": "30268",
+      "codigoCetip": "RENTD1",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "1.516900"
+    },
+    {
+      "id": "30290",
+      "codigoCetip": "HVSP11",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "zspread": "2.170000"
+    },
+    {
+      "id": "30203",
+      "codigoCetip": "MEAL14",
+      "rating": "BBB+.br",
+      "indexador": "DI SPREAD",
+      "zspread": "4.193700"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcodigoCetip\trating\tindexador\tzspread\n30167\tVBRR11\tA-.br\tIPCA SPREAD\t3.978700\n30184\tOPCT15\tA.br\tDI SPREAD\t1.398800\n30226\tOPCT17\tA.br\tDI SPREAD\t1.522100\n30163\tOPCT16\tA.br\tDI SPREAD\t1.543100\n30193\tAEGP17\tA.br\tDI SPREAD\t1.982200\n30202\tLVTC12\tA.br\tDI SPREAD\t2.057500\n30275\tLVTC22\tA.br\tDI SPREAD\t4.151000\n30309\tBRKPA0\tA+.br\tDI SPREAD\t1.871800\n30180\tBRKPA3\tA+.br\tDI SPREAD\t2.249800\n30220\tCASN14\tA+.br\tDI SPREAD\t2.588200\n30230\tBRKP28\tA+.br\tIPCA SPREAD\t1.422300\n30272\tCASN24\tA+.br\tIPCA SPREAD\t2.563700\n30216\tCASN34\tA+.br\tIPCA SPREAD\t2.578800\n30255\tASER12\tA+.br\tIPCA SPREAD\t5.250800\n30303\tMTRO12\tAA-.br\tDI SPREAD\t0.505200\n30223\tITPO15\tAA-.br\tIPCA SPREAD\t1.159400\n30251\tCRTA12\tAA-.br\tIPCA SPREAD\t1.895200\n30234\tRMSA12\tAA-.br\tIPCA SPREAD\t2.646300\n30232\tPAXA12\tAA-.br\tIPCA SPREAD\t3.013200\n30229\tRECV12\tAA.br\tDI SPREAD\t0.796700\n30233\tRECV13\tAA.br\tDI SPREAD\t1.117300\n30170\tINEL12\tAA.br\tDI SPREAD\t1.210200\n30185\tVLIDA1\tAA.br\tDI SPREAD\t1.252800\n30250\tANIM15\tAA.br\tDI SPREAD\t1.634100\n30201\tCDAR11\tAA.br\tDI SPREAD\t1.710600\n30227\tOVSAB0\tAA.br\tDI SPREAD\t2.148800\n30291\tOVSAA8\tAA.br\tDI SPREAD\t2.387000\n30297\tOVSAA9\tAA.br\tDI SPREAD\t2.653800\n30298\tRECV11\tAA.br\tIPCA SPREAD\t0.988900\n30165\tITPO14\tAA.br\tIPCA SPREAD\t1.043000\n30160\tCLTM14\tAA.br\tIPCA SPREAD\t1.567500\n30310\tITPE13\tAA.br\tIPCA SPREAD\t2.556100\n30177\tQUNT11\tAA+.br\tDI SPREAD\t0.815100\n30248\tVLIDA0\tAA+.br\tDI SPREAD\t1.214900\n30286\tCAMLA1\tAA+.br\tDI SPREAD\t1.294800\n30159\tCAMLB1\tAA+.br\tDI SPREAD\t1.309200\n30245\tLMTP26\tAA+.br\tDI SPREAD\t1.623600\n30283\tLMTP18\tAA+.br\tDI SPREAD\t1.629000\n30162\tLMTP17\tAA+.br\tDI SPREAD\t1.944700\n30225\tMVLVA3\tAA+.br\tDI SPREAD\t2.321000\n30261\tRODB11\tAA+.br\tDI SPREAD\t2.463800\n30246\tMVLV19\tAA+.br\tDI SPREAD\t2.542600\n30176\tJSLGA5\tAA+.br\tDI SPREAD\t3.220200\n30267\tRDOE18\tAA+.br\tIPCA SPREAD\t0.590400\n30288\tMSGT23\tAA+.br\tIPCA SPREAD\t0.795700\n30259\tMSGT33\tAA+.br\tIPCA SPREAD\t0.857100\n30208\tMSGT13\tAA+.br\tIPCA SPREAD\t1.021000\n30182\tCEAD11\tAA+.br\tIPCA SPREAD\t1.931400\n30204\tNNAE12\tAA+.br\tIPCA SPREAD\t2.209600\n30171\tMOVI18\tAA+.br\tIPCA SPREAD\t4.555500\n30206\tSNGO10\tAAA.br\tDI SPREAD\t0.443400\n30241\tTSSG14\tAAA.br\tDI SPREAD\t0.460600\n30172\tSNGOA1\tAAA.br\tDI SPREAD\t0.495100\n30295\tHBSA14\tAAA.br\tDI SPREAD\t0.518800\n30228\tRADLA0\tAAA.br\tDI SPREAD\t0.556200\n30158\tBSA319\tAAA.br\tDI SPREAD\t0.582400\n30289\tFLRYA0\tAAA.br\tDI SPREAD\t0.585300\n30256\tFLRY36\tAAA.br\tDI SPREAD\t0.603300\n30207\tSNGOA2\tAAA.br\tDI SPREAD\t0.606400\n30222\tFLRY19\tAAA.br\tDI SPREAD\t0.634000\n30284\tSNGOA3\tAAA.br\tDI SPREAD\t0.638400\n30194\tANHBA5\tAAA.br\tDI SPREAD\t0.663200\n30294\tANHBA6\tAAA.br\tDI SPREAD\t0.681500\n30266\tRADLA1\tAAA.br\tDI SPREAD\t0.684700\n30166\tFLRY29\tAAA.br\tDI SPREAD\t0.691100\n30311\tITSA17\tAAA.br\tDI SPREAD\t0.703900\n30169\tFLRY25\tAAA.br\tDI SPREAD\t0.718900\n30244\tFLRYB0\tAAA.br\tDI SPREAD\t0.730300\n30243\tBSA312\tAAA.br\tDI SPREAD\t0.764200\n30240\tRADL19\tAAA.br\tDI SPREAD\t0.775500\n30178\tRADL15\tAAA.br\tDI SPREAD\t0.785000\n30209\tQYAN11\tAAA.br\tDI SPREAD\t0.797200\n30191\tTLPP27\tAAA.br\tDI SPREAD\t0.803600\n30173\tCMGDA1\tAAA.br\tDI SPREAD\t0.804700\n30281\tHYPEA7\tAAA.br\tDI SPREAD\t0.815900\n30257\tHYPEA6\tAAA.br\tDI SPREAD\t0.850500\n30301\tHYPEA8\tAAA.br\tDI SPREAD\t0.870800\n30188\tHYPEB1\tAAA.br\tDI SPREAD\t0.893800\n30210\tSAPRB4\tAAA.br\tDI SPREAD\t0.904400\n30282\tHYPEA9\tAAA.br\tDI SPREAD\t0.909900\n30237\tCBAN22\tAAA.br\tDI SPREAD\t0.917200\n30189\tRIPR13\tAAA.br\tDI SPREAD\t0.926800\n30258\tHYPEC0\tAAA.br\tDI SPREAD\t0.988100\n30192\tVBBR14\tAAA.br\tDI SPREAD\t1.038400\n30279\tVBBR18\tAAA.br\tDI SPREAD\t1.056800\n30213\tVBBR15\tAAA.br\tDI SPREAD\t1.125200\n30306\tVBBR16\tAAA.br\tDI SPREAD\t1.137700\n30270\tVBBR17\tAAA.br\tDI SPREAD\t1.145300\n30307\tVBBR24\tAAA.br\tDI SPREAD\t1.197600\n30300\tRENTD5\tAAA.br\tDI SPREAD\t1.206900\n30308\tVBBR26\tAAA.br\tDI SPREAD\t1.264500\n30269\tRENTE5\tAAA.br\tDI SPREAD\t1.278000\n30299\tRENTD0\tAAA.br\tDI SPREAD\t1.349400\n30304\tTFLEA3\tAAA.br\tDI SPREAD\t1.355300\n30235\tTFLEC0\tAAA.br\tDI SPREAD\t1.362200\n30218\tTFLEB5\tAAA.br\tDI SPREAD\t1.370900\n30292\tRENTC8\tAAA.br\tDI SPREAD\t1.387100\n30278\tTFLEA9\tAAA.br\tDI SPREAD\t1.412800\n30312\tRENTE4\tAAA.br\tDI SPREAD\t1.432700\n30305\tTFLEA6\tAAA.br\tDI SPREAD\t1.436700\n30190\tTFLED0\tAAA.br\tDI SPREAD\t1.485200\n30247\tRENTA5\tAAA.br\tDI SPREAD\t1.539000\n30211\tSAPRC1\tAAA.br\tDI SPREAD\t1.555700\n30277\tRENTE3\tAAA.br\tDI SPREAD\t1.571200\n30296\tLORTB2\tAAA.br\tDI SPREAD\t1.598900\n30260\tRIPR22\tAAA.br\tIPCA SPREAD\t0.200000\n30254\tXNGU17\tAAA.br\tIPCA SPREAD\t0.325200\n30302\tJTEE11\tAAA.br\tIPCA SPREAD\t0.459100\n30313\tTAEEB0\tAAA.br\tIPCA SPREAD\t0.482100\n30198\tTSSG21\tAAA.br\tIPCA SPREAD\t0.540800\n30293\tVALEB1\tAAA.br\tIPCA SPREAD\t0.583700\n30253\tGASP19\tAAA.br\tIPCA SPREAD\t0.611300\n30314\tVALEB0\tAAA.br\tIPCA SPREAD\t0.648300\n30262\tVALEC1\tAAA.br\tIPCA SPREAD\t0.650300\n30224\tJTEE12\tAAA.br\tIPCA SPREAD\t0.659700\n30217\tCBAN52\tAAA.br\tIPCA SPREAD\t0.663800\n30263\tVALED1\tAAA.br\tIPCA SPREAD\t0.680700\n30219\tVALEA0\tAAA.br\tIPCA SPREAD\t0.684400\n30273\tCBAN72\tAAA.br\tIPCA SPREAD\t0.688200\n30164\tCBAN32\tAAA.br\tIPCA SPREAD\t0.698500\n30181\tCBAN12\tAAA.br\tIPCA SPREAD\t0.703200\n30205\tSAPR10\tAAA.br\tIPCA SPREAD\t0.706400\n30196\tRIGEA3\tAAA.br\tIPCA SPREAD\t0.711700\n30175\tFBRI13\tAAA.br\tIPCA SPREAD\t0.740900\n30285\tVALE48\tAAA.br\tIPCA SPREAD\t0.761800\n30231\tEEELA0\tAAA.br\tIPCA SPREAD\t0.790400\n30199\tVALEC0\tAAA.br\tIPCA SPREAD\t0.791100\n30274\tCPFPA5\tAAA.br\tIPCA SPREAD\t0.795400\n30200\tAESLA5\tAAA.br\tIPCA SPREAD\t0.796100\n30212\tTAEED2\tAAA.br\tIPCA SPREAD\t0.827800\n30252\tEEELA1\tAAA.br\tIPCA SPREAD\t0.868700\n30264\tAESLA7\tAAA.br\tIPCA SPREAD\t0.872000\n30195\tCPFPA7\tAAA.br\tIPCA SPREAD\t0.921100\n30214\tAESLA9\tAAA.br\tIPCA SPREAD\t0.935600\n30249\tANHBB6\tAAA.br\tIPCA SPREAD\t0.949000\n30187\tGASP29\tAAA.br\tIPCA SPREAD\t0.965900\n30197\tTNHL11\tAAA.br\tIPCA SPREAD\t0.983500\n30276\tPALFA7\tAAA.br\tIPCA SPREAD\t0.999800\n30221\tCPFPB0\tAAA.br\tIPCA SPREAD\t0.999900\n30179\tBCPSA7\tAAA.br\tIPCA SPREAD\t1.005400\n30236\tAESLB0\tAAA.br\tIPCA SPREAD\t1.027500\n30186\tCPFPB7\tAAA.br\tIPCA SPREAD\t1.049500\n30174\tEEELB1\tAAA.br\tIPCA SPREAD\t1.055400\n30280\tCMGDB1\tAAA.br\tIPCA SPREAD\t1.065600\n30239\tCPFPB1\tAAA.br\tIPCA SPREAD\t1.069000\n30287\tCMGDA4\tAAA.br\tIPCA SPREAD\t1.098600\n30183\tCGASA1\tAAA.br\tIPCA SPREAD\t1.104100\n30215\tAESLB7\tAAA.br\tIPCA SPREAD\t1.110300\n30271\tAURP12\tAAA.br\tIPCA SPREAD\t1.136800\n30265\tCGASB1\tAAA.br\tIPCA SPREAD\t1.167500\n30168\tCMGDB4\tAAA.br\tIPCA SPREAD\t1.212000\n30161\tCMGTB1\tAAA.br\tIPCA SPREAD\t1.218600\n30242\tAEAB11\tAAA.br\tIPCA SPREAD\t1.235200\n30238\tCMGTA1\tAAA.br\tIPCA SPREAD\t1.261100\n30268\tRENTD1\tAAA.br\tIPCA SPREAD\t1.516900\n30290\tHVSP11\tAAA.br\tIPCA SPREAD\t2.170000\n30203\tMEAL14\tBBB+.br\tDI SPREAD\t4.193700\n",
+  "stderr": "",
+  "execution_time_ms": 75
+}
