@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -554,7 +554,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
 
 export default function SpreadDashboard() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
-  const [activeView, setActiveView] = useState<"scatter" | "bar" | "table" | "dados">("scatter");
+  const [activeView, setActiveView] = useState<"analise" | "table" | "dados">("analise");
   const [tableSearch, setTableSearch] = useState("");
   const [showOutliers, setShowOutliers] = useState(false);
   // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B), DI SPREAD (spread sobre CDI em bps) ou DI PERCENTUAL (% do CDI)
@@ -1052,8 +1052,8 @@ export default function SpreadDashboard() {
                   </button>
                 ))}
               </div>
-              {/* Toggle Média/Mediana — apenas na aba Por Rating */}
-              {activeView === "bar" && (
+              {/* Toggle Média/Mediana — visível na aba Análise */}
+              {activeView === "analise" && (
                 <div className="flex items-center gap-1 bg-secondary rounded-md p-0.5">
                   {(["media", "mediana"] as const).map((m) => (
                     <button
@@ -1090,8 +1090,7 @@ export default function SpreadDashboard() {
               <div className="flex items-center gap-1 bg-secondary rounded-md p-0.5">
                 {(
                   [
-                    { key: "scatter", icon: TrendingUp, label: "Dispersão" },
-                    { key: "bar", icon: BarChart3, label: "Por Rating" },
+                    { key: "analise", icon: TrendingUp, label: "Análise" },
                     { key: "table", icon: Table2, label: "Tabela" },
                     { key: "dados", icon: Database, label: "Dados" },
                   ] as const
@@ -1128,10 +1127,15 @@ export default function SpreadDashboard() {
                 moodysFile={moodysFile}
                 anbimaFile={anbimaFile}
               />
-            ) : activeView === "scatter" ? (
-              <ScatterView data={scatterData} ratingGroups={ratingGroups} yAxisLabel={yAxisLabel} />
-            ) : activeView === "bar" ? (
-              <BarView data={byRatingData} yAxisLabel={yAxisLabel} metrica={metrica} />
+            ) : activeView === "analise" ? (
+              <AnaliseView
+                scatterData={scatterData}
+                ratingGroups={ratingGroups}
+                byRatingData={byRatingData}
+                yAxisLabel={yAxisLabel}
+                metrica={metrica}
+                analysisData={analysisData}
+              />
             ) : activeView === "dados" ? (
               <DadosView
                 windowSummary={windowSummary.data || null}
@@ -1245,6 +1249,437 @@ function EmptyState({
           <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
           {isSyncing ? "Sincronizando..." : "Iniciar sincronização"}
         </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Análise View (Dispersão + Por Rating + Calculadora) ────────────────────────
+
+const SHRINKAGE_K = 5;
+
+function calcPricing(
+  targetRating: string,
+  targetDuration: number,
+  data: { rating: string | null | undefined; durationAnos: number | null; zspread: number | null }[]
+): {
+  pointEst: number;
+  lo: number;
+  hi: number;
+  n: number;
+  comparaveis: { emissorNome: string | null | undefined; codigoCetip: string; durationAnos: number | null; zspread: number | null }[];
+  approach: string;
+  inversao: boolean;
+  nextRatingKey: string | null;
+} | null {
+  const ratingOrder = {
+    "AAA.br": 1, "AA+.br": 2, "AA.br": 3, "AA-.br": 4, "A+.br": 5, "A.br": 6, "A-.br": 7,
+    "BBB+.br": 8, "BBB.br": 9, "BBB-.br": 10, "BB+.br": 11, "BB.br": 12, "BB-.br": 13,
+    "B+.br": 14, "B.br": 15, "B-.br": 16, "CCC.br": 17, "CC.br": 18, "C.br": 19, "D.br": 20,
+  } as Record<string, number>;
+  const ratingIdx = ratingOrder[targetRating];
+  if (ratingIdx === undefined) return null;
+
+  const validData = data.filter(
+    (d) => d.rating && d.durationAnos != null && d.zspread != null
+  ) as { rating: string; durationAnos: number; zspread: number; emissorNome?: string | null; codigoCetip: string }[];
+
+  if (validData.length === 0) return null;
+
+  // Comparáveis diretos: mesmo rating, duration ±2 anos
+  const directRating = validData.filter(
+    (d) => d.rating === targetRating && Math.abs(d.durationAnos - targetDuration) <= 2
+  );
+
+  // Comparáveis adjacentes: rating ±1 nível, duration ±2 anos
+  const adjacentRating = validData.filter(
+    (d) =>
+      d.rating !== targetRating &&
+      Math.abs((ratingOrder[d.rating] ?? 99) - ratingIdx) <= 1 &&
+      Math.abs(d.durationAnos - targetDuration) <= 2
+  );
+
+  // Linha estrutural global: regressão OLS spread ~ duration
+  const allSpreads = validData.map((d) => d.zspread * 100);
+  const allDurs = validData.map((d) => d.durationAnos);
+  const globalMean = allSpreads.reduce((a, b) => a + b, 0) / allSpreads.length;
+  const meanDur = allDurs.reduce((a, b) => a + b, 0) / allDurs.length;
+  const num = validData.reduce((a, d) => a + (d.durationAnos - meanDur) * (d.zspread * 100 - globalMean), 0);
+  const den = validData.reduce((a, d) => a + (d.durationAnos - meanDur) ** 2, 0);
+  const globalSlope = den ? num / den : 0;
+  const globalEst = globalMean - globalSlope * meanDur + globalSlope * targetDuration;
+
+  // Bucket efetivo: diretos + adjacentes com peso 0.7
+  const adjVals = adjacentRating.map((d) => d.zspread * 100 * 0.7);
+  const directVals = directRating.map((d) => d.zspread * 100);
+  const effectiveVals =
+    directVals.length >= 3 ? directVals : [...directVals, ...adjVals];
+
+  const n = directVals.length;
+  const w = n / (n + SHRINKAGE_K);
+  const bucketMean = effectiveVals.length
+    ? effectiveVals.reduce((a, b) => a + b, 0) / effectiveVals.length
+    : globalEst;
+  const pointEst = w * bucketMean + (1 - w) * globalEst;
+
+  // Intervalo de confiança t-student
+  const tCrit = n >= 10 ? 1.96 : n >= 5 ? 2.13 : n >= 3 ? 2.92 : 3.18;
+  const std =
+    effectiveVals.length > 1
+      ? Math.sqrt(
+          effectiveVals.reduce((a, b) => a + (b - bucketMean) ** 2, 0) /
+            (effectiveVals.length - 1)
+        )
+      : 40;
+  const se = std / Math.sqrt(Math.max(1, effectiveVals.length));
+  const lo = Math.max(0, pointEst - tCrit * se);
+  const hi = pointEst + tCrit * se;
+
+  // Detectar inversão
+  const ratingKeys = Object.keys(ratingOrder).sort(
+    (a, b) => ratingOrder[a] - ratingOrder[b]
+  );
+  const nextKey = ratingKeys.find((r) => ratingOrder[r] === ratingIdx + 1) || null;
+  const nextMedian = nextKey
+    ? (() => {
+        const vals = validData
+          .filter((d) => d.rating === nextKey)
+          .map((d) => d.zspread * 100)
+          .sort((a, b) => a - b);
+        if (!vals.length) return null;
+        const m = Math.floor(vals.length / 2);
+        return vals.length % 2 ? vals[m] : (vals[m - 1] + vals[m]) / 2;
+      })()
+    : null;
+  const inversao = nextMedian !== null && pointEst < nextMedian * 0.95;
+
+  const approach =
+    n >= 3
+      ? "bucket direto"
+      : n >= 1
+      ? "bucket + adjacentes (shrinkage)"
+      : "linha global (sem comparáveis diretos)";
+
+  return {
+    pointEst,
+    lo,
+    hi,
+    n,
+    comparaveis: directRating.map((d) => ({
+      emissorNome: (d as unknown as { emissorNome?: string | null }).emissorNome,
+      codigoCetip: d.codigoCetip,
+      durationAnos: d.durationAnos,
+      zspread: d.zspread,
+    })),
+    approach,
+    inversao,
+    nextRatingKey: nextKey,
+  };
+}
+
+function AnaliseView({
+  scatterData,
+  ratingGroups,
+  byRatingData,
+  yAxisLabel,
+  metrica,
+  analysisData,
+}: {
+  scatterData: ScatterPoint[];
+  ratingGroups: string[];
+  byRatingData: {
+    rating: string;
+    avgZspread: number;
+    medianZspread: number;
+    count: number;
+    minZspread: number;
+    maxZspread: number;
+  }[];
+  yAxisLabel: string;
+  metrica: "media" | "mediana";
+  analysisData: AnalysisRow[];
+}) {
+  const [pricingRating, setPricingRating] = useState("AA-.br");
+  const [pricingDur, setPricingDur] = useState(4);
+  const [pricingResult, setPricingResult] = useState<ReturnType<typeof calcPricing>>(null);
+
+  const ratingsDisponiveis = useMemo(() => {
+    const set = new Set(analysisData.map((d) => d.rating).filter(Boolean) as string[]);
+    return sortRatings(Array.from(set));
+  }, [analysisData]);
+
+  const handleCalc = () => {
+    const result = calcPricing(pricingRating, pricingDur, analysisData as unknown as { rating: string | null | undefined; durationAnos: number | null; zspread: number | null }[]);
+    setPricingResult(result);
+  };
+
+  // Recalcular automaticamente quando os dados mudam
+  useEffect(() => {
+    if (analysisData.length > 0) {
+      const result = calcPricing(pricingRating, pricingDur, analysisData as unknown as { rating: string | null | undefined; durationAnos: number | null; zspread: number | null }[]);
+      setPricingResult(result);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pricingRating, pricingDur, analysisData]);
+
+  return (
+    <div className="h-full overflow-hidden grid grid-cols-[1fr_380px] gap-4">
+      {/* ── Coluna esquerda: Scatter ── */}
+      <div className="flex flex-col gap-2 min-h-0">
+        <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
+          {ratingGroups.map((r) => (
+            <span key={r} className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: getRatingColor(r) }}
+              />
+              {r}
+            </span>
+          ))}
+        </div>
+        <div className="flex-1 min-h-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.25 0.01 240)" />
+              <XAxis
+                dataKey="x"
+                name="Duration"
+                type="number"
+                label={{
+                  value: "Duration (anos)",
+                  position: "insideBottom",
+                  offset: -10,
+                  fill: "oklch(0.55 0.02 240)",
+                  fontSize: 11,
+                }}
+                tick={{ fill: "oklch(0.55 0.02 240)", fontSize: 11 }}
+                tickFormatter={(v) => `${v}a`}
+              />
+              <YAxis
+                dataKey="y"
+                name="Z-spread"
+                label={{
+                  value: yAxisLabel,
+                  angle: -90,
+                  position: "insideLeft",
+                  offset: 10,
+                  fill: "oklch(0.55 0.02 240)",
+                  fontSize: 11,
+                }}
+                tick={{ fill: "oklch(0.55 0.02 240)", fontSize: 11 }}
+              />
+              <ReferenceLine y={0} stroke="oklch(0.35 0.01 240)" strokeDasharray="4 4" />
+              <Tooltip
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                content={({ active, payload }: any) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0]?.payload as ScatterPoint;
+                  if (!d) return null;
+                  return (
+                    <div className="bg-popover border border-border rounded-lg p-3 text-xs shadow-xl">
+                      <p className="font-semibold text-foreground mb-1">{d.emissor || d.cetip}</p>
+                      <p className="text-muted-foreground">Código: {d.cetip}</p>
+                      <p>
+                        Rating:{" "}
+                        <span className="font-medium" style={{ color: d.color }}>
+                          {d.rating || "—"}
+                        </span>
+                      </p>
+                      <p>Duration: {d.x.toFixed(2)} anos</p>
+                      <p>
+                        Z-spread:{" "}
+                        <span className={d.y >= 0 ? "text-emerald-400" : "text-red-400"}>
+                          {d.y > 0 ? "+" : ""}{d.y} bps
+                        </span>
+                      </p>
+                    </div>
+                  );
+                }}
+              />
+              <Scatter
+                data={scatterData}
+                fill="#60a5fa"
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                shape={(props: any) => {
+                  const { cx = 0, cy = 0, payload } = props;
+                  return (
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={4}
+                      fill={payload?.color || "#60a5fa"}
+                      fillOpacity={0.8}
+                      stroke={payload?.color || "#60a5fa"}
+                      strokeWidth={0.5}
+                    />
+                  );
+                }}
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ── Coluna direita: Barras + Calculadora ── */}
+      <div className="flex flex-col gap-3 min-h-0 overflow-y-auto pr-0.5">
+        {/* Gráfico de barras por rating */}
+        <div className="flex-shrink-0">
+          <BarView data={byRatingData} yAxisLabel={yAxisLabel} metrica={metrica} />
+        </div>
+
+        {/* Calculadora de pricing */}
+        <div className="flex-shrink-0 bg-card border border-border rounded-lg p-4">
+          <div className="mb-3">
+            <p className="text-xs font-semibold text-foreground">Spread Esperado</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Estimativa com IC 95% · shrinkage hierárquico
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {/* Rating */}
+            <div>
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wide block mb-1">Rating</label>
+              <select
+                value={pricingRating}
+                onChange={(e) => setPricingRating(e.target.value)}
+                className="w-full h-8 px-2 text-xs bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                {ratingsDisponiveis.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Duration */}
+            <div>
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wide block mb-1">
+                Duration — {pricingDur.toFixed(1)} anos
+              </label>
+              <input
+                type="range"
+                min={0.5}
+                max={15}
+                step={0.5}
+                value={pricingDur}
+                onChange={(e) => setPricingDur(Number(e.target.value))}
+                className="w-full accent-primary"
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
+                <span>0.5a</span>
+                <span>15a</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleCalc}
+              className="w-full h-8 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Calcular
+            </button>
+          </div>
+
+          {/* Resultado */}
+          {pricingResult && (
+            <div className="mt-4 space-y-3">
+              {pricingResult.inversao && (
+                <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-400">
+                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Inversão: spread estimado ({Math.round(pricingResult.pointEst)} bps) inferior ao rating{" "}
+                    {pricingResult.nextRatingKey} abaixo.
+                  </span>
+                </div>
+              )}
+
+              {/* Ponto central + IC */}
+              <div className="flex items-end gap-4">
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-0.5">Ponto médio</p>
+                  <p className="text-2xl font-bold font-mono text-primary">
+                    {Math.round(pricingResult.pointEst)}
+                    <span className="text-sm font-normal text-muted-foreground ml-1">bps</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-0.5">IC 95%</p>
+                  <p className="text-sm font-mono text-foreground">
+                    [{Math.round(pricingResult.lo)} — {Math.round(pricingResult.hi)}]
+                  </p>
+                </div>
+                <div className="ml-auto">
+                  <p className="text-[10px] text-muted-foreground mb-0.5">Comparáveis</p>
+                  <p className="text-sm font-bold text-foreground text-center">{pricingResult.n}</p>
+                </div>
+              </div>
+
+              {/* Barra visual do IC */}
+              {(() => {
+                const range = Math.max(500, pricingResult.hi * 1.1);
+                const pct = (v: number) => Math.min(100, Math.max(0, (v / range) * 100));
+                return (
+                  <div className="relative h-6 bg-muted rounded overflow-hidden">
+                    <div
+                      className="absolute h-full bg-primary/20"
+                      style={{
+                        left: `${pct(pricingResult.lo)}%`,
+                        width: `${pct(pricingResult.hi) - pct(pricingResult.lo)}%`,
+                      }}
+                    />
+                    <div
+                      className="absolute top-1 bottom-1 w-0.5 bg-primary rounded"
+                      style={{ left: `${pct(pricingResult.pointEst)}%`, transform: "translateX(-50%)" }}
+                    />
+                    <span
+                      className="absolute text-[9px] text-primary font-bold"
+                      style={{ left: `${pct(pricingResult.lo)}%`, top: "50%", transform: "translateY(-50%) translateX(-50%)" }}
+                    >
+                      {Math.round(pricingResult.lo)}
+                    </span>
+                    <span
+                      className="absolute text-[9px] text-primary font-bold"
+                      style={{ left: `${pct(pricingResult.hi)}%`, top: "50%", transform: "translateY(-50%) translateX(-50%)" }}
+                    >
+                      {Math.round(pricingResult.hi)}
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Comparáveis diretos */}
+              {pricingResult.comparaveis.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1">Papéis comparáveis</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {pricingResult.comparaveis.slice(0, 6).map((c, i) => (
+                      <div
+                        key={i}
+                        className="px-2 py-1 rounded bg-muted border border-border text-[10px] text-foreground"
+                      >
+                        <span className="font-medium">{c.emissorNome || c.codigoCetip}</span>
+                        {" · "}
+                        {c.durationAnos?.toFixed(1)}a
+                        {" · "}
+                        <span className="text-primary font-semibold">
+                          {c.zspread != null ? Math.round(c.zspread * 100) : "—"} bps
+                        </span>
+                      </div>
+                    ))}
+                    {pricingResult.comparaveis.length > 6 && (
+                      <span className="text-[10px] text-muted-foreground self-center">
+                        +{pricingResult.comparaveis.length - 6} mais
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[9px] text-muted-foreground/60 leading-relaxed">
+                Abordagem: <em>{pricingResult.approach}</em>. Peso do bucket = n/(n+5). IC usa distribuição t com (n−1) g.l.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1481,7 +1916,7 @@ function BarView({
       )}
 
       {/* Gráfico */}
-      <div className="flex-1" style={{ minHeight: "200px" }}>
+      <div className="flex-1" style={{ minHeight: "160px", maxHeight: "220px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={trendData}

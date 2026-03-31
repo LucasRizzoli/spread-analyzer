@@ -303,3 +303,10 @@
 - [x] Aba Dados: card de janela ativa, upload drag-and-drop, progresso em tempo real
 - [x] Aba Dados: gráfico de linha histórico por rating com seletor de indexador e métrica
 - [x] 41 testes passando
+
+## v4.1 — Unificação de abas: Dispersão + Por Rating + Spread Esperado
+- [x] Remover abas separadas "Dispersão" e "Por Rating" do seletor de views
+- [x] Criar nova aba unificada "Análise" com layout de grid: scatter à esquerda, barras + calculadora à direita
+- [x] Implementar SpreadCalculator inline (spread esperado por rating e duration)
+- [x] Ajustar toggle Média/Mediana para ficar dentro da nova view unificada (não no header)
+- [x] Manter abas "Tabela" e "Dados" separadas como estão
