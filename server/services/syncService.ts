@@ -2,14 +2,14 @@
  * Serviço de sincronização — processa as planilhas da Moody's e ANBIMA Data
  * e persiste os dados cruzados no banco de dados.
  *
- * Fluxo:
+ * Fluxo (v3.11 — invertido: parte da Moody's):
  * 1. Parsear planilha Moody's → ratings por emissão específica
  * 2. Parsear planilha ANBIMA Data → ativos com Z-spread (data mais recente)
- * 3. Pré-filtro Dice em memória: identificar apenas os CETIPs cujo emissor tem
- *    similaridade ≥ 0.85 com algum emissor na Moody's (elimina ~80% dos ativos)
- * 4. Enriquecer via ANBIMA Data (Playwright) APENAS os CETIPs candidatos
- * 5. Cruzar por número de emissão exato (confirmação final do match)
- * 6. Marcar outliers: por rating, quando ≥5 emissões, remover 10% superior e 10% inferior de Z-spread
+ * 3. Para cada emissão Moody's com número de emissão, buscar candidatos ANBIMA
+ *    via Dice ≥ 0.80 (pré-filtro em memória, sem browser)
+ * 4. Enriquecer via ANBIMA Data (Playwright, retry 3x) APENAS os CETIPs candidatos
+ * 5. Confirmar match por número de emissão idêntico + Dice ≥ 0.80
+ * 6. Marcar outliers: por rating+universo, critério adaptativo
  * 7. Persistir resultados com scoreMatch, isOutlier e campos de rastreabilidade
  */
 import { getDb, invalidateLatestDateCache } from "../db";
@@ -116,56 +116,57 @@ function diceCoefficient(a: string, b: string): number {
 }
 
 /**
- * Pré-filtro Dice em memória: para cada ativo ANBIMA, verifica se existe
- * algum emissor na Moody's com similaridade ≥ 0.85 no nome normalizado.
+ * Pré-filtro Dice invertido: parte das emissões Moody's (com número de emissão)
+ * e para cada uma busca candidatos na planilha ANBIMA com Dice ≥ 0.80.
  *
- * Retorna apenas os códigos CETIP que têm ao menos um candidato plausível
+ * Retorna os códigos CETIP únicos que têm ao menos um candidato plausível
  * na Moody's — sem abrir nenhuma aba do browser.
  *
- * Objetivo: reduzir de ~1.200 para ~200 o número de chamadas ao Playwright.
+ * Garante cobertura total: toda emissão Moody's é verificada.
  */
 function preFilterByCandidates(
   assets: AnbimaAsset[],
   ratings: MoodysRatingRow[]
 ): string[] {
-  // Pré-processar emissores Moody's normalizados (apenas emissões específicas)
-  const emissorNormsMoodys = ratings
+  // Pré-processar ativos ANBIMA normalizados com seus CETIPs
+  const assetsNorm = assets.map((a) => ({
+    cetip: a.codigoAtivo,
+    norm: normalizeEmissor(a.emissor),
+  }));
+
+  // Emissões Moody's com número de emissão preenchido
+  const emissoesMoodys = ratings
     .filter((r) => r.isEmissao && r.numeroEmissao !== null)
     .map((r) => normalizeEmissor(r.emissor));
 
-  const candidatos: string[] = [];
+  const candidatosSet = new Set<string>();
 
-  for (const asset of assets) {
-    const emissorNormAsset = normalizeEmissor(asset.emissor);
-
-    // Verificar se existe ao menos um emissor Moody's com score ≥ 0.85
-    const temCandidato = emissorNormsMoodys.some(
-      (emissorNormMoodys) => diceCoefficient(emissorNormAsset, emissorNormMoodys) >= 0.85
-    );
-
-    if (temCandidato) {
-      candidatos.push(asset.codigoAtivo);
+  for (const moodysNorm of emissoesMoodys) {
+    for (const asset of assetsNorm) {
+      if (diceCoefficient(asset.norm, moodysNorm) >= 0.80) {
+        candidatosSet.add(asset.cetip);
+      }
     }
   }
 
-  return candidatos;
+  return Array.from(candidatosSet);
 }
 
 /**
- * Realiza o cruzamento emissão-a-emissão:
- * Para cada ativo ANBIMA que foi enriquecido com número de emissão via ANBIMA Data,
- * busca na Moody's o rating de emissão com mesmo emissor (fuzzy ≥ 0.85) e
- * mesmo número de emissão.
+ * Realiza o cruzamento emissão-a-emissão (v3.11 — invertido: parte da Moody's):
+ * Para cada emissão Moody's com número de emissão, busca na planilha ANBIMA
+ * o ativo com emissor similar (Dice ≥ 0.80) que foi enriquecido com o mesmo
+ * número de emissão via ANBIMA Data.
  *
- * Retorna apenas os ativos com match confirmado — sem fallback para rating de emissor.
- * Inclui scoreMatch e campos de rastreabilidade para o relatório de qualidade.
+ * Garante cobertura total: toda emissão Moody's é verificada.
+ * Retorna apenas os ativos com match confirmado.
  */
 function crossByEmissao(
   assets: AnbimaAsset[],
   ratings: MoodysRatingRow[],
   sndMap: Map<string, SndRecord>
 ): SpreadResult[] {
-  // Pré-processar ratings: apenas emissões específicas (isEmissao = true)
+  // Pré-processar emissões Moody's com número de emissão
   const ratingsEmissao = ratings
     .filter((r) => r.isEmissao && r.numeroEmissao !== null)
     .map((r) => ({
@@ -175,71 +176,70 @@ function crossByEmissao(
     }))
     .filter((r) => !isNaN(r.emissaoNum));
 
-  const results: SpreadResult[] = [];
+  // Pré-processar ativos ANBIMA enriquecidos (com número de emissão do Playwright)
+  const assetsEnriquecidos = assets
+    .map((a) => {
+      const snd = sndMap.get(a.codigoAtivo.toUpperCase());
+      if (!snd) return null;
+      return { asset: a, snd, emissorNorm: normalizeEmissor(a.emissor) };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
 
-  for (const asset of assets) {
-    const sndRecord = sndMap.get(asset.codigoAtivo.toUpperCase());
+  // Mapa CETIP → resultado para evitar duplicatas (um CETIP pode ter match com múltiplos ratings)
+  const resultMap = new Map<string, SpreadResult>();
 
-    // Sem enriquecimento SND → não é possível identificar a emissão
-    if (!sndRecord) continue;
-
-    const emissorNormAsset = normalizeEmissor(asset.emissor);
-    const numeroEmissaoAsset = sndRecord.numeroEmissao;
-
-    // Buscar na Moody's: mesmo número de emissão + emissor similar
-    let bestRating: string | null = null;
-    let bestSetor: string | null = null;
+  // Iterar sobre cada emissão Moody's e procurar o melhor ativo ANBIMA correspondente
+  for (const r of ratingsEmissao) {
+    let bestAsset: typeof assetsEnriquecidos[0] | null = null;
     let bestScore = 0;
-    let bestEmissorMoodys = "";
-    let bestNumeroEmissaoMoodys = "";
-    let bestInstrumentoMoodys = "";
 
-    for (const r of ratingsEmissao) {
+    for (const item of assetsEnriquecidos) {
       // Filtro primário: número de emissão deve ser idêntico
-      if (r.emissaoNum !== numeroEmissaoAsset) continue;
+      if (item.snd.numeroEmissao !== r.emissaoNum) continue;
 
-      // Filtro secundário: nome do emissor deve ser similar (Dice ≥ 0.85)
-      const score = diceCoefficient(emissorNormAsset, r.emissorNorm);
-      if (score >= 0.85 && score > bestScore) {
+      // Filtro secundário: nome do emissor deve ser similar (Dice ≥ 0.80)
+      const score = diceCoefficient(item.emissorNorm, r.emissorNorm);
+      if (score >= 0.80 && score > bestScore) {
         bestScore = score;
-        bestRating = r.rating;
-        bestSetor = r.setor;
-        bestEmissorMoodys = r.emissor;
-        bestNumeroEmissaoMoodys = r.numeroEmissao || "";
-        bestInstrumentoMoodys = r.instrumento || "";
+        bestAsset = item;
       }
     }
 
-    // Sem match de emissão → ignorar este ativo
-    if (!bestRating) continue;
+    if (!bestAsset) continue;
 
-    results.push({
-      codigoCetip: asset.codigoAtivo,
-      emissorNome: asset.emissor,
-      tipoRemuneracao: asset.tipoRemuneracao,
-      remuneracao: asset.remuneracao,
-      dataVencimento: asset.dataVencimento,
-      taxaIndicativa: asset.taxaIndicativa,
-      duration: asset.duration,
-      referenciaNtnb: asset.referenciaNtnb,
-      zSpread: asset.zSpread,
-      spreadIncentivadoSemGrossUp: asset.spreadIncentivadoSemGrossUp,
-      lei12431: asset.lei12431,
-      dataReferencia: asset.dataReferencia,
-      isin: sndRecord.isin || null,
-      numeroEmissao: numeroEmissaoAsset,
-      rating: bestRating,
-      setor: bestSetor,
+    const cetip = bestAsset.asset.codigoAtivo;
+
+    // Se já existe um match para este CETIP, manter o de maior score
+    const existing = resultMap.get(cetip);
+    if (existing && existing.scoreMatch >= bestScore) continue;
+
+    resultMap.set(cetip, {
+      codigoCetip: cetip,
+      emissorNome: bestAsset.asset.emissor,
+      tipoRemuneracao: bestAsset.asset.tipoRemuneracao,
+      remuneracao: bestAsset.asset.remuneracao,
+      dataVencimento: bestAsset.asset.dataVencimento,
+      taxaIndicativa: bestAsset.asset.taxaIndicativa,
+      duration: bestAsset.asset.duration,
+      referenciaNtnb: bestAsset.asset.referenciaNtnb,
+      zSpread: bestAsset.asset.zSpread,
+      spreadIncentivadoSemGrossUp: bestAsset.asset.spreadIncentivadoSemGrossUp,
+      lei12431: bestAsset.asset.lei12431,
+      dataReferencia: bestAsset.asset.dataReferencia,
+      isin: bestAsset.snd.isin || null,
+      numeroEmissao: bestAsset.snd.numeroEmissao,
+      rating: r.rating,
+      setor: r.setor,
       tipoMatch: "emissao",
       scoreMatch: bestScore,
-      emissorMoodys: bestEmissorMoodys,
-      numeroEmissaoMoodys: bestNumeroEmissaoMoodys,
-      instrumentoMoodys: bestInstrumentoMoodys,
+      emissorMoodys: r.emissor,
+      numeroEmissaoMoodys: r.numeroEmissao || "",
+      instrumentoMoodys: r.instrumento || "",
       isOutlier: false,
     });
   }
 
-  return results;
+  return Array.from(resultMap.values());
 }
 
 /**
@@ -399,18 +399,18 @@ export async function runFullSync(
     }
     report(`${anbimaData.length} ativos ANBIMA processados`, 1, 1);
 
-    // ── 3. Pré-filtro Dice em memória ────────────────────────────────────────
-    // Identifica apenas os CETIPs cujo emissor tem similaridade ≥ 0.85 com
-    // algum emissor na planilha Moody's. Elimina ~80% dos ativos sem abrir
-    // nenhuma aba do browser — o Playwright só roda para os candidatos.
-    report("Pré-filtrando candidatos por similaridade de emissor (Dice)...", 0, 1);
+    // ── 3. Pré-filtro Dice invertido: parte das emissões Moody's ────────────
+    // Para cada emissão Moody's com número de emissão, busca candidatos ANBIMA
+    // com Dice ≥ 0.80. Garante cobertura total das emissões Moody's.
+    report("Identificando candidatos ANBIMA para cada emissão Moody's (Dice ≥ 0.80)...", 0, 1);
     const candidatosCetip = preFilterByCandidates(anbimaData, moodysData);
+    const emissoesMoodysCount = moodysData.filter((r) => r.isEmissao && r.numeroEmissao !== null).length;
     report(
-      `${candidatosCetip.length} de ${anbimaData.length} ativos são candidatos ao match (Dice ≥ 0.85)`,
+      `${candidatosCetip.length} de ${anbimaData.length} ativos ANBIMA são candidatos (cobertura: ${emissoesMoodysCount} emissões Moody's verificadas)`,
       1,
       1
     );
-    console.log(`[Sync] Pré-filtro Dice: ${candidatosCetip.length}/${anbimaData.length} candidatos para enriquecimento`);
+    console.log(`[Sync] Pré-filtro Dice invertido: ${candidatosCetip.length}/${anbimaData.length} candidatos ANBIMA para ${emissoesMoodysCount} emissões Moody's`);
 
     // ── 4. Enriquecer via ANBIMA Data — APENAS os candidatos ─────────────────
     report(

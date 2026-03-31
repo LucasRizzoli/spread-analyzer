@@ -1,0 +1,25 @@
+{
+  "query": "\n-- Distribuição de indexadores no spread_analysis atual\nSELECT indexador, COUNT(*) as qtd\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30'\nGROUP BY indexador\nORDER BY qtd DESC;\n\n-- Ver exemplos de ativos com DI PERCENTUAL para sanidade\nSELECT codigoCetip, emissorNome, indexador, zspread, rating\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30' AND indexador = 'DI PERCENTUAL'\nLIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- Distribuição de indexadores no spread_analysis atual\nSELECT indexador, COUNT(*) as qtd\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30'\nGROUP BY indexador\nORDER BY qtd DESC;\n\n-- Ver exemplos de ativos com DI PERCENTUAL para sanidade\nSELECT codigoCetip, emissorNome, indexador, zspread, rating\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30' AND indexador = 'DI PERCENTUAL'\nLIMIT 5;\n",
+  "rows": [
+    {
+      "indexador": "DI SPREAD",
+      "qtd": "87"
+    },
+    {
+      "indexador": "IPCA SPREAD",
+      "qtd": "78"
+    },
+    {
+      "indexador": "DI PERCENTUAL",
+      "qtd": "1"
+    }
+  ],
+  "messages": [
+    "codigoCetip\temissorNome\tindexador\tzspread\trating",
+    "TAEE16\tTRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*) (**)\tDI PERCENTUAL\t0.350700\tAAA.br"
+  ],
+  "stdout": "indexador\tqtd\nDI SPREAD\t87\nIPCA SPREAD\t78\nDI PERCENTUAL\t1\ncodigoCetip\temissorNome\tindexador\tzspread\trating\nTAEE16\tTRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*) (**)\tDI PERCENTUAL\t0.350700\tAAA.br\n",
+  "stderr": "",
+  "execution_time_ms": 75
+}

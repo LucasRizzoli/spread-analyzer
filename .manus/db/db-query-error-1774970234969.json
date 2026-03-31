@@ -1,0 +1,10 @@
+{
+  "query": "\n-- Total de ratings Moody's\nSELECT COUNT(*) as total FROM moodys_ratings;\n\n-- Breakdown por isEmissao\nSELECT isEmissao, COUNT(*) as qtd FROM moodys_ratings GROUP BY isEmissao;\n\n-- Ver exemplos de linhas com isEmissao = false (corporativos)\nSELECT emissor, instrumento, rating, isEmissao, numeroEmissao\nFROM moodys_ratings\nWHERE isEmissao = false\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- Total de ratings Moody's\nSELECT COUNT(*) as total FROM moodys_ratings;\n\n-- Breakdown por isEmissao\nSELECT isEmissao, COUNT(*) as qtd FROM moodys_ratings GROUP BY isEmissao;\n\n-- Ver exemplos de linhas com isEmissao = false (corporativos)\nSELECT emissor, instrumento, rating, isEmissao, numeroEmissao\nFROM moodys_ratings\nWHERE isEmissao = false\nLIMIT 10;\n",
+  "returncode": 1,
+  "logs": [
+    "total",
+    "808",
+    "ERROR 1054 (42S22) at line 6: Unknown column 'isemissao' in 'group statement'"
+  ]
+}

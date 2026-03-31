@@ -247,3 +247,10 @@
 - [x] Corrigir syncService: dedup agora usa id < maxId (mantém o registro mais recente por codigoCetip)
 - [x] Limpar banco: 323 → 166 registros (157 duplicados removidos)
 - [x] 40 testes passando
+
+## v3.11 — Inversão de fluxo, DI PERCENTUAL separado, score 0.80
+- [x] Inverter fluxo no syncService: iterar sobre emissões Moody's → Dice ≥ 0.80 → Playwright com retry 3x → confirmar por número de emissão
+- [x] Adicionar retry 3x no anbimaDataService (fetchOne com retentativas antes de descartar)
+- [x] Baixar score mínimo para 0.80 em todos os pontos (syncService + frontend)
+- [x] DI PERCENTUAL já separado no frontend (aba % DI existente verificada e funcional)
+- [x] 41 testes passando

@@ -74,31 +74,20 @@ export function clearAnbimaDataCache(): void {
 // ── Funções internas ──────────────────────────────────────────────────────────
 
 /**
- * Busca dados de um único ativo via ANBIMA Data, interceptando a chamada web-bff.
- * Retorna null se o ativo não for encontrado ou ocorrer erro.
+ * Tenta buscar dados de um único ativo via ANBIMA Data (uma tentativa).
+ * Retorna o registro ou null em caso de falha.
  */
-async function fetchOne(
+async function fetchOneAttempt(
   context: BrowserContext,
-  codigoCetip: string
+  key: string
 ): Promise<AnbimaDataRecord | null> {
-  const key = codigoCetip.toUpperCase();
-
-  if (cache.has(key)) {
-    return cache.get(key) ?? null;
-  }
-
   const page = await context.newPage();
   try {
-    // Navegar com 'commit' (apenas aguarda início da resposta HTTP, sem esperar JS)
-    // e usar waitForResponse para aguardar a chamada da API web-bff de forma reativa.
-    // Diagnóstico: com waitUntil 'domcontentloaded' o React não terminava de hidratar
-    // dentro do timeout; com 'commit' + waitForResponse a API responde em ~1-2s.
     const gotoPromise = page.goto(
       `https://data.anbima.com.br/debentures/${key}/caracteristicas`,
       { waitUntil: "commit", timeout: 20000 }
     );
 
-    // Aguardar a resposta da API web-bff de forma reativa (sem polling)
     const apiResponsePromise = page.waitForResponse(
       (r) =>
         r.url().includes("data-api.prd.anbima.com.br") &&
@@ -117,13 +106,10 @@ async function fetchOne(
         apiData = json as AnbimaBffResponse;
       }
     } catch {
-      // API não respondeu dentro do timeout — ativo não encontrado
+      // API não respondeu dentro do timeout
     }
 
-    if (!apiData) {
-      cache.set(key, null);
-      return null;
-    }
+    if (!apiData) return null;
 
     const d = apiData as AnbimaBffResponse;
     const emissao = d.emissao || {};
@@ -134,14 +120,11 @@ async function fetchOne(
       ? parseInt(String(numeroEmissaoRaw), 10)
       : NaN;
 
-    if (isNaN(numeroEmissao)) {
-      cache.set(key, null);
-      return null;
-    }
+    if (isNaN(numeroEmissao)) return null;
 
     const empresa = emissor.nome || emissor.razao_social || "";
     const cnpj = emissor.cnpj || "";
-    const record: AnbimaDataRecord = {
+    return {
       codigoCetip: key,
       isin: d.isin || d.codigo_b3 || "",
       serie: d.numero_serie || "",
@@ -153,21 +136,55 @@ async function fetchOne(
       dataVencimento: d.data_vencimento || null,
       remuneracao: d.remuneracao || "",
       lei12431: d.lei === true,
-      // Aliases de compatibilidade
       emissorNome: empresa,
       emissorCnpj: cnpj,
       incentivado: d.lei === true,
     };
-
-    cache.set(key, record);
-    return record;
-  } catch (err) {
-    console.warn(`[ANBIMA Data] Erro ao buscar ${key}:`, err);
-    cache.set(key, null);
-    return null;
   } finally {
     await page.close();
   }
+}
+
+/**
+ * Busca dados de um único ativo via ANBIMA Data com retry até 3 tentativas.
+ * Só descarta silenciosamente após a terceira falha consecutiva.
+ */
+async function fetchOne(
+  context: BrowserContext,
+  codigoCetip: string
+): Promise<AnbimaDataRecord | null> {
+  const key = codigoCetip.toUpperCase();
+
+  if (cache.has(key)) {
+    return cache.get(key) ?? null;
+  }
+
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const record = await fetchOneAttempt(context, key);
+      if (record) {
+        cache.set(key, record);
+        return record;
+      }
+      // Retornou null (ativo não encontrado, sem erro de exceção) — não adianta tentar novamente
+      cache.set(key, null);
+      return null;
+    } catch (err) {
+      const isLastAttempt = attempt === MAX_RETRIES;
+      if (isLastAttempt) {
+        console.warn(`[ANBIMA Data] Falha definitiva após ${MAX_RETRIES} tentativas para ${key}:`, (err as Error).message);
+        cache.set(key, null);
+        return null;
+      }
+      console.warn(`[ANBIMA Data] Tentativa ${attempt}/${MAX_RETRIES} falhou para ${key}, tentando novamente...`);
+      // Aguardar 1s antes de tentar novamente
+      await new Promise((res) => setTimeout(res, 1000));
+    }
+  }
+
+  cache.set(key, null);
+  return null;
 }
 
 // ── API pública ───────────────────────────────────────────────────────────────

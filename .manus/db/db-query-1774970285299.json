@@ -1,0 +1,115 @@
+{
+  "query": "\nSELECT emissor, instrumento, produto, rating, numeroEmissao\nFROM moodys_ratings\nWHERE numeroEmissao IS NOT NULL\nLIMIT 15;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT emissor, instrumento, produto, rating, numeroEmissao\nFROM moodys_ratings\nWHERE numeroEmissao IS NOT NULL\nLIMIT 15;\n",
+  "rows": [
+    {
+      "emissor": "Adami S.A. - Madeiras",
+      "instrumento": "4ª Emissão de Debêntures - Série Única",
+      "produto": "Rating de Dívida",
+      "rating": "AA-.br",
+      "numeroEmissao": "4"
+    },
+    {
+      "emissor": "Aegea Saneamento e Participações S.A.",
+      "instrumento": "7a Emissão de Debêntures",
+      "produto": "Rating de Dívida",
+      "rating": "A.br",
+      "numeroEmissao": "7"
+    },
+    {
+      "emissor": "Afya Participações S.A.",
+      "instrumento": "1ª Emissão de Debêntures",
+      "produto": "Rating de Dívida",
+      "rating": "AAA.br",
+      "numeroEmissao": "1"
+    },
+    {
+      "emissor": "Afya Participações S.A.",
+      "instrumento": "1ª Emissão de Notas Comerciais Escriturais - 1ª Série",
+      "produto": "Rating de Dívida",
+      "rating": "AAA.br",
+      "numeroEmissao": "1"
+    },
+    {
+      "emissor": "Afya Participações S.A.",
+      "instrumento": "1ª Emissão de Notas Comerciais Escriturais - 2ª Série",
+      "produto": "Rating de Dívida",
+      "rating": "AAA.br",
+      "numeroEmissao": "1"
+    },
+    {
+      "emissor": "Alibem Alimentos S.A.",
+      "instrumento": "3ª Emissão de Notas Comerciais - 1ª Série",
+      "produto": "Rating de Dívida",
+      "rating": "A.br",
+      "numeroEmissao": "3"
+    },
+    {
+      "emissor": "Alibem Alimentos S.A.",
+      "instrumento": "3ª Emissão de Notas Comerciais - 2ª Série",
+      "produto": "Rating de Dívida",
+      "rating": "A.br",
+      "numeroEmissao": "3"
+    },
+    {
+      "emissor": "Ânima Holding S.A.",
+      "instrumento": "4ª Emissão de Debêntures - 1ª Série",
+      "produto": "Rating de Dívida",
+      "rating": "AA.br",
+      "numeroEmissao": "4"
+    },
+    {
+      "emissor": "Ânima Holding S.A.",
+      "instrumento": "4ª Emissão de Debêntures - 2ª Série",
+      "produto": "Rating de Dívida",
+      "rating": "AA.br",
+      "numeroEmissao": "4"
+    },
+    {
+      "emissor": "Ânima Holding S.A.",
+      "instrumento": "5ª Emissão de Debêntures - Série Única",
+      "produto": "Rating de Dívida",
+      "rating": "AA.br",
+      "numeroEmissao": "5"
+    },
+    {
+      "emissor": "Argo Energia Empreendimentos e Participações S.A.",
+      "instrumento": "1ª Emissão de Debentures - 1ª Série",
+      "produto": "Rating de Dívida",
+      "rating": "AAA.br",
+      "numeroEmissao": "1"
+    },
+    {
+      "emissor": "Argo Energia Empreendimentos e Participações S.A.",
+      "instrumento": "1ª Emissão de Debentures - 2ª Série",
+      "produto": "Rating de Dívida",
+      "rating": "AAA.br",
+      "numeroEmissao": "1"
+    },
+    {
+      "emissor": "Argo Energia Empreendimentos e Participações S.A.",
+      "instrumento": "1ª Emissão de Debentures - 3ª Série",
+      "produto": "Rating de Dívida",
+      "rating": "AAA.br",
+      "numeroEmissao": "1"
+    },
+    {
+      "emissor": "Auren Operações S.A. (sucessora de AES Brasil Operações S.A.)",
+      "instrumento": "11ª Emissão de Debêntures – Série Única",
+      "produto": "Rating de Dívida",
+      "rating": "AAA.br",
+      "numeroEmissao": "11"
+    },
+    {
+      "emissor": "Auren Operações S.A. (sucessora de AES Brasil Operações S.A.)",
+      "instrumento": "8a Emissão de Debêntures",
+      "produto": "Rating de Dívida",
+      "rating": "AAA.br",
+      "numeroEmissao": "8"
+    }
+  ],
+  "messages": [],
+  "stdout": "emissor\tinstrumento\tproduto\trating\tnumeroEmissao\nAdami S.A. - Madeiras\t4ª Emissão de Debêntures - Série Única\tRating de Dívida\tAA-.br\t4\nAegea Saneamento e Participações S.A.\t7a Emissão de Debêntures\tRating de Dívida\tA.br\t7\nAfya Participações S.A.\t1ª Emissão de Debêntures\tRating de Dívida\tAAA.br\t1\nAfya Participações S.A.\t1ª Emissão de Notas Comerciais Escriturais - 1ª Série\tRating de Dívida\tAAA.br\t1\nAfya Participações S.A.\t1ª Emissão de Notas Comerciais Escriturais - 2ª Série\tRating de Dívida\tAAA.br\t1\nAlibem Alimentos S.A.\t3ª Emissão de Notas Comerciais - 1ª Série\tRating de Dívida\tA.br\t3\nAlibem Alimentos S.A.\t3ª Emissão de Notas Comerciais - 2ª Série\tRating de Dívida\tA.br\t3\nÂnima Holding S.A.\t4ª Emissão de Debêntures - 1ª Série\tRating de Dívida\tAA.br\t4\nÂnima Holding S.A.\t4ª Emissão de Debêntures - 2ª Série\tRating de Dívida\tAA.br\t4\nÂnima Holding S.A.\t5ª Emissão de Debêntures - Série Única\tRating de Dívida\tAA.br\t5\nArgo Energia Empreendimentos e Participações S.A.\t1ª Emissão de Debentures - 1ª Série\tRating de Dívida\tAAA.br\t1\nArgo Energia Empreendimentos e Participações S.A.\t1ª Emissão de Debentures - 2ª Série\tRating de Dívida\tAAA.br\t1\nArgo Energia Empreendimentos e Participações S.A.\t1ª Emissão de Debentures - 3ª Série\tRating de Dívida\tAAA.br\t1\nAuren Operações S.A. (sucessora de AES Brasil Operações S.A.)\t11ª Emissão de Debêntures – Série Única\tRating de Dívida\tAAA.br\t11\nAuren Operações S.A. (sucessora de AES Brasil Operações S.A.)\t8a Emissão de Debêntures\tRating de Dívida\tAAA.br\t8\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

@@ -1,0 +1,23 @@
+{
+  "query": "\n-- Ver todos os DI PERCENTUAL no banco para sanidade\nSELECT codigoCetip, emissorNome, indexador, zspread, taxaIndicativa, rating\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30' AND indexador LIKE '%PERCENTUAL%';\n\n-- Ver range de zspread por indexador para detectar mistura\nSELECT indexador, \n  MIN(zspread) as min_z, \n  MAX(zspread) as max_z, \n  AVG(zspread) as avg_z,\n  COUNT(*) as qtd\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30'\nGROUP BY indexador;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- Ver todos os DI PERCENTUAL no banco para sanidade\nSELECT codigoCetip, emissorNome, indexador, zspread, taxaIndicativa, rating\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30' AND indexador LIKE '%PERCENTUAL%';\n\n-- Ver range de zspread por indexador para detectar mistura\nSELECT indexador, \n  MIN(zspread) as min_z, \n  MAX(zspread) as max_z, \n  AVG(zspread) as avg_z,\n  COUNT(*) as qtd\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30'\nGROUP BY indexador;\n",
+  "rows": [
+    {
+      "codigoCetip": "TAEE16",
+      "emissorNome": "TRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*) (**)",
+      "indexador": "DI PERCENTUAL",
+      "zspread": "0.350700",
+      "taxaIndicativa": "102.794800",
+      "rating": "AAA.br"
+    }
+  ],
+  "messages": [
+    "indexador\tmin_z\tmax_z\tavg_z\tqtd",
+    "DI SPREAD\t0.443400\t4.193700\t1.2996333333\t87",
+    "IPCA SPREAD\t0.200000\t5.250800\t1.2070051282\t78",
+    "DI PERCENTUAL\t0.350700\t0.350700\t0.3507000000\t1"
+  ],
+  "stdout": "codigoCetip\temissorNome\tindexador\tzspread\ttaxaIndicativa\trating\nTAEE16\tTRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*) (**)\tDI PERCENTUAL\t0.350700\t102.794800\tAAA.br\nindexador\tmin_z\tmax_z\tavg_z\tqtd\nDI SPREAD\t0.443400\t4.193700\t1.2996333333\t87\nIPCA SPREAD\t0.200000\t5.250800\t1.2070051282\t78\nDI PERCENTUAL\t0.350700\t0.350700\t0.3507000000\t1\n",
+  "stderr": "",
+  "execution_time_ms": 72
+}

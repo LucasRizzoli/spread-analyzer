@@ -1,0 +1,26 @@
+{
+  "query": "\nSELECT \n  CASE \n    WHEN scoreMatch >= 1.0 THEN '1.00 (exato)'\n    WHEN scoreMatch >= 0.95 THEN '0.95-0.99'\n    WHEN scoreMatch >= 0.90 THEN '0.90-0.94'\n    WHEN scoreMatch >= 0.85 THEN '0.85-0.89'\n  END as faixa,\n  COUNT(*) as qtd\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30'\nGROUP BY faixa\nORDER BY faixa DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  CASE \n    WHEN scoreMatch >= 1.0 THEN '1.00 (exato)'\n    WHEN scoreMatch >= 0.95 THEN '0.95-0.99'\n    WHEN scoreMatch >= 0.90 THEN '0.90-0.94'\n    WHEN scoreMatch >= 0.85 THEN '0.85-0.89'\n  END as faixa,\n  COUNT(*) as qtd\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30'\nGROUP BY faixa\nORDER BY faixa DESC;\n",
+  "rows": [
+    {
+      "faixa": "1.00 (exato)",
+      "qtd": "146"
+    },
+    {
+      "faixa": "0.95-0.99",
+      "qtd": "5"
+    },
+    {
+      "faixa": "0.90-0.94",
+      "qtd": "6"
+    },
+    {
+      "faixa": "0.85-0.89",
+      "qtd": "9"
+    }
+  ],
+  "messages": [],
+  "stdout": "faixa\tqtd\n1.00 (exato)\t146\n0.95-0.99\t5\n0.90-0.94\t6\n0.85-0.89\t9\n",
+  "stderr": "",
+  "execution_time_ms": 61
+}

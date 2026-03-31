@@ -1,0 +1,19 @@
+{
+  "query": "\n-- Ver quantos ativos da última sync ficaram sem match (estão na tabela anbima_assets mas não em spread_analysis)\nSELECT COUNT(*) as total_anbima FROM anbima_assets WHERE dataReferencia = '2026-03-30';\n\n-- Ver distribuição de scoreMatch nos que passaram\nSELECT MIN(scoreMatch) as min_score, MAX(scoreMatch) as max_score, AVG(scoreMatch) as avg_score, COUNT(*) as total\nFROM spread_analysis WHERE dataReferencia = '2026-03-30';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \n-- Ver quantos ativos da última sync ficaram sem match (estão na tabela anbima_assets mas não em spread_analysis)\nSELECT COUNT(*) as total_anbima FROM anbima_assets WHERE dataReferencia = '2026-03-30';\n\n-- Ver distribuição de scoreMatch nos que passaram\nSELECT MIN(scoreMatch) as min_score, MAX(scoreMatch) as max_score, AVG(scoreMatch) as avg_score, COUNT(*) as total\nFROM spread_analysis WHERE dataReferencia = '2026-03-30';\n",
+  "rows": [
+    {
+      "total_anbima": "0"
+    },
+    {
+      "total_anbima": "min_score\tmax_score\tavg_score\ttotal"
+    },
+    {
+      "total_anbima": "0.8642\t1.0000\t0.98998434\t166"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_anbima\n0\nmin_score\tmax_score\tavg_score\ttotal\n0.8642\t1.0000\t0.98998434\t166\n",
+  "stderr": "",
+  "execution_time_ms": 69
+}

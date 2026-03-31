@@ -1,0 +1,190 @@
+{
+  "query": "\nSELECT codigoCetip, emissorNome, emissorMoodys, scoreMatch, rating, numeroEmissaoSnd, numeroEmissaoMoodys\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30'\nORDER BY scoreMatch ASC\nLIMIT 20;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT codigoCetip, emissorNome, emissorMoodys, scoreMatch, rating, numeroEmissaoSnd, numeroEmissaoMoodys\nFROM spread_analysis\nWHERE dataReferencia = '2026-03-30'\nORDER BY scoreMatch ASC\nLIMIT 20;\n",
+  "rows": [
+    {
+      "codigoCetip": "EBAS13",
+      "emissorNome": "EMPRESA BAIANA DE AGUAS E SANEAMENTO SA (*)",
+      "emissorMoodys": "Empresa Baiana de Águas e Saneamento S.A. - EMBASA",
+      "scoreMatch": "0.8642",
+      "rating": "AA.br",
+      "numeroEmissaoSnd": "3",
+      "numeroEmissaoMoodys": "3"
+    },
+    {
+      "codigoCetip": "TAEE17",
+      "emissorNome": "TRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A",
+      "emissorMoodys": "Transmissora Aliança de Energia Elétrica S.A. (TAESA)",
+      "scoreMatch": "0.8732",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "7",
+      "numeroEmissaoMoodys": "7"
+    },
+    {
+      "codigoCetip": "TAEE16",
+      "emissorNome": "TRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*) (**)",
+      "emissorMoodys": "Transmissora Aliança de Energia Elétrica S.A. (TAESA)",
+      "scoreMatch": "0.8732",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "6",
+      "numeroEmissaoMoodys": "6"
+    },
+    {
+      "codigoCetip": "TAEEB2",
+      "emissorNome": "TRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A",
+      "emissorMoodys": "Transmissora Aliança de Energia Elétrica S.A. (TAESA)",
+      "scoreMatch": "0.8732",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "12",
+      "numeroEmissaoMoodys": "12"
+    },
+    {
+      "codigoCetip": "TAEE18",
+      "emissorNome": "TRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*)",
+      "emissorMoodys": "Transmissora Aliança de Energia Elétrica S.A. (TAESA)",
+      "scoreMatch": "0.8732",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "8",
+      "numeroEmissaoMoodys": "8"
+    },
+    {
+      "codigoCetip": "TAEEC2",
+      "emissorNome": "TRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A",
+      "emissorMoodys": "Transmissora Aliança de Energia Elétrica S.A. (TAESA)",
+      "scoreMatch": "0.8732",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "12",
+      "numeroEmissaoMoodys": "12"
+    },
+    {
+      "codigoCetip": "TAEE26",
+      "emissorNome": "TRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*) (**)",
+      "emissorMoodys": "Transmissora Aliança de Energia Elétrica S.A. (TAESA)",
+      "scoreMatch": "0.8732",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "6",
+      "numeroEmissaoMoodys": "6"
+    },
+    {
+      "codigoCetip": "CHTH11",
+      "emissorNome": "CHINA THREE GORGES BRASIL ENERGIA S.A. (*)",
+      "emissorMoodys": "China Three Gorges Brasil Energia S.A. - CTG",
+      "scoreMatch": "0.8889",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "1",
+      "numeroEmissaoMoodys": "1"
+    },
+    {
+      "codigoCetip": "TCII11",
+      "emissorNome": "AES TUCANO HOLDING II S.A (*)",
+      "emissorMoodys": "Tucano Holding II S.A.",
+      "scoreMatch": "0.8889",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "1",
+      "numeroEmissaoMoodys": "1"
+    },
+    {
+      "codigoCetip": "AEAB11",
+      "emissorNome": "AES CAJUINA AB1 HOLDINGS S.A. (*)",
+      "emissorMoodys": "Cajuina AB1 Holdings S.A.",
+      "scoreMatch": "0.9048",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "1",
+      "numeroEmissaoMoodys": "1"
+    },
+    {
+      "codigoCetip": "MTRO12",
+      "emissorNome": "COMPANHIA DO METROPOLITANO DE SAO PAULO",
+      "emissorMoodys": "Companhia do Metropolitano de São Paulo – Metrô",
+      "scoreMatch": "0.9268",
+      "rating": "AA-.br",
+      "numeroEmissaoSnd": "2",
+      "numeroEmissaoMoodys": "2"
+    },
+    {
+      "codigoCetip": "SNGOA1",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "emissorMoodys": "Saneamento De Goiás S.A. - Saneago",
+      "scoreMatch": "0.9286",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "11",
+      "numeroEmissaoMoodys": "11"
+    },
+    {
+      "codigoCetip": "SNGOA3",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "emissorMoodys": "Saneamento De Goiás S.A. - Saneago",
+      "scoreMatch": "0.9286",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "13",
+      "numeroEmissaoMoodys": "13"
+    },
+    {
+      "codigoCetip": "SNGOA2",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "emissorMoodys": "Saneamento De Goiás S.A. - Saneago",
+      "scoreMatch": "0.9286",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "12",
+      "numeroEmissaoMoodys": "12"
+    },
+    {
+      "codigoCetip": "SNGO10",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "emissorMoodys": "Saneamento De Goiás S.A. - Saneago",
+      "scoreMatch": "0.9286",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "10",
+      "numeroEmissaoMoodys": "10"
+    },
+    {
+      "codigoCetip": "TNHL11",
+      "emissorNome": "TUCANO HOLDING III S.A (*)",
+      "emissorMoodys": "Tucano Holding II S.A.",
+      "scoreMatch": "0.9697",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "1",
+      "numeroEmissaoMoodys": "1"
+    },
+    {
+      "codigoCetip": "FBRI13",
+      "emissorNome": "FIBRASIL INFRAESTRUTURA FIBRA OTICA S.A. (*)",
+      "emissorMoodys": "Fibrasil Infraestrutura e Fibra Ótica S.A.",
+      "scoreMatch": "0.9714",
+      "rating": "AAA.br",
+      "numeroEmissaoSnd": "3",
+      "numeroEmissaoMoodys": "3"
+    },
+    {
+      "codigoCetip": "LMTP26",
+      "emissorNome": "LM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*) (**)",
+      "emissorMoodys": "LM Transportes Interestaduais Serviços e Comércio S.A.",
+      "scoreMatch": "0.9897",
+      "rating": "AA+.br",
+      "numeroEmissaoSnd": "6",
+      "numeroEmissaoMoodys": "6"
+    },
+    {
+      "codigoCetip": "LMTP18",
+      "emissorNome": "LM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*)",
+      "emissorMoodys": "LM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIO S.A.",
+      "scoreMatch": "0.9897",
+      "rating": "AA+.br",
+      "numeroEmissaoSnd": "8",
+      "numeroEmissaoMoodys": "8"
+    },
+    {
+      "codigoCetip": "LMTP17",
+      "emissorNome": "LM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*)",
+      "emissorMoodys": "LM Transportes Interestaduais Serviços e Comércio S.A.",
+      "scoreMatch": "0.9897",
+      "rating": "AA+.br",
+      "numeroEmissaoSnd": "7",
+      "numeroEmissaoMoodys": "7"
+    }
+  ],
+  "messages": [],
+  "stdout": "codigoCetip\temissorNome\temissorMoodys\tscoreMatch\trating\tnumeroEmissaoSnd\tnumeroEmissaoMoodys\nEBAS13\tEMPRESA BAIANA DE AGUAS E SANEAMENTO SA (*)\tEmpresa Baiana de Águas e Saneamento S.A. - EMBASA\t0.8642\tAA.br\t3\t3\nTAEE17\tTRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A\tTransmissora Aliança de Energia Elétrica S.A. (TAESA)\t0.8732\tAAA.br\t7\t7\nTAEE16\tTRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*) (**)\tTransmissora Aliança de Energia Elétrica S.A. (TAESA)\t0.8732\tAAA.br\t6\t6\nTAEEB2\tTRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A\tTransmissora Aliança de Energia Elétrica S.A. (TAESA)\t0.8732\tAAA.br\t12\t12\nTAEE18\tTRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*)\tTransmissora Aliança de Energia Elétrica S.A. (TAESA)\t0.8732\tAAA.br\t8\t8\nTAEEC2\tTRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A\tTransmissora Aliança de Energia Elétrica S.A. (TAESA)\t0.8732\tAAA.br\t12\t12\nTAEE26\tTRANS. ALIANÇA DE ENERGIA ELÉTRICA S/A (*) (**)\tTransmissora Aliança de Energia Elétrica S.A. (TAESA)\t0.8732\tAAA.br\t6\t6\nCHTH11\tCHINA THREE GORGES BRASIL ENERGIA S.A. (*)\tChina Three Gorges Brasil Energia S.A. - CTG\t0.8889\tAAA.br\t1\t1\nTCII11\tAES TUCANO HOLDING II S.A (*)\tTucano Holding II S.A.\t0.8889\tAAA.br\t1\t1\nAEAB11\tAES CAJUINA AB1 HOLDINGS S.A. (*)\tCajuina AB1 Holdings S.A.\t0.9048\tAAA.br\t1\t1\nMTRO12\tCOMPANHIA DO METROPOLITANO DE SAO PAULO\tCompanhia do Metropolitano de São Paulo – Metrô\t0.9268\tAA-.br\t2\t2\nSNGOA1\tSANEAMENTO DE GOIÁS - SANEAGO\tSaneamento De Goiás S.A. - Saneago\t0.9286\tAAA.br\t11\t11\nSNGOA3\tSANEAMENTO DE GOIÁS - SANEAGO\tSaneamento De Goiás S.A. - Saneago\t0.9286\tAAA.br\t13\t13\nSNGOA2\tSANEAMENTO DE GOIÁS - SANEAGO\tSaneamento De Goiás S.A. - Saneago\t0.9286\tAAA.br\t12\t12\nSNGO10\tSANEAMENTO DE GOIÁS - SANEAGO\tSaneamento De Goiás S.A. - Saneago\t0.9286\tAAA.br\t10\t10\nTNHL11\tTUCANO HOLDING III S.A (*)\tTucano Holding II S.A.\t0.9697\tAAA.br\t1\t1\nFBRI13\tFIBRASIL INFRAESTRUTURA FIBRA OTICA S.A. (*)\tFibrasil Infraestrutura e Fibra Ótica S.A.\t0.9714\tAAA.br\t3\t3\nLMTP26\tLM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*) (**)\tLM Transportes Interestaduais Serviços e Comércio S.A.\t0.9897\tAA+.br\t6\t6\nLMTP18\tLM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*)\tLM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIO S.A.\t0.9897\tAA+.br\t8\t8\nLMTP17\tLM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*)\tLM Transportes Interestaduais Serviços e Comércio S.A.\t0.9897\tAA+.br\t7\t7\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

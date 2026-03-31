@@ -1,0 +1,55 @@
+{
+  "query": "\nSELECT COUNT(*) as total FROM moodys_ratings;\n\nSELECT \n  CASE WHEN numeroEmissao IS NOT NULL THEN 'com_emissao' ELSE 'sem_emissao' END as tipo,\n  COUNT(*) as qtd\nFROM moodys_ratings\nGROUP BY tipo;\n\nSELECT emissor, instrumento, rating, numeroEmissao\nFROM moodys_ratings\nWHERE numeroEmissao IS NULL\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT COUNT(*) as total FROM moodys_ratings;\n\nSELECT \n  CASE WHEN numeroEmissao IS NOT NULL THEN 'com_emissao' ELSE 'sem_emissao' END as tipo,\n  COUNT(*) as qtd\nFROM moodys_ratings\nGROUP BY tipo;\n\nSELECT emissor, instrumento, rating, numeroEmissao\nFROM moodys_ratings\nWHERE numeroEmissao IS NULL\nLIMIT 10;\n",
+  "rows": [
+    {
+      "total": "808"
+    },
+    {
+      "total": "tipo\tqtd"
+    },
+    {
+      "total": "com_emissao\t482"
+    },
+    {
+      "total": "sem_emissao\t326"
+    },
+    {
+      "total": "emissor\tinstrumento\trating\tnumeroEmissao"
+    },
+    {
+      "total": "Adami S.A. - Madeiras\tN/A\tAA-.br\tNULL"
+    },
+    {
+      "total": "Aegea Saneamento e Participações S.A.\tN/A\tAA-.br\tNULL"
+    },
+    {
+      "total": "Afya Participações S.A.\tN/A\tAAA.br\tNULL"
+    },
+    {
+      "total": "Alibem Alimentos S.A.\tN/A\tA.br\tNULL"
+    },
+    {
+      "total": "Allos S.A.\tN/A\tAAA.br\tNULL"
+    },
+    {
+      "total": "AMBEV S.A.\tN/A\tAAA.br\tNULL"
+    },
+    {
+      "total": "Ânima Holding S.A.\tN/A\tAA.br\tNULL"
+    },
+    {
+      "total": "Argo Energia Empreendimentos e Participações S.A.\tN/A\tAAA.br\tNULL"
+    },
+    {
+      "total": "Armac Locação, Logistica e Serviços S.A.\tN/A\tAA-.br\tNULL"
+    },
+    {
+      "total": "Associação Hospitalar Moinhos de Vento\tN/A\tAA.br\tNULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n808\ntipo\tqtd\ncom_emissao\t482\nsem_emissao\t326\nemissor\tinstrumento\trating\tnumeroEmissao\nAdami S.A. - Madeiras\tN/A\tAA-.br\tNULL\nAegea Saneamento e Participações S.A.\tN/A\tAA-.br\tNULL\nAfya Participações S.A.\tN/A\tAAA.br\tNULL\nAlibem Alimentos S.A.\tN/A\tA.br\tNULL\nAllos S.A.\tN/A\tAAA.br\tNULL\nAMBEV S.A.\tN/A\tAAA.br\tNULL\nÂnima Holding S.A.\tN/A\tAA.br\tNULL\nArgo Energia Empreendimentos e Participações S.A.\tN/A\tAAA.br\tNULL\nArmac Locação, Logistica e Serviços S.A.\tN/A\tAA-.br\tNULL\nAssociação Hospitalar Moinhos de Vento\tN/A\tAA.br\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 80
+}
