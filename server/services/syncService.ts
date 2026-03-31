@@ -205,10 +205,13 @@ function crossByEmissao(
 }
 
 /**
- * Marca outliers por rating+universo usando ±3 desvios padrão da média:
- * Para cada combinação de (rating, universo) com ≥5 emissões, calcula média e desvio
- * padrão do Z-spread. Pontos a 3 ou mais desvios padrão da média são marcados como
- * isOutlier = true.
+ * Marca outliers por rating+universo usando critério adaptativo:
+ *
+ * - n ≥ 20: Winsorização 10% — remove os 10% extremos de cada lado.
+ *           Robusto, não depende de normalidade, remove quantidade previsível.
+ * - 10 ≤ n < 20: ±2,5σ — mais conservador que ±3σ, captura outliers em grupos médios.
+ * - 5 ≤ n < 10: ±2σ — mais agressivo, grupos pequenos têm distribuição instável.
+ * - n < 5: Sem remoção — amostra insuficiente para qualquer critério.
  *
  * O agrupamento por universo (IPCA vs DI) é essencial: misturar os dois universos
  * faria com que ativos DI+ (spreads menores em bps) fossem penalizados ao serem
@@ -247,25 +250,41 @@ function markOutliers(results: SpreadResult[]): {
   let outlierCount = 0;
 
   for (const [rating, group] of Array.from(byRating.entries())) {
-    // Apenas grupos com \u22655 emiss\u00f5es recebem tratamento de outlier
-    if (group.length < 5) {
-      ratingStats[rating] = { total: group.length, outliers: 0, cutLow: -Infinity, cutHigh: Infinity, mean: 0, stdDev: 0 };
-      continue;
-    }
-
     const n = group.length;
     const spreads = group.map((r) => r.zSpread);
 
-    // Calcular m\u00e9dia
-    const mean = spreads.reduce((s, v) => s + v, 0) / n;
+    // n < 5: amostra insuficiente — sem remoção
+    if (n < 5) {
+      ratingStats[rating] = { total: n, outliers: 0, cutLow: -Infinity, cutHigh: Infinity, mean: 0, stdDev: 0 };
+      continue;
+    }
 
-    // Calcular desvio padr\u00e3o (popula\u00e7\u00e3o)
-    const variance = spreads.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / n;
-    const stdDev = Math.sqrt(variance);
+    let cutLow: number;
+    let cutHigh: number;
+    let mean = 0;
+    let stdDev = 0;
 
-    // Limites: m\u00e9dia \u00b1 3 * desvio padr\u00e3o
-    const cutLow = mean - 3 * stdDev;
-    const cutHigh = mean + 3 * stdDev;
+    if (n >= 20) {
+      // Winsorização 10%: remove os 10% extremos de cada lado
+      const sorted = [...spreads].sort((a, b) => a - b);
+      const k = Math.floor(n * 0.10); // número de pontos a remover de cada lado
+      cutLow  = sorted[k];            // 10º percentil
+      cutHigh = sorted[n - 1 - k];    // 90º percentil
+      // mean/stdDev calculados sobre o núcleo (para stats)
+      const core = sorted.slice(k, n - k);
+      mean = core.reduce((s, v) => s + v, 0) / core.length;
+      const variance = core.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / core.length;
+      stdDev = Math.sqrt(variance);
+    } else {
+      // Grupos médios/pequenos: usar z-score com sigma adaptativo
+      // 10 ≤ n < 20 → ±2,5σ | 5 ≤ n < 10 → ±2σ
+      const sigma = n >= 10 ? 2.5 : 2.0;
+      mean = spreads.reduce((s, v) => s + v, 0) / n;
+      const variance = spreads.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (n - 1); // desvio amostral (n-1)
+      stdDev = Math.sqrt(variance);
+      cutLow  = mean - sigma * stdDev;
+      cutHigh = mean + sigma * stdDev;
+    }
 
     let outliers = 0;
     for (const item of group) {

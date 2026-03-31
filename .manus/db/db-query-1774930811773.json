@@ -1,0 +1,140 @@
+{
+  "query": "\nSELECT \n  rating,\n  indexador,\n  COUNT(*) as n,\n  ROUND(AVG(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as media_bps,\n  ROUND(STD(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as std_bps,\n  ROUND(MIN(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as min_bps,\n  ROUND(MAX(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as max_bps,\n  SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END) as outliers_atuais\nFROM spread_analysis\nWHERE scoreMatch >= 0.90\nGROUP BY rating, indexador\nORDER BY indexador, n DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  rating,\n  indexador,\n  COUNT(*) as n,\n  ROUND(AVG(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as media_bps,\n  ROUND(STD(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as std_bps,\n  ROUND(MIN(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as min_bps,\n  ROUND(MAX(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as max_bps,\n  SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END) as outliers_atuais\nFROM spread_analysis\nWHERE scoreMatch >= 0.90\nGROUP BY rating, indexador\nORDER BY indexador, n DESC;\n",
+  "rows": [
+    {
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "n": "55",
+      "media_bps": "96.6",
+      "std_bps": "33.6",
+      "min_bps": "44.3",
+      "max_bps": "159.9",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "DI SPREAD",
+      "n": "11",
+      "media_bps": "185.3",
+      "std_bps": "68.4",
+      "min_bps": "81.5",
+      "max_bps": "322.0",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "AA.br",
+      "indexador": "DI SPREAD",
+      "n": "9",
+      "media_bps": "165.7",
+      "std_bps": "59.3",
+      "min_bps": "79.7",
+      "max_bps": "265.4",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "A.br",
+      "indexador": "DI SPREAD",
+      "n": "6",
+      "media_bps": "210.9",
+      "std_bps": "94.5",
+      "min_bps": "139.9",
+      "max_bps": "415.1",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "A+.br",
+      "indexador": "DI SPREAD",
+      "n": "3",
+      "media_bps": "223.7",
+      "std_bps": "29.3",
+      "min_bps": "187.2",
+      "max_bps": "258.8",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "AA-.br",
+      "indexador": "DI SPREAD",
+      "n": "1",
+      "media_bps": "50.5",
+      "std_bps": "0",
+      "min_bps": "50.5",
+      "max_bps": "50.5",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "BBB+.br",
+      "indexador": "DI SPREAD",
+      "n": "1",
+      "media_bps": "419.4",
+      "std_bps": "0",
+      "min_bps": "419.4",
+      "max_bps": "419.4",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "n": "51",
+      "media_bps": "88.6",
+      "std_bps": "31.2",
+      "min_bps": "20.0",
+      "max_bps": "217.0",
+      "outliers_atuais": "1"
+    },
+    {
+      "rating": "AA+.br",
+      "indexador": "IPCA SPREAD",
+      "n": "7",
+      "media_bps": "170.9",
+      "std_bps": "129.2",
+      "min_bps": "59.0",
+      "max_bps": "455.6",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "AA-.br",
+      "indexador": "IPCA SPREAD",
+      "n": "4",
+      "media_bps": "217.9",
+      "std_bps": "71.3",
+      "min_bps": "115.9",
+      "max_bps": "301.3",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "A+.br",
+      "indexador": "IPCA SPREAD",
+      "n": "4",
+      "media_bps": "295.4",
+      "std_bps": "140.7",
+      "min_bps": "142.2",
+      "max_bps": "525.1",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "AA.br",
+      "indexador": "IPCA SPREAD",
+      "n": "4",
+      "media_bps": "153.9",
+      "std_bps": "62.9",
+      "min_bps": "98.9",
+      "max_bps": "255.6",
+      "outliers_atuais": "0"
+    },
+    {
+      "rating": "A-.br",
+      "indexador": "IPCA SPREAD",
+      "n": "1",
+      "media_bps": "397.9",
+      "std_bps": "0",
+      "min_bps": "397.9",
+      "max_bps": "397.9",
+      "outliers_atuais": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "rating\tindexador\tn\tmedia_bps\tstd_bps\tmin_bps\tmax_bps\toutliers_atuais\nAAA.br\tDI SPREAD\t55\t96.6\t33.6\t44.3\t159.9\t0\nAA+.br\tDI SPREAD\t11\t185.3\t68.4\t81.5\t322.0\t0\nAA.br\tDI SPREAD\t9\t165.7\t59.3\t79.7\t265.4\t0\nA.br\tDI SPREAD\t6\t210.9\t94.5\t139.9\t415.1\t0\nA+.br\tDI SPREAD\t3\t223.7\t29.3\t187.2\t258.8\t0\nAA-.br\tDI SPREAD\t1\t50.5\t0\t50.5\t50.5\t0\nBBB+.br\tDI SPREAD\t1\t419.4\t0\t419.4\t419.4\t0\nAAA.br\tIPCA SPREAD\t51\t88.6\t31.2\t20.0\t217.0\t1\nAA+.br\tIPCA SPREAD\t7\t170.9\t129.2\t59.0\t455.6\t0\nAA-.br\tIPCA SPREAD\t4\t217.9\t71.3\t115.9\t301.3\t0\nA+.br\tIPCA SPREAD\t4\t295.4\t140.7\t142.2\t525.1\t0\nAA.br\tIPCA SPREAD\t4\t153.9\t62.9\t98.9\t255.6\t0\nA-.br\tIPCA SPREAD\t1\t397.9\t0\t397.9\t397.9\t0\n",
+  "stderr": "",
+  "execution_time_ms": 74
+}

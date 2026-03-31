@@ -56,22 +56,24 @@ function formatDuration(v: number | null | undefined): string {
   return `${v.toFixed(2)}a`;
 }
 
+// Escala semântica: verde escuro (AAA) → verde claro → amarelo → laranja → vermelho → vinho (B)
+// Quanto pior o crédito, mais "quente" a cor — intuitivo para análise de risco
 const RATING_COLORS: Record<string, string> = {
-  "AAA.br": "#10b981",
-  "AA+.br": "#34d399",
-  "AA.br": "#6ee7b7",
-  "AA-.br": "#a7f3d0",
-  "A+.br": "#38bdf8",
-  "A.br": "#60a5fa",
-  "A-.br": "#93c5fd",
-  "BBB+.br": "#fbbf24",
-  "BBB.br": "#f59e0b",
-  "BBB-.br": "#d97706",
-  "BB+.br": "#f97316",
-  "BB.br": "#ef4444",
-  "BB-.br": "#dc2626",
-  "B+.br": "#b91c1c",
-  "B.br": "#991b1b",
+  "AAA.br":  "#16a34a", // verde escuro — melhor qualidade
+  "AA+.br":  "#22c55e", // verde médio
+  "AA.br":   "#86efac", // verde claro
+  "AA-.br":  "#bef264", // verde-amarelado
+  "A+.br":   "#facc15", // amarelo
+  "A.br":    "#fb923c", // laranja
+  "A-.br":   "#f97316", // laranja escuro
+  "BBB+.br": "#ef4444", // vermelho — grau especulativo começa aqui
+  "BBB.br":  "#dc2626", // vermelho escuro
+  "BBB-.br": "#b91c1c", // vinho claro
+  "BB+.br":  "#991b1b", // vinho
+  "BB.br":   "#7f1d1d", // vinho escuro
+  "BB-.br":  "#6b0f0f", // vinho muito escuro
+  "B+.br":   "#450a0a", // quase preto-vinho
+  "B.br":    "#3b0000", // preto-vinho — pior qualidade
 };
 
 function getRatingColor(rating: string | null | undefined): string {
@@ -1324,9 +1326,9 @@ function BarView({
       return order.indexOf(a.rating) - order.indexOf(b.rating);
     });
   }, [data]);
-  // Calcular linha de tendência linear (regressão simples sobre índice ordinal)
-  const trendData = useMemo(() => {
-    if (sorted.length < 2) return [];
+  // Regressão linear simples sobre índice ordinal dos ratings
+  const regression = useMemo(() => {
+    if (sorted.length < 2) return { trendData: [], slope: 0, intercept: 0 };
     const xs = sorted.map((_, i) => i);
     const ys = sorted.map((d) => {
       const val = metrica === "mediana" ? (d.medianZspread ?? d.avgZspread) : d.avgZspread;
@@ -1339,7 +1341,7 @@ function BarView({
     const sumX2 = xs.reduce((s, x) => s + x * x, 0);
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
-    return sorted.map((d, i) => {
+    const trendData = sorted.map((d, i) => {
       const val = metrica === "mediana" ? (d.medianZspread ?? d.avgZspread) : d.avgZspread;
       return {
         rating: d.rating,
@@ -1347,7 +1349,10 @@ function BarView({
         trend: Math.round(slope * i + intercept),
       };
     });
+    return { trendData, slope, intercept };
   }, [sorted, metrica]);
+
+  const { trendData, slope } = regression;
 
   const CustomTooltip = ({
     active,
@@ -1381,49 +1386,91 @@ function BarView({
     );
   };
 
+  // Direção da curva de crédito
+  const slopeDir = slope > 0 ? "crescente" : slope < 0 ? "decrescente" : "plana";
+  const slopeColor = slope > 0 ? "text-emerald-400" : slope < 0 ? "text-red-400" : "text-muted-foreground";
+
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart
-        data={trendData}
-        margin={{ top: 10, right: 20, bottom: 60, left: 20 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.25 0.01 240)" />
-        <XAxis
-          dataKey="rating"
-          tick={{ fill: "oklch(0.55 0.02 240)", fontSize: 11 }}
-          angle={-45}
-          textAnchor="end"
-          interval={0}
-        />
-        <YAxis
-          tick={{ fill: "oklch(0.55 0.02 240)", fontSize: 11 }}
-          label={{
-            value: yAxisLabel,
-            angle: -90,
-            position: "insideLeft",
-            offset: 10,
-            fill: "oklch(0.55 0.02 240)",
-            fontSize: 11,
-          }}
-        />
-        <Tooltip content={<CustomTooltip />} />
-        <ReferenceLine y={0} stroke="oklch(0.35 0.01 240)" strokeDasharray="4 4" />
-        <Bar dataKey="spreadBps" radius={[3, 3, 0, 0]}>
-          {trendData.map((entry) => (
-            <Cell key={entry.rating} fill={getRatingColor(entry.rating)} fillOpacity={0.85} />
-          ))}
-        </Bar>
-        <Line
-          type="monotone"
-          dataKey="trend"
-          stroke="oklch(0.75 0.15 60)"
-          strokeWidth={2}
-          dot={false}
-          strokeDasharray="5 3"
-          name="Tendência"
-        />
-      </ComposedChart>
-    </ResponsiveContainer>
+    <div className="flex flex-col h-full gap-3">
+      {/* Painel de estatísticas da tendência */}
+      {trendData.length >= 2 && (
+        <div className="flex items-start gap-3 flex-shrink-0">
+          {/* Coeficiente angular */}
+          <div className="flex-1 bg-card border border-border rounded-lg px-4 py-2.5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Inclinação da curva</p>
+            <p className={`text-lg font-bold font-mono ${slopeColor}`}>
+              {slope >= 0 ? "+" : ""}{Math.round(slope)} bps/nível
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Curva {slopeDir} — cada nível de rating adiciona {Math.abs(Math.round(slope))} bps
+            </p>
+          </div>
+          {/* Valores da tendência por rating */}
+          <div className="flex-[3] bg-card border border-border rounded-lg px-4 py-2.5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Spread previsto pela tendência (bps)</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {trendData.map((d) => (
+                <div key={d.rating} className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: getRatingColor(d.rating) }}
+                  />
+                  <span className="text-[10px] text-muted-foreground">{d.rating}</span>
+                  <span className="text-[10px] font-semibold font-mono text-foreground">{d.trend}</span>
+                  <span className="text-[10px] text-muted-foreground/60">({d.spreadBps})</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gráfico */}
+      <div className="flex-1" style={{ minHeight: "200px" }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart
+            data={trendData}
+            margin={{ top: 10, right: 20, bottom: 60, left: 20 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.25 0.01 240)" />
+            <XAxis
+              dataKey="rating"
+              tick={{ fill: "oklch(0.55 0.02 240)", fontSize: 11 }}
+              angle={-45}
+              textAnchor="end"
+              interval={0}
+            />
+            <YAxis
+              tick={{ fill: "oklch(0.55 0.02 240)", fontSize: 11 }}
+              label={{
+                value: yAxisLabel,
+                angle: -90,
+                position: "insideLeft",
+                offset: 10,
+                fill: "oklch(0.55 0.02 240)",
+                fontSize: 11,
+              }}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <ReferenceLine y={0} stroke="oklch(0.35 0.01 240)" strokeDasharray="4 4" />
+            <Bar dataKey="spreadBps" radius={[3, 3, 0, 0]}>
+              {trendData.map((entry) => (
+                <Cell key={entry.rating} fill={getRatingColor(entry.rating)} fillOpacity={0.85} />
+              ))}
+            </Bar>
+            <Line
+              type="monotone"
+              dataKey="trend"
+              stroke="oklch(0.75 0.15 60)"
+              strokeWidth={2}
+              dot={false}
+              strokeDasharray="5 3"
+              name="Tendência"
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }
 

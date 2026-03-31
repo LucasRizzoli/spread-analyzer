@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT \n  rating,\n  indexador,\n  COUNT(*) as n,\n  ROUND(AVG(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as media_bps,\n  ROUND(STD(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as std_bps,\n  ROUND(MIN(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as min_bps,\n  ROUND(MAX(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as max_bps,\n  SUM(CASE WHEN is_outlier = 1 THEN 1 ELSE 0 END) as outliers_atuais\nFROM spread_analysis\nWHERE scoreMatch >= 0.90\nGROUP BY rating, indexador\nORDER BY indexador, n DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT \n  rating,\n  indexador,\n  COUNT(*) as n,\n  ROUND(AVG(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as media_bps,\n  ROUND(STD(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as std_bps,\n  ROUND(MIN(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as min_bps,\n  ROUND(MAX(CAST(zspread AS DECIMAL(10,4))) * 100, 1) as max_bps,\n  SUM(CASE WHEN is_outlier = 1 THEN 1 ELSE 0 END) as outliers_atuais\nFROM spread_analysis\nWHERE scoreMatch >= 0.90\nGROUP BY rating, indexador\nORDER BY indexador, n DESC;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'is_outlier' in 'where clause'"
+  ]
+}

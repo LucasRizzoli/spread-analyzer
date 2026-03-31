@@ -217,3 +217,10 @@
 - [x] Melhoria 6: expor spreadIncentivadoSemGrossUp na aba Tabela do frontend
 - [x] Melhoria 7: adicionar cache in-memory para getLatestDataReferencia (db.ts)
 - [x] Testes: 40 passando (casos de guard vazio, excludeOutliers e duration numérica já cobertos)
+
+## v3.5 — Cores semânticas, tendência numérica e outliers adaptativos
+- [x] Escala de cores semântica por rating: verde (AAA.br) → amarelo (AA) → laranja (A) → vermelho (BBB e abaixo)
+- [x] Aplicar cores no gráfico de dispersão, legenda e aba Por Rating
+- [x] Algoritmo de outliers adaptativo: n≥20 → winsorização 10%, 10≤n<20 → ±2,5σ, 5≤n<10 → ±2σ, n<5 → sem remoção
+- [x] Exibir valor da tendência por rating na aba Por Rating (spread previsto pela reta de regressão)
+- [x] Exibir coeficiente angular da reta de tendência (bps por nível de rating)
