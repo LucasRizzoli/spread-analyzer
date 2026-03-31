@@ -229,3 +229,9 @@
 - [x] Re-executar markOutliers sobre dados atuais do banco via script Node.js — 21 outliers marcados
 - [x] Ocultar botão % DI no header quando não há ativos com DI PERCENTUAL no banco
 - [x] Verificar cálculo de winsorização 10% no grupo AAA.br DI SPREAD (55 ativos) — correto
+
+## v3.8 — Inversão da lógica de matching (eficiência)
+- [x] Implementar pré-filtro Dice em memória: identificar CETIPs candidatos antes do Playwright
+- [x] Ajustar syncService: enrichBatch recebe apenas CETIPs que passaram no Dice
+- [x] Manter crossByEmissao: confirmação final por número de emissão (sem mudança)
+- [x] 40 testes passando

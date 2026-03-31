@@ -1,0 +1,20 @@
+{
+  "query": "SELECT COUNT(*) as total, COUNT(DISTINCT dataReferencia) as datas, COUNT(DISTINCT rating) as ratings, COUNT(DISTINCT indexador) as indexadores, SUM(isOutlier) as outliers FROM spread_analysis; SELECT dataReferencia, COUNT(*) as ativos FROM spread_analysis GROUP BY dataReferencia ORDER BY dataReferencia DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute SELECT COUNT(*) as total, COUNT(DISTINCT dataReferencia) as datas, COUNT(DISTINCT rating) as ratings, COUNT(DISTINCT indexador) as indexadores, SUM(isOutlier) as outliers FROM spread_analysis; SELECT dataReferencia, COUNT(*) as ativos FROM spread_analysis GROUP BY dataReferencia ORDER BY dataReferencia DESC;",
+  "rows": [
+    {
+      "total": "157",
+      "datas": "1",
+      "ratings": "8",
+      "indexadores": "2",
+      "outliers": "21"
+    }
+  ],
+  "messages": [
+    "dataReferencia\tativos",
+    "2026-03-30\t157"
+  ],
+  "stdout": "total\tdatas\tratings\tindexadores\toutliers\n157\t1\t8\t2\t21\ndataReferencia\tativos\n2026-03-30\t157\n",
+  "stderr": "",
+  "execution_time_ms": 67
+}

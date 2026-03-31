@@ -5,10 +5,12 @@
  * Fluxo:
  * 1. Parsear planilha Moody's → ratings por emissão específica
  * 2. Parsear planilha ANBIMA Data → ativos com Z-spread (data mais recente)
- * 3. Enriquecer cada código CETIP via ANBIMA Data (data.anbima.com.br) → número de emissão real
- * 4. Cruzar por emissor normalizado (Dice ≥ 0.85) + número de emissão exato
- * 5. Marcar outliers: por rating, quando ≥5 emissões, remover 10% superior e 10% inferior de Z-spread
- * 6. Persistir resultados com scoreMatch, isOutlier e campos de rastreabilidade
+ * 3. Pré-filtro Dice em memória: identificar apenas os CETIPs cujo emissor tem
+ *    similaridade ≥ 0.85 com algum emissor na Moody's (elimina ~80% dos ativos)
+ * 4. Enriquecer via ANBIMA Data (Playwright) APENAS os CETIPs candidatos
+ * 5. Cruzar por número de emissão exato (confirmação final do match)
+ * 6. Marcar outliers: por rating, quando ≥5 emissões, remover 10% superior e 10% inferior de Z-spread
+ * 7. Persistir resultados com scoreMatch, isOutlier e campos de rastreabilidade
  */
 import { getDb, invalidateLatestDateCache } from "../db";
 import {
@@ -111,6 +113,42 @@ function diceCoefficient(a: string, b: string): number {
   }
 
   return (2 * intersection) / (a.length - 1 + (b.length - 1));
+}
+
+/**
+ * Pré-filtro Dice em memória: para cada ativo ANBIMA, verifica se existe
+ * algum emissor na Moody's com similaridade ≥ 0.85 no nome normalizado.
+ *
+ * Retorna apenas os códigos CETIP que têm ao menos um candidato plausível
+ * na Moody's — sem abrir nenhuma aba do browser.
+ *
+ * Objetivo: reduzir de ~1.200 para ~200 o número de chamadas ao Playwright.
+ */
+function preFilterByCandidates(
+  assets: AnbimaAsset[],
+  ratings: MoodysRatingRow[]
+): string[] {
+  // Pré-processar emissores Moody's normalizados (apenas emissões específicas)
+  const emissorNormsMoodys = ratings
+    .filter((r) => r.isEmissao && r.numeroEmissao !== null)
+    .map((r) => normalizeEmissor(r.emissor));
+
+  const candidatos: string[] = [];
+
+  for (const asset of assets) {
+    const emissorNormAsset = normalizeEmissor(asset.emissor);
+
+    // Verificar se existe ao menos um emissor Moody's com score ≥ 0.85
+    const temCandidato = emissorNormsMoodys.some(
+      (emissorNormMoodys) => diceCoefficient(emissorNormAsset, emissorNormMoodys) >= 0.85
+    );
+
+    if (temCandidato) {
+      candidatos.push(asset.codigoAtivo);
+    }
+  }
+
+  return candidatos;
 }
 
 /**
@@ -361,22 +399,34 @@ export async function runFullSync(
     }
     report(`${anbimaData.length} ativos ANBIMA processados`, 1, 1);
 
-    // ── 3. Enriquecer via ANBIMA Data ─────────────────────────────────────────────────
+    // ── 3. Pré-filtro Dice em memória ────────────────────────────────────────
+    // Identifica apenas os CETIPs cujo emissor tem similaridade ≥ 0.85 com
+    // algum emissor na planilha Moody's. Elimina ~80% dos ativos sem abrir
+    // nenhuma aba do browser — o Playwright só roda para os candidatos.
+    report("Pré-filtrando candidatos por similaridade de emissor (Dice)...", 0, 1);
+    const candidatosCetip = preFilterByCandidates(anbimaData, moodysData);
     report(
-      `Consultando ANBIMA Data para ${anbimaData.length} ativos...`,
-      0,
-      anbimaData.length
+      `${candidatosCetip.length} de ${anbimaData.length} ativos são candidatos ao match (Dice ≥ 0.85)`,
+      1,
+      1
     );
-    const codigos = anbimaData.map((a) => a.codigoAtivo);
+    console.log(`[Sync] Pré-filtro Dice: ${candidatosCetip.length}/${anbimaData.length} candidatos para enriquecimento`);
+
+    // ── 4. Enriquecer via ANBIMA Data — APENAS os candidatos ─────────────────
+    report(
+      `Consultando ANBIMA Data para ${candidatosCetip.length} candidatos...`,
+      0,
+      candidatosCetip.length
+    );
     // ANBIMA Data usa Playwright (browser headless) — batchSize 3 para não sobrecarregar
-    const sndMap = await enrichBatch(codigos, 3, (done, total) => {
+    const sndMap = await enrichBatch(candidatosCetip, 3, (done, total) => {
       report(`Consultando ANBIMA Data (${done}/${total})...`, done, total);
     });
     const enriquecidos = sndMap.size;
     report(
-      `${enriquecidos} de ${anbimaData.length} ativos enriquecidos via ANBIMA Data`,
+      `${enriquecidos} de ${candidatosCetip.length} candidatos enriquecidos via ANBIMA Data`,
       enriquecidos,
-      anbimaData.length
+      candidatosCetip.length
     );
 
     // ── 4. Persistir ratings da Moody's ──────────────────────────────────────

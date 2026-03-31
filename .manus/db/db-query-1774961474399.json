@@ -1,0 +1,210 @@
+{
+  "query": "SELECT codigoCetip, emissorNome, emissorMoodys, numeroEmissaoSnd, numeroEmissaoMoodys, rating, scoreMatch, indexador FROM spread_analysis WHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis) ORDER BY scoreMatch ASC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute SELECT codigoCetip, emissorNome, emissorMoodys, numeroEmissaoSnd, numeroEmissaoMoodys, rating, scoreMatch, indexador FROM spread_analysis WHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis) ORDER BY scoreMatch ASC LIMIT 20;",
+  "rows": [
+    {
+      "codigoCetip": "AEAB11",
+      "emissorNome": "AES CAJUINA AB1 HOLDINGS S.A. (*)",
+      "emissorMoodys": "Cajuina AB1 Holdings S.A.",
+      "numeroEmissaoSnd": "1",
+      "numeroEmissaoMoodys": "1",
+      "rating": "AAA.br",
+      "scoreMatch": "0.9048",
+      "indexador": "IPCA SPREAD"
+    },
+    {
+      "codigoCetip": "MTRO12",
+      "emissorNome": "COMPANHIA DO METROPOLITANO DE SAO PAULO",
+      "emissorMoodys": "Companhia do Metropolitano de São Paulo – Metrô",
+      "numeroEmissaoSnd": "2",
+      "numeroEmissaoMoodys": "2",
+      "rating": "AA-.br",
+      "scoreMatch": "0.9268",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "SNGO10",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "emissorMoodys": "Saneamento De Goiás S.A. - Saneago",
+      "numeroEmissaoSnd": "10",
+      "numeroEmissaoMoodys": "10",
+      "rating": "AAA.br",
+      "scoreMatch": "0.9286",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "SNGOA2",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "emissorMoodys": "Saneamento De Goiás S.A. - Saneago",
+      "numeroEmissaoSnd": "12",
+      "numeroEmissaoMoodys": "12",
+      "rating": "AAA.br",
+      "scoreMatch": "0.9286",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "SNGOA1",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "emissorMoodys": "Saneamento De Goiás S.A. - Saneago",
+      "numeroEmissaoSnd": "11",
+      "numeroEmissaoMoodys": "11",
+      "rating": "AAA.br",
+      "scoreMatch": "0.9286",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "SNGOA3",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "emissorMoodys": "Saneamento De Goiás S.A. - Saneago",
+      "numeroEmissaoSnd": "13",
+      "numeroEmissaoMoodys": "13",
+      "rating": "AAA.br",
+      "scoreMatch": "0.9286",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "TNHL11",
+      "emissorNome": "TUCANO HOLDING III S.A (*)",
+      "emissorMoodys": "Tucano Holding II S.A.",
+      "numeroEmissaoSnd": "1",
+      "numeroEmissaoMoodys": "1",
+      "rating": "AAA.br",
+      "scoreMatch": "0.9697",
+      "indexador": "IPCA SPREAD"
+    },
+    {
+      "codigoCetip": "FBRI13",
+      "emissorNome": "FIBRASIL INFRAESTRUTURA FIBRA OTICA S.A. (*)",
+      "emissorMoodys": "Fibrasil Infraestrutura e Fibra Ótica S.A.",
+      "numeroEmissaoSnd": "3",
+      "numeroEmissaoMoodys": "3",
+      "rating": "AAA.br",
+      "scoreMatch": "0.9714",
+      "indexador": "IPCA SPREAD"
+    },
+    {
+      "codigoCetip": "LMTP18",
+      "emissorNome": "LM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*)",
+      "emissorMoodys": "LM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIO S.A.",
+      "numeroEmissaoSnd": "8",
+      "numeroEmissaoMoodys": "8",
+      "rating": "AA+.br",
+      "scoreMatch": "0.9897",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "LMTP17",
+      "emissorNome": "LM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*)",
+      "emissorMoodys": "LM Transportes Interestaduais Serviços e Comércio S.A.",
+      "numeroEmissaoSnd": "7",
+      "numeroEmissaoMoodys": "7",
+      "rating": "AA+.br",
+      "scoreMatch": "0.9897",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "LMTP26",
+      "emissorNome": "LM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*) (**)",
+      "emissorMoodys": "LM Transportes Interestaduais Serviços e Comércio S.A.",
+      "numeroEmissaoSnd": "6",
+      "numeroEmissaoMoodys": "6",
+      "rating": "AA+.br",
+      "scoreMatch": "0.9897",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "ITPO14",
+      "emissorNome": "ITAPOA TERMINAIS PORTUÁRIOS S/A (*)",
+      "emissorMoodys": "Itapoá Terminais Portuários S.A.",
+      "numeroEmissaoSnd": "4",
+      "numeroEmissaoMoodys": "4",
+      "rating": "AA.br",
+      "scoreMatch": "1.0000",
+      "indexador": "IPCA SPREAD"
+    },
+    {
+      "codigoCetip": "CMGDB4",
+      "emissorNome": "CEMIG DISTRIBUIÇÃO S/A (*)",
+      "emissorMoodys": "CEMIG Distribuição S.A.",
+      "numeroEmissaoSnd": "14",
+      "numeroEmissaoMoodys": "14",
+      "rating": "AAA.br",
+      "scoreMatch": "1.0000",
+      "indexador": "IPCA SPREAD"
+    },
+    {
+      "codigoCetip": "OPCT16",
+      "emissorNome": "OCEANPACT SERVICOS MARITIMOS S.A. (*)",
+      "emissorMoodys": "OceanPact Serviços Marítimos S.A.",
+      "numeroEmissaoSnd": "6",
+      "numeroEmissaoMoodys": "6",
+      "rating": "A.br",
+      "scoreMatch": "1.0000",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "MOVI18",
+      "emissorNome": "MOVIDA PARTICIPACOES S/A (*)",
+      "emissorMoodys": "Movida Participações S.A.",
+      "numeroEmissaoSnd": "8",
+      "numeroEmissaoMoodys": "8",
+      "rating": "AA+.br",
+      "scoreMatch": "1.0000",
+      "indexador": "IPCA SPREAD"
+    },
+    {
+      "codigoCetip": "CMGDA1",
+      "emissorNome": "CEMIG DISTRIBUIÇÃO S/A (*)",
+      "emissorMoodys": "CEMIG Distribuição S.A.",
+      "numeroEmissaoSnd": "11",
+      "numeroEmissaoMoodys": "11",
+      "rating": "AAA.br",
+      "scoreMatch": "1.0000",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "INEL12",
+      "emissorNome": "INSPIRALI EDUCACAO S/A (*)",
+      "emissorMoodys": "Inspirali Educação S.A.",
+      "numeroEmissaoSnd": "2",
+      "numeroEmissaoMoodys": "2",
+      "rating": "AA.br",
+      "scoreMatch": "1.0000",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "FLRY25",
+      "emissorNome": "FLEURY S/A (*)",
+      "emissorMoodys": "Fleury S.A.",
+      "numeroEmissaoSnd": "5",
+      "numeroEmissaoMoodys": "5",
+      "rating": "AAA.br",
+      "scoreMatch": "1.0000",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "CAMLB1",
+      "emissorNome": "CAMIL ALIMENTOS S/A",
+      "emissorMoodys": "Camil Alimentos S.A.",
+      "numeroEmissaoSnd": "11",
+      "numeroEmissaoMoodys": "11",
+      "rating": "AA+.br",
+      "scoreMatch": "1.0000",
+      "indexador": "DI SPREAD"
+    },
+    {
+      "codigoCetip": "BSA319",
+      "emissorNome": "B3 S/A - BRASIL, BOLSA, BALCÃO (*)",
+      "emissorMoodys": "B3 S.A. - Brasil, Bolsa, Balcão",
+      "numeroEmissaoSnd": "9",
+      "numeroEmissaoMoodys": "9",
+      "rating": "AAA.br",
+      "scoreMatch": "1.0000",
+      "indexador": "DI SPREAD"
+    }
+  ],
+  "messages": [],
+  "stdout": "codigoCetip\temissorNome\temissorMoodys\tnumeroEmissaoSnd\tnumeroEmissaoMoodys\trating\tscoreMatch\tindexador\nAEAB11\tAES CAJUINA AB1 HOLDINGS S.A. (*)\tCajuina AB1 Holdings S.A.\t1\t1\tAAA.br\t0.9048\tIPCA SPREAD\nMTRO12\tCOMPANHIA DO METROPOLITANO DE SAO PAULO\tCompanhia do Metropolitano de São Paulo – Metrô\t2\t2\tAA-.br\t0.9268\tDI SPREAD\nSNGO10\tSANEAMENTO DE GOIÁS - SANEAGO\tSaneamento De Goiás S.A. - Saneago\t10\t10\tAAA.br\t0.9286\tDI SPREAD\nSNGOA2\tSANEAMENTO DE GOIÁS - SANEAGO\tSaneamento De Goiás S.A. - Saneago\t12\t12\tAAA.br\t0.9286\tDI SPREAD\nSNGOA1\tSANEAMENTO DE GOIÁS - SANEAGO\tSaneamento De Goiás S.A. - Saneago\t11\t11\tAAA.br\t0.9286\tDI SPREAD\nSNGOA3\tSANEAMENTO DE GOIÁS - SANEAGO\tSaneamento De Goiás S.A. - Saneago\t13\t13\tAAA.br\t0.9286\tDI SPREAD\nTNHL11\tTUCANO HOLDING III S.A (*)\tTucano Holding II S.A.\t1\t1\tAAA.br\t0.9697\tIPCA SPREAD\nFBRI13\tFIBRASIL INFRAESTRUTURA FIBRA OTICA S.A. (*)\tFibrasil Infraestrutura e Fibra Ótica S.A.\t3\t3\tAAA.br\t0.9714\tIPCA SPREAD\nLMTP18\tLM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*)\tLM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIO S.A.\t8\t8\tAA+.br\t0.9897\tDI SPREAD\nLMTP17\tLM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*)\tLM Transportes Interestaduais Serviços e Comércio S.A.\t7\t7\tAA+.br\t0.9897\tDI SPREAD\nLMTP26\tLM TRANSPORTES INTERESTADUAIS SERVIÇOS E COMÉRCIOS S.A. (*) (**)\tLM Transportes Interestaduais Serviços e Comércio S.A.\t6\t6\tAA+.br\t0.9897\tDI SPREAD\nITPO14\tITAPOA TERMINAIS PORTUÁRIOS S/A (*)\tItapoá Terminais Portuários S.A.\t4\t4\tAA.br\t1.0000\tIPCA SPREAD\nCMGDB4\tCEMIG DISTRIBUIÇÃO S/A (*)\tCEMIG Distribuição S.A.\t14\t14\tAAA.br\t1.0000\tIPCA SPREAD\nOPCT16\tOCEANPACT SERVICOS MARITIMOS S.A. (*)\tOceanPact Serviços Marítimos S.A.\t6\t6\tA.br\t1.0000\tDI SPREAD\nMOVI18\tMOVIDA PARTICIPACOES S/A (*)\tMovida Participações S.A.\t8\t8\tAA+.br\t1.0000\tIPCA SPREAD\nCMGDA1\tCEMIG DISTRIBUIÇÃO S/A (*)\tCEMIG Distribuição S.A.\t11\t11\tAAA.br\t1.0000\tDI SPREAD\nINEL12\tINSPIRALI EDUCACAO S/A (*)\tInspirali Educação S.A.\t2\t2\tAA.br\t1.0000\tDI SPREAD\nFLRY25\tFLEURY S/A (*)\tFleury S.A.\t5\t5\tAAA.br\t1.0000\tDI SPREAD\nCAMLB1\tCAMIL ALIMENTOS S/A\tCamil Alimentos S.A.\t11\t11\tAA+.br\t1.0000\tDI SPREAD\nBSA319\tB3 S/A - BRASIL, BOLSA, BALCÃO (*)\tB3 S.A. - Brasil, Bolsa, Balcão\t9\t9\tAAA.br\t1.0000\tDI SPREAD\n",
+  "stderr": "",
+  "execution_time_ms": 68
+}
