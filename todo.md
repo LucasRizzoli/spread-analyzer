@@ -194,3 +194,8 @@
 - [x] Testes: deduplicação substitui papel existente
 - [x] Testes: registros com mais de 30 dias são removidos
 - [x] Testes: getAnalysis retorna apenas dados da data mais recente
+
+## v3.1 — Correção de outliers nas abas Dispersão e Por Rating
+- [x] Corrigir getAnalysis para aplicar scoreMin 0.90 (consistência com Por Rating)
+- [x] Corrigir filtro isOutlier no frontend (cast de inteiro 0/1 para boolean)
+- [x] Garantir que excludeOutliers é aplicado no backend via getSpreadAnalysis

@@ -572,6 +572,8 @@ export default function SpreadDashboard() {
     indexadores: filters.indexadores.length ? filters.indexadores : undefined,
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
+    excludeOutliers: !showOutliers,
+    scoreMin: 0.90,
   });
 
   // Mapear universo para indexadores correspondentes
@@ -689,14 +691,16 @@ export default function SpreadDashboard() {
     });
   }, [highScoreData, universo]);
 
-  // 3. Filtrar outliers (por padrão, ocultar outliers)
-  const analysisData = useMemo(() => {
-    if (showOutliers) return universoData;
-    return universoData.filter((r) => !(r as { isOutlier?: boolean }).isOutlier);
-  }, [universoData, showOutliers]);
+  // 3. Outliers já filtrados no backend via excludeOutliers.
+  // isOutlier pode chegar como boolean ou 0/1 do banco — normalizar para boolean.
+  const isOutlierTrue = (r: unknown) => {
+    const val = (r as { isOutlier?: boolean | number | null }).isOutlier;
+    return val === true || val === 1;
+  };
+  const analysisData = universoData;
   const outlierCount = useMemo(
-    () => universoData.filter((r) => (r as { isOutlier?: boolean }).isOutlier).length,
-    [universoData]
+    () => allData.filter(isOutlierTrue).length,
+    [allData]
   );
 
   // Rótulo do eixo Y conforme universo

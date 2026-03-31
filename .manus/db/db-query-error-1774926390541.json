@@ -1,0 +1,8 @@
+{
+  "query": "SELECT id, iniciado_em, finalizado_em, status, erros FROM sync_log ORDER BY iniciado_em DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute SELECT id, iniciado_em, finalizado_em, status, erros FROM sync_log ORDER BY iniciado_em DESC LIMIT 5;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'iniciado_em' in 'field list'"
+  ]
+}

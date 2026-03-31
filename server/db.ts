@@ -149,7 +149,12 @@ export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
   if (filters.setores?.length) {
     conditions.push(inArray(spreadAnalysis.setor, filters.setores));
   }
-
+  if (filters.excludeOutliers) {
+    conditions.push(eq(spreadAnalysis.isOutlier, false));
+  }
+  if (filters.scoreMin !== undefined) {
+    conditions.push(gte(spreadAnalysis.scoreMatch, String(filters.scoreMin)));
+  }
   return db
     .select()
     .from(spreadAnalysis)

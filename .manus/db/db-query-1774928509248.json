@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, tipo, status, mensagem, totalProcessados, totalErros, iniciadoEm, finalizadoEm FROM sync_log ORDER BY iniciadoEm DESC LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute SELECT id, tipo, status, mensagem, totalProcessados, totalErros, iniciadoEm, finalizadoEm FROM sync_log ORDER BY iniciadoEm DESC LIMIT 3;",
+  "rows": [
+    {
+      "id": "30003",
+      "tipo": "full_sync",
+      "status": "success",
+      "mensagem": "Concluído: 808 ratings Moody's, 1221 ativos ANBIMA, 1221 enriquecidos via ANBIMA Data, 157 com match de emissão, 1 outliers marcados",
+      "totalProcessados": "157",
+      "totalErros": "0",
+      "iniciadoEm": "2026-03-31 03:09:16",
+      "finalizadoEm": "2026-03-31 03:40:23"
+    },
+    {
+      "id": "30002",
+      "tipo": "full_sync",
+      "status": "success",
+      "mensagem": "Concluído: 808 ratings Moody's, 1218 ativos ANBIMA, 1214 enriquecidos via ANBIMA Data, 157 com match de emissão, 1 outliers marcados",
+      "totalProcessados": "157",
+      "totalErros": "0",
+      "iniciadoEm": "2026-03-31 01:49:40",
+      "finalizadoEm": "2026-03-31 02:21:59"
+    },
+    {
+      "id": "30001",
+      "tipo": "full_sync",
+      "status": "error",
+      "mensagem": "browserContext.newPage: Protocol error (Target.createTarget): Not supported",
+      "totalProcessados": "0",
+      "totalErros": "0",
+      "iniciadoEm": "2026-03-31 01:39:07",
+      "finalizadoEm": "2026-03-31 01:42:28"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttipo\tstatus\tmensagem\ttotalProcessados\ttotalErros\tiniciadoEm\tfinalizadoEm\n30003\tfull_sync\tsuccess\tConcluído: 808 ratings Moody's, 1221 ativos ANBIMA, 1221 enriquecidos via ANBIMA Data, 157 com match de emissão, 1 outliers marcados\t157\t0\t2026-03-31 03:09:16\t2026-03-31 03:40:23\n30002\tfull_sync\tsuccess\tConcluído: 808 ratings Moody's, 1218 ativos ANBIMA, 1214 enriquecidos via ANBIMA Data, 157 com match de emissão, 1 outliers marcados\t157\t0\t2026-03-31 01:49:40\t2026-03-31 02:21:59\n30001\tfull_sync\terror\tbrowserContext.newPage: Protocol error (Target.createTarget): Not supported\t0\t0\t2026-03-31 01:39:07\t2026-03-31 01:42:28\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}

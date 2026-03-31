@@ -1,0 +1,14 @@
+{
+  "query": "SELECT dataReferencia, COUNT(*) as total FROM spread_analysis GROUP BY dataReferencia ORDER BY dataReferencia DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute SELECT dataReferencia, COUNT(*) as total FROM spread_analysis GROUP BY dataReferencia ORDER BY dataReferencia DESC;",
+  "rows": [
+    {
+      "dataReferencia": "2026-03-27",
+      "total": "157"
+    }
+  ],
+  "messages": [],
+  "stdout": "dataReferencia\ttotal\n2026-03-27\t157\n",
+  "stderr": "",
+  "execution_time_ms": 150
+}
