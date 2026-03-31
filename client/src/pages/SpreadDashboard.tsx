@@ -45,6 +45,7 @@ import {
   Line,
   LineChart,
   Legend,
+  LabelList,
 } from "recharts";
 import { toast } from "sonner";
 import { sortRatings } from "../lib/ratings";
@@ -1338,16 +1339,21 @@ function AnaliseView({
       <div className="flex-1 min-h-0 grid grid-cols-2 gap-3">
         {/* Scatter */}
         <div className="flex flex-col gap-2 min-h-0 bg-card border border-border rounded-lg p-3">
-          <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
-            {ratingGroups.map((r) => (
-              <span key={r} className="flex items-center gap-1 text-xs text-muted-foreground">
-                <span
-                  className="inline-block w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: getRatingColor(r) }}
-                />
-                {r}
-              </span>
-            ))}
+          <div className="flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              {ratingGroups.map((r) => (
+                <span key={r} className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span
+                    className="inline-block w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: getRatingColor(r) }}
+                  />
+                  {r}
+                </span>
+              ))}
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono flex-shrink-0 ml-2">
+              {scatterData.length} pontos
+            </span>
           </div>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -1434,6 +1440,12 @@ function AnaliseView({
 
         {/* Barras por rating */}
         <div className="min-h-0 bg-card border border-border rounded-lg p-3">
+          <div className="flex items-center justify-between mb-1 flex-shrink-0">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Por Rating</span>
+            <span className="text-[10px] text-muted-foreground font-mono">
+              {byRatingData.reduce((s, d) => s + d.count, 0)} ativos · {byRatingData.length} ratings
+            </span>
+          </div>
           <BarView data={byRatingData} yAxisLabel={yAxisLabel} metrica={metrica} />
         </div>
       </div>
@@ -1716,6 +1728,7 @@ function BarView({
         rating: d.rating,
         spreadBps: Math.round(val * 100),
         trend: Math.round(slope * i + intercept),
+        count: d.count,
       };
     });
     return { trendData, slope, intercept };
@@ -1789,6 +1802,12 @@ function BarView({
               {trendData.map((entry) => (
                 <Cell key={entry.rating} fill={getRatingColor(entry.rating)} fillOpacity={0.85} />
               ))}
+              <LabelList
+                dataKey="count"
+                position="top"
+                formatter={(v: number) => `n=${v}`}
+                style={{ fontSize: 10, fill: "oklch(0.65 0.02 240)", fontWeight: 500 }}
+              />
             </Bar>
             <Line
               type="monotone"

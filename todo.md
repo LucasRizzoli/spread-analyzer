@@ -329,3 +329,9 @@
 - [x] Corrigir bug crítico: filtro de outliers não propagava universo ao backend
 - [x] Corrigir scoreMin comparação string vs decimal (CAST SQL em db.ts)
 - [x] Gerar relatório de auditoria completo (AUDITORIA.md)
+
+## v4.4 — Contadores de outliers nos gráficos
+- [x] Adicionar contador "X pontos" no header do scatter
+- [x] Adicionar contador "X ativos · Y ratings" no header do gráfico de barras
+- [x] Adicionar label n=X em cima de cada barra (LabelList)
+- [x] Confirmar que toggle de outliers atualiza todos os contadores corretamente
