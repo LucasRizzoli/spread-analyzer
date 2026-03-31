@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT codigoCetip, nomeEmissor, rating, indexador, \n       scoreMatch, tipoMatch, ntnbVencimento,\n       CAST(durationAnos AS DECIMAL(5,2)) as duration,\n       CAST(ntnbDuration AS DECIMAL(5,2)) as ntnb_duration,\n       CAST(zspread AS DECIMAL(8,4)) as zspread\nFROM spread_analysis\nWHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\n  AND scoreMatch >= 0.90 AND scoreMatch < 0.95\nORDER BY scoreMatch;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT codigoCetip, nomeEmissor, rating, indexador, \n       scoreMatch, tipoMatch, ntnbVencimento,\n       CAST(durationAnos AS DECIMAL(5,2)) as duration,\n       CAST(ntnbDuration AS DECIMAL(5,2)) as ntnb_duration,\n       CAST(zspread AS DECIMAL(8,4)) as zspread\nFROM spread_analysis\nWHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\n  AND scoreMatch >= 0.90 AND scoreMatch < 0.95\nORDER BY scoreMatch;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'nomeemissor' in 'field list'"
+  ]
+}

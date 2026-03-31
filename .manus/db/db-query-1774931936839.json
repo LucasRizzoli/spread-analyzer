@@ -1,0 +1,18 @@
+{
+  "query": "SHOW COLUMNS FROM spread_analysis LIKE '%score%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute SHOW COLUMNS FROM spread_analysis LIKE '%score%';",
+  "rows": [
+    {
+      "Field": "scoreMatch",
+      "Type": "decimal(5,4)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nscoreMatch\tdecimal(5,4)\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

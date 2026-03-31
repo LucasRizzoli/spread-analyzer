@@ -241,8 +241,8 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
   const data = reportQuery.data || [];
 
   const filtered = useMemo(() => {
-    // Nunca exibir matches com score < 0.90 no relatório de qualidade
-    let rows = data.filter((r) => r.scoreMatch == null || r.scoreMatch >= 0.90); // limiar único: 0.90
+    // Nunca exibir matches com score < 0.85 no relatório de qualidade
+    let rows = data.filter((r) => r.scoreMatch == null || r.scoreMatch >= 0.85); // limiar único: 0.85
     if (showOutliersOnly) rows = rows.filter((r) => r.isOutlier);
     if (search) {
       const q = search.toLowerCase();
@@ -386,7 +386,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                       ? "text-muted-foreground"
                       : score >= 0.9
                       ? "text-emerald-400"
-                      : score >= 0.75
+                      : score >= 0.85
                       ? "text-yellow-400"
                       : "text-orange-400";
                   const scoreBg =
@@ -394,7 +394,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                       ? ""
                       : score >= 0.9
                       ? "bg-emerald-500/10"
-                      : score >= 0.75
+                      : score >= 0.85
                       ? "bg-yellow-500/10"
                       : "bg-orange-500/10";
                   // Verificar se os nomes de emissor são iguais (match exato)
@@ -530,8 +530,8 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
           <div className="flex items-center gap-3">
             <span className="font-semibold text-foreground">Score:</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> ≥ 0.90 Confiável</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> 0.75–0.89 Bom</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> 0.65–0.74 Limiar</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> 0.85–0.89 Bom</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> &lt; 0.85 Excluído</span>
           </div>
           <div className="flex items-center gap-3 ml-4">
             <span className="font-semibold text-foreground">Emissor:</span>
@@ -575,7 +575,7 @@ export default function SpreadDashboard() {
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
     excludeOutliers: !showOutliers,
-    scoreMin: 0.90,
+    scoreMin: 0.85,
   });
 
   // Query separada apenas para contar outliers — sempre sem filtro de exclusão,
@@ -587,7 +587,7 @@ export default function SpreadDashboard() {
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
     excludeOutliers: false,
-    scoreMin: 0.90,
+    scoreMin: 0.85,
   });
 
   // Mapear universo para indexadores correspondentes
@@ -603,7 +603,7 @@ export default function SpreadDashboard() {
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
     excludeOutliers: !showOutliers,
-    scoreMin: 0.90,
+    scoreMin: 0.85,
   });
   const triggerSync = trpc.spread.triggerSync.useMutation({
     onSuccess: () => {
@@ -683,12 +683,12 @@ export default function SpreadDashboard() {
   const allData = analysisQuery.data || [];
   const isSyncing = syncState.data?.status === "running";
 
-  // 1. Filtrar por score mínimo 0.90 (nunca exibir matches de baixa confiança)
+  // 1. Filtrar por score mínimo 0.85 (nunca exibir matches de baixa confiança)
   const highScoreData = useMemo(() => {
     return allData.filter((r) => {
       const score = (r as { scoreMatch?: number | null }).scoreMatch;
-      // Se scoreMatch é null (dados antigos), manter; se preenchido, exigir ≥ 0.90
-      return score == null || score >= 0.90;
+      // Se scoreMatch é null (dados antigos), manter; se preenchido, exigir ≥ 0.85
+      return score == null || score >= 0.85;
     });
   }, [allData]);
 
@@ -1594,12 +1594,12 @@ function TableView({
               const scoreColor =
                 score == null ? "text-muted-foreground"
                 : score >= 0.9 ? "text-emerald-400"
-                : score >= 0.75 ? "text-yellow-400"
+                : score >= 0.85 ? "text-yellow-400"
                 : "text-orange-400";
               const scoreBg =
                 score == null ? ""
                 : score >= 0.9 ? "bg-emerald-500/10"
-                : score >= 0.75 ? "bg-yellow-500/10"
+                : score >= 0.85 ? "bg-yellow-500/10"
                 : "bg-orange-500/10";
               return (
                 <tr

@@ -1,0 +1,88 @@
+{
+  "query": "\nSELECT codigoCetip, emissorNome, rating, indexador, \n       scoreMatch, tipoMatch, ntnbReferencia,\n       CAST(durationAnos AS DECIMAL(5,2)) as duration_ativo,\n       CAST(ntnbDuration AS DECIMAL(5,2)) as duration_ntnb,\n       ABS(CAST(durationAnos AS DECIMAL(5,2)) - CAST(ntnbDuration AS DECIMAL(5,2))) as gap_duration,\n       CAST(zspread AS DECIMAL(8,4)) as zspread\nFROM spread_analysis\nWHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\n  AND scoreMatch >= 0.90 AND scoreMatch < 0.95\nORDER BY scoreMatch;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT codigoCetip, emissorNome, rating, indexador, \n       scoreMatch, tipoMatch, ntnbReferencia,\n       CAST(durationAnos AS DECIMAL(5,2)) as duration_ativo,\n       CAST(ntnbDuration AS DECIMAL(5,2)) as duration_ntnb,\n       ABS(CAST(durationAnos AS DECIMAL(5,2)) - CAST(ntnbDuration AS DECIMAL(5,2))) as gap_duration,\n       CAST(zspread AS DECIMAL(8,4)) as zspread\nFROM spread_analysis\nWHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\n  AND scoreMatch >= 0.90 AND scoreMatch < 0.95\nORDER BY scoreMatch;\n",
+  "rows": [
+    {
+      "codigoCetip": "AEAB11",
+      "emissorNome": "AES CAJUINA AB1 HOLDINGS S.A. (*)",
+      "rating": "AAA.br",
+      "indexador": "IPCA SPREAD",
+      "scoreMatch": "0.9048",
+      "tipoMatch": "emissao",
+      "ntnbReferencia": "15/05/2037",
+      "duration_ativo": "7.70",
+      "duration_ntnb": "NULL",
+      "gap_duration": "NULL",
+      "zspread": "1.2352"
+    },
+    {
+      "codigoCetip": "MTRO12",
+      "emissorNome": "COMPANHIA DO METROPOLITANO DE SAO PAULO",
+      "rating": "AA-.br",
+      "indexador": "DI SPREAD",
+      "scoreMatch": "0.9268",
+      "tipoMatch": "emissao",
+      "ntnbReferencia": "NULL",
+      "duration_ativo": "0.54",
+      "duration_ntnb": "NULL",
+      "gap_duration": "NULL",
+      "zspread": "0.5052"
+    },
+    {
+      "codigoCetip": "SNGOA1",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "scoreMatch": "0.9286",
+      "tipoMatch": "emissao",
+      "ntnbReferencia": "NULL",
+      "duration_ativo": "1.10",
+      "duration_ntnb": "NULL",
+      "gap_duration": "NULL",
+      "zspread": "0.4951"
+    },
+    {
+      "codigoCetip": "SNGO10",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "scoreMatch": "0.9286",
+      "tipoMatch": "emissao",
+      "ntnbReferencia": "NULL",
+      "duration_ativo": "0.59",
+      "duration_ntnb": "NULL",
+      "gap_duration": "NULL",
+      "zspread": "0.4434"
+    },
+    {
+      "codigoCetip": "SNGOA2",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "scoreMatch": "0.9286",
+      "tipoMatch": "emissao",
+      "ntnbReferencia": "NULL",
+      "duration_ativo": "1.57",
+      "duration_ntnb": "NULL",
+      "gap_duration": "NULL",
+      "zspread": "0.6064"
+    },
+    {
+      "codigoCetip": "SNGOA3",
+      "emissorNome": "SANEAMENTO DE GOIÁS - SANEAGO",
+      "rating": "AAA.br",
+      "indexador": "DI SPREAD",
+      "scoreMatch": "0.9286",
+      "tipoMatch": "emissao",
+      "ntnbReferencia": "NULL",
+      "duration_ativo": "2.12",
+      "duration_ntnb": "NULL",
+      "gap_duration": "NULL",
+      "zspread": "0.6384"
+    }
+  ],
+  "messages": [],
+  "stdout": "codigoCetip\temissorNome\trating\tindexador\tscoreMatch\ttipoMatch\tntnbReferencia\tduration_ativo\tduration_ntnb\tgap_duration\tzspread\nAEAB11\tAES CAJUINA AB1 HOLDINGS S.A. (*)\tAAA.br\tIPCA SPREAD\t0.9048\temissao\t15/05/2037\t7.70\tNULL\tNULL\t1.2352\nMTRO12\tCOMPANHIA DO METROPOLITANO DE SAO PAULO\tAA-.br\tDI SPREAD\t0.9268\temissao\tNULL\t0.54\tNULL\tNULL\t0.5052\nSNGOA1\tSANEAMENTO DE GOIÁS - SANEAGO\tAAA.br\tDI SPREAD\t0.9286\temissao\tNULL\t1.10\tNULL\tNULL\t0.4951\nSNGO10\tSANEAMENTO DE GOIÁS - SANEAGO\tAAA.br\tDI SPREAD\t0.9286\temissao\tNULL\t0.59\tNULL\tNULL\t0.4434\nSNGOA2\tSANEAMENTO DE GOIÁS - SANEAGO\tAAA.br\tDI SPREAD\t0.9286\temissao\tNULL\t1.57\tNULL\tNULL\t0.6064\nSNGOA3\tSANEAMENTO DE GOIÁS - SANEAGO\tAAA.br\tDI SPREAD\t0.9286\temissao\tNULL\t2.12\tNULL\tNULL\t0.6384\n",
+  "stderr": "",
+  "execution_time_ms": 83
+}
