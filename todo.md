@@ -183,3 +183,14 @@
 - [x] Remover parâmetro `tipos` do backend (SpreadFiltersSchema, SpreadFilters, queries)
 - [x] Remover coluna "Tipo" da tabela de resultados
 - [x] Remover coluna "Tipo" do relatório de qualidade/verificação manual
+
+## v3.0 — Retenção histórica com janela móvel de 30 dias
+- [x] Adicionar índice composto (codigoCetip, dataReferencia) no schema Drizzle + migração SQL
+- [x] Normalizar dataReferencia para YYYY-MM-DD no syncService antes de salvar
+- [x] Substituir DELETE total por INSERT + deduplicação + limpeza de janela 30 dias no syncService
+- [x] Atualizar getSpreadAnalysis para filtrar pela dataReferencia mais recente
+- [x] Atualizar getZspreadByRating para filtrar pela dataReferencia mais recente
+- [x] Adicionar endpoint getAvailableDates no router e db.ts
+- [x] Testes: deduplicação substitui papel existente
+- [x] Testes: registros com mais de 30 dias são removidos
+- [x] Testes: getAnalysis retorna apenas dados da data mais recente

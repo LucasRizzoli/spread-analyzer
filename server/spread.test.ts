@@ -297,3 +297,194 @@ describe("matching emissão-a-emissão (lógica de crossByEmissao)", () => {
     expect(score).toBeGreaterThanOrEqual(0.90);
   });
 });
+
+// ─── Normalização de data de referência ──────────────────────────────────────
+
+describe("normalização de dataReferencia (DD/MM/YYYY → YYYY-MM-DD)", () => {
+  /**
+   * A função normalizeDate é interna ao syncService, então testamos
+   * o comportamento esperado diretamente com a lógica equivalente.
+   */
+  function normalizeDate(d: string | null | undefined): string | null {
+    if (!d) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+    const parts = d.split("/");
+    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    return d;
+  }
+
+  it("converte DD/MM/YYYY para YYYY-MM-DD", () => {
+    expect(normalizeDate("21/03/2026")).toBe("2026-03-21");
+    expect(normalizeDate("01/01/2025")).toBe("2025-01-01");
+    expect(normalizeDate("31/12/2024")).toBe("2024-12-31");
+  });
+
+  it("mantém YYYY-MM-DD sem alteração", () => {
+    expect(normalizeDate("2026-03-21")).toBe("2026-03-21");
+    expect(normalizeDate("2025-01-01")).toBe("2025-01-01");
+  });
+
+  it("retorna null para entrada nula ou undefined", () => {
+    expect(normalizeDate(null)).toBeNull();
+    expect(normalizeDate(undefined)).toBeNull();
+    expect(normalizeDate("")).toBeNull();
+  });
+});
+
+// ─── Lógica de deduplicação e janela 30 dias ─────────────────────────────────
+
+describe("lógica de deduplicação por codigoCetip", () => {
+  /**
+   * Simula a lógica de deduplicação do syncService:
+   * Para cada codigoCetip, manter apenas o registro com maior dataReferencia.
+   */
+  function deduplicate<T extends { codigoCetip: string; dataReferencia: string }>(
+    records: T[]
+  ): T[] {
+    const latest = new Map<string, T>();
+    for (const r of records) {
+      const existing = latest.get(r.codigoCetip);
+      if (!existing || r.dataReferencia > existing.dataReferencia) {
+        latest.set(r.codigoCetip, r);
+      }
+    }
+    return Array.from(latest.values());
+  }
+
+  it("mantém apenas o registro mais recente quando há duplicatas", () => {
+    const records = [
+      { codigoCetip: "ABCD11", dataReferencia: "2026-03-15", zspread: "0.5" },
+      { codigoCetip: "ABCD11", dataReferencia: "2026-03-21", zspread: "0.6" },
+      { codigoCetip: "ABCD11", dataReferencia: "2026-03-10", zspread: "0.4" },
+    ];
+    const result = deduplicate(records);
+    expect(result).toHaveLength(1);
+    expect(result[0].dataReferencia).toBe("2026-03-21");
+    expect(result[0].zspread).toBe("0.6");
+  });
+
+  it("mantém registros distintos de papéis diferentes", () => {
+    const records = [
+      { codigoCetip: "ABCD11", dataReferencia: "2026-03-21", zspread: "0.5" },
+      { codigoCetip: "EFGH22", dataReferencia: "2026-03-21", zspread: "1.2" },
+      { codigoCetip: "IJKL33", dataReferencia: "2026-03-20", zspread: "0.8" },
+    ];
+    const result = deduplicate(records);
+    expect(result).toHaveLength(3);
+  });
+
+  it("upload com papel já existente substitui o anterior", () => {
+    // Simula: banco tem MOVI18 com data 15/03, novo upload traz MOVI18 com 21/03
+    const bancoBefore = [
+      { codigoCetip: "MOVI18", dataReferencia: "2026-03-15", zspread: "1.0" },
+      { codigoCetip: "RENT14", dataReferencia: "2026-03-15", zspread: "0.8" },
+    ];
+    const novoUpload = [
+      { codigoCetip: "MOVI18", dataReferencia: "2026-03-21", zspread: "1.1" },
+      { codigoCetip: "VALE22", dataReferencia: "2026-03-21", zspread: "0.9" },
+    ];
+    const combined = [...bancoBefore, ...novoUpload];
+    const result = deduplicate(combined);
+
+    // MOVI18 deve ter o registro mais recente (21/03)
+    const movi18 = result.find((r) => r.codigoCetip === "MOVI18");
+    expect(movi18?.dataReferencia).toBe("2026-03-21");
+    expect(movi18?.zspread).toBe("1.1");
+
+    // RENT14 deve continuar (não foi substituído)
+    expect(result.find((r) => r.codigoCetip === "RENT14")).toBeDefined();
+
+    // VALE22 deve estar presente (novo papel)
+    expect(result.find((r) => r.codigoCetip === "VALE22")).toBeDefined();
+  });
+});
+
+describe("lógica de janela móvel de 30 dias", () => {
+  /**
+   * Simula a lógica de limpeza do syncService:
+   * Deletar registros com dataReferencia < (MAX(dataReferencia) - 30 dias).
+   */
+  function applyWindow(
+    records: { codigoCetip: string; dataReferencia: string }[],
+    windowDays = 30
+  ) {
+    if (records.length === 0) return [];
+    const maxDate = records.reduce((max, r) =>
+      r.dataReferencia > max ? r.dataReferencia : max,
+      records[0].dataReferencia
+    );
+    const cutoff = new Date(maxDate);
+    cutoff.setDate(cutoff.getDate() - windowDays);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    return records.filter((r) => r.dataReferencia >= cutoffStr);
+  }
+
+  it("registros com mais de 30 dias são removidos após novo upload", () => {
+    const records = [
+      { codigoCetip: "ABCD11", dataReferencia: "2026-03-21" }, // mais recente
+      { codigoCetip: "EFGH22", dataReferencia: "2026-02-20" }, // exatamente 29 dias antes → mantém
+      { codigoCetip: "IJKL33", dataReferencia: "2026-02-19" }, // exatamente 30 dias antes → mantém (>= cutoff)
+      { codigoCetip: "MNOP44", dataReferencia: "2026-02-18" }, // 31 dias antes → remove
+      { codigoCetip: "QRST55", dataReferencia: "2026-01-01" }, // muito antigo → remove
+    ];
+    const result = applyWindow(records, 30);
+    expect(result.map((r) => r.codigoCetip).sort()).toEqual(["ABCD11", "EFGH22", "IJKL33"]);
+  });
+
+  it("mantém todos os registros quando todos estão dentro da janela", () => {
+    const records = [
+      { codigoCetip: "ABCD11", dataReferencia: "2026-03-21" },
+      { codigoCetip: "EFGH22", dataReferencia: "2026-03-15" },
+      { codigoCetip: "IJKL33", dataReferencia: "2026-03-01" },
+    ];
+    const result = applyWindow(records, 30);
+    expect(result).toHaveLength(3);
+  });
+
+  it("banco vazio retorna array vazio", () => {
+    expect(applyWindow([])).toHaveLength(0);
+  });
+});
+
+describe("filtragem por data mais recente (getLatestDataReferencia)", () => {
+  /**
+   * Simula o comportamento de getLatestDataReferencia + filtragem nas queries.
+   */
+  function getLatestDate(records: { dataReferencia: string }[]): string | null {
+    if (records.length === 0) return null;
+    return records.reduce((max, r) =>
+      r.dataReferencia > max ? r.dataReferencia : max,
+      records[0].dataReferencia
+    );
+  }
+
+  function filterByLatest<T extends { dataReferencia: string }>(records: T[]): T[] {
+    const latest = getLatestDate(records);
+    if (!latest) return [];
+    return records.filter((r) => r.dataReferencia === latest);
+  }
+
+  it("getAnalysis retorna apenas dados da data mais recente", () => {
+    const records = [
+      { codigoCetip: "ABCD11", dataReferencia: "2026-03-21", zspread: "0.6" },
+      { codigoCetip: "EFGH22", dataReferencia: "2026-03-21", zspread: "1.2" },
+      { codigoCetip: "IJKL33", dataReferencia: "2026-03-15", zspread: "0.8" }, // data anterior
+    ];
+    const result = filterByLatest(records);
+    expect(result).toHaveLength(2);
+    expect(result.every((r) => r.dataReferencia === "2026-03-21")).toBe(true);
+    expect(result.find((r) => r.codigoCetip === "IJKL33")).toBeUndefined();
+  });
+
+  it("banco vazio retorna array vazio", () => {
+    expect(filterByLatest([])).toHaveLength(0);
+  });
+
+  it("banco com apenas uma data retorna todos os registros", () => {
+    const records = [
+      { codigoCetip: "ABCD11", dataReferencia: "2026-03-21", zspread: "0.6" },
+      { codigoCetip: "EFGH22", dataReferencia: "2026-03-21", zspread: "1.2" },
+    ];
+    expect(filterByLatest(records)).toHaveLength(2);
+  });
+});

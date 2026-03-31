@@ -25,7 +25,7 @@ import {
   AnbimaAsset,
 } from "./moodysScraperService";
 import { enrichBatch, clearAnbimaDataCache, AnbimaDataRecord as SndRecord } from "./anbimaDataService";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export interface SyncProgress {
   step: string;
@@ -442,7 +442,18 @@ export async function runFullSync(
 
     // ── 8. Persistir resultados de spread ─────────────────────────────────────
     report("Salvando análise de spread...", 0, 1);
-    await db.delete(spreadAnalysis);
+
+    // Normalizar dataReferencia para YYYY-MM-DD (de DD/MM/YYYY)
+    const normalizeDate = (d: string | null | undefined): string | null => {
+      if (!d) return null;
+      // Se já está no formato YYYY-MM-DD, retornar como está
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+      // Converter DD/MM/YYYY → YYYY-MM-DD
+      const parts = d.split("/");
+      if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      return d;
+    };
+
     for (let i = 0; i < marked.length; i += BATCH) {
       const batch = marked.slice(i, i + BATCH);
       await db.insert(spreadAnalysis).values(
@@ -463,11 +474,11 @@ export async function runFullSync(
             s.duration !== null
               ? String((s.duration / 252).toFixed(4))
               : null,
-          dataReferencia: s.dataReferencia || null,
+          dataReferencia: normalizeDate(s.dataReferencia),
           ntnbReferencia: s.referenciaNtnb || null,
           ntnbTaxa: null,
           ntnbDuration: null,
-          dataVencimento: s.dataVencimento || null,
+          dataVencimento: normalizeDate(s.dataVencimento),
           zspread: String(s.zSpread),
           spreadIncentivadoSemGrossUp: s.spreadIncentivadoSemGrossUp !== null ? String(s.spreadIncentivadoSemGrossUp) : null,
           scoreMatch: String(s.scoreMatch.toFixed(4)),
@@ -479,6 +490,38 @@ export async function runFullSync(
         }))
       );
     }
+
+    // ── 9. Deduplicação: manter apenas o registro mais recente por codigoCetip ──
+    report("Deduplicando registros por papel...", 0, 1);
+    // Para cada codigoCetip com múltiplos registros, deletar todos exceto o de maior dataReferencia
+    // (em caso de empate na data, manter o de maior id)
+    await db.execute(sql`
+      DELETE sa FROM spread_analysis sa
+      INNER JOIN (
+        SELECT codigoCetip, MAX(dataReferencia) AS maxData
+        FROM spread_analysis
+        GROUP BY codigoCetip
+      ) latest ON sa.codigoCetip = latest.codigoCetip
+      WHERE sa.dataReferencia < latest.maxData
+    `);
+    report("Deduplicação concluída", 1, 1);
+
+    // ── 10. Limpeza de janela: deletar registros com mais de 30 dias ─────────
+    report("Aplicando janela de 30 dias...", 0, 1);
+    await db.execute(sql`
+      DELETE FROM spread_analysis
+      WHERE dataReferencia < DATE_FORMAT(
+        DATE_SUB(
+          STR_TO_DATE(
+            (SELECT MAX(dataReferencia) FROM spread_analysis AS sa2),
+            '%Y-%m-%d'
+          ),
+          INTERVAL 30 DAY
+        ),
+        '%Y-%m-%d'
+      )
+    `);
+    report("Janela de 30 dias aplicada", 1, 1);
 
     const comRating = marked.length;
     const semMatch = anbimaData.length - comRating;

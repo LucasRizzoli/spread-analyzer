@@ -112,11 +112,25 @@ export interface SpreadFilters {
   scoreMin?: number;
 }
 
+/**
+ * Retorna a data de referência mais recente disponível no banco.
+ * Usado para filtrar todas as queries por padrão.
+ */
+async function getLatestDataReferencia(db: NonNullable<Awaited<ReturnType<typeof getDb>>>): Promise<string | null> {
+  const result = await db
+    .select({ maxDate: sql<string>`MAX(${spreadAnalysis.dataReferencia})` })
+    .from(spreadAnalysis);
+  return result[0]?.maxDate ?? null;
+}
+
 export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
   const db = await getDb();
   if (!db) return [];
 
-  const conditions = [];
+  const latestDate = await getLatestDataReferencia(db);
+  const conditions = latestDate
+    ? [sql`${spreadAnalysis.dataReferencia} = ${latestDate}`]
+    : [];
 
   if (filters.durationMin !== undefined || filters.durationMax !== undefined) {
     const min = filters.durationMin ?? 0;
@@ -147,11 +161,16 @@ export async function getSpreadFiltersOptions() {
   const db = await getDb();
   if (!db) return { indexadores: [], setores: [], ratings: [], tipos: [] };
 
+  const latestDate = await getLatestDataReferencia(db);
+  const dateFilter = latestDate
+    ? sql`${spreadAnalysis.dataReferencia} = ${latestDate}`
+    : isNotNull(spreadAnalysis.dataReferencia);
+
   const [indexadores, setores, ratings, tipos] = await Promise.all([
-    db.selectDistinct({ value: spreadAnalysis.indexador }).from(spreadAnalysis).where(isNotNull(spreadAnalysis.indexador)).orderBy(asc(spreadAnalysis.indexador)),
-    db.selectDistinct({ value: spreadAnalysis.setor }).from(spreadAnalysis).where(isNotNull(spreadAnalysis.setor)).orderBy(asc(spreadAnalysis.setor)),
-    db.selectDistinct({ value: spreadAnalysis.rating }).from(spreadAnalysis).where(isNotNull(spreadAnalysis.rating)).orderBy(asc(spreadAnalysis.rating)),
-    db.selectDistinct({ value: spreadAnalysis.tipo }).from(spreadAnalysis).where(isNotNull(spreadAnalysis.tipo)),
+    db.selectDistinct({ value: spreadAnalysis.indexador }).from(spreadAnalysis).where(and(isNotNull(spreadAnalysis.indexador), dateFilter)).orderBy(asc(spreadAnalysis.indexador)),
+    db.selectDistinct({ value: spreadAnalysis.setor }).from(spreadAnalysis).where(and(isNotNull(spreadAnalysis.setor), dateFilter)).orderBy(asc(spreadAnalysis.setor)),
+    db.selectDistinct({ value: spreadAnalysis.rating }).from(spreadAnalysis).where(and(isNotNull(spreadAnalysis.rating), dateFilter)).orderBy(asc(spreadAnalysis.rating)),
+    db.selectDistinct({ value: spreadAnalysis.tipo }).from(spreadAnalysis).where(and(isNotNull(spreadAnalysis.tipo), dateFilter)),
   ]);
 
   return {
@@ -166,9 +185,11 @@ export async function getZspreadByRating(filters: SpreadFilters = {}) {
   const db = await getDb();
   if (!db) return [];
 
+  const latestDate = await getLatestDataReferencia(db);
   const conditions = [
     isNotNull(spreadAnalysis.rating),
     isNotNull(spreadAnalysis.zspread),
+    ...(latestDate ? [sql`${spreadAnalysis.dataReferencia} = ${latestDate}`] : []),
   ];
   if (filters.durationMin !== undefined || filters.durationMax !== undefined) {
     const min = filters.durationMin ?? 0;
@@ -252,6 +273,11 @@ export async function getMatchQualityReport() {
   const db = await getDb();
   if (!db) return [];
 
+  const latestDate = await getLatestDataReferencia(db);
+  const dateCondition = latestDate
+    ? sql`${spreadAnalysis.dataReferencia} = ${latestDate}`
+    : undefined;
+
   return db
     .select({
       id: spreadAnalysis.id,
@@ -283,5 +309,24 @@ export async function getMatchQualityReport() {
       isOutlier: spreadAnalysis.isOutlier,
     })
     .from(spreadAnalysis)
+    .where(dateCondition)
     .orderBy(asc(spreadAnalysis.rating), asc(spreadAnalysis.emissorNome));
+}
+
+/**
+ * Retorna as datas de referência distintas disponíveis no banco,
+ * ordenadas da mais recente para a mais antiga.
+ * Usado para navegação histórica futura.
+ */
+export async function getAvailableDates(): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .selectDistinct({ dataReferencia: spreadAnalysis.dataReferencia })
+    .from(spreadAnalysis)
+    .where(isNotNull(spreadAnalysis.dataReferencia))
+    .orderBy(desc(spreadAnalysis.dataReferencia));
+
+  return rows.map((r) => r.dataReferencia).filter(Boolean) as string[];
 }

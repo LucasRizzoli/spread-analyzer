@@ -1,0 +1,9 @@
+{
+  "query": "CREATE INDEX `idx_spread_cetip_data` ON `spread_analysis` (`codigoCetip`,`dataReferencia`);\nCREATE INDEX `idx_spread_data_ref` ON `spread_analysis` (`dataReferencia`);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute CREATE INDEX `idx_spread_cetip_data` ON `spread_analysis` (`codigoCetip`,`dataReferencia`);\nCREATE INDEX `idx_spread_data_ref` ON `spread_analysis` (`dataReferencia`);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1570
+}

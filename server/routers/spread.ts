@@ -7,6 +7,7 @@ import {
   getLastSyncLog,
   getSyncLogs,
   getMatchQualityReport,
+  getAvailableDates,
 } from "../db";
 import { getSyncState, runFullSync } from "../services/syncService";
 import { sortRatings } from "../services/spreadCalculatorService";
@@ -114,6 +115,13 @@ export const spreadRouter = router({
       spreadIncentivadoSemGrossUp: row.spreadIncentivadoSemGrossUp ? Number(row.spreadIncentivadoSemGrossUp) : null,
       dataVencimento: row.dataVencimento || null,
     }));
+  }),
+
+  /**
+   * Retorna as datas de referência disponíveis no banco (para navegação histórica futura)
+   */
+  getAvailableDates: publicProcedure.query(async () => {
+    return getAvailableDates();
   }),
 
   /**

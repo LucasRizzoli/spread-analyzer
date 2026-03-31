@@ -1,0 +1,8 @@
+{
+  "query": "SHOW COLUMNS FROM spread_analysis LIMIT 20 OFFSET 20; SHOW INDEX FROM spread_analysis;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute SHOW COLUMNS FROM spread_analysis LIMIT 20 OFFSET 20; SHOW INDEX FROM spread_analysis;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 39 near \"LIMIT 20 OFFSET 20\""
+  ]
+}
