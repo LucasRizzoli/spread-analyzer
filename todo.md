@@ -237,7 +237,7 @@
 - [x] 40 testes passando
 
 ## v3.9 — Correção de erro na atualização de dados
-- [x] Diagnosticar: timeout no Playwright ao carregar homepage data.anbima.com.br (scripts Hotjar bloqueavam networkidle)
-- [x] Corrigir enrichBatch: inicialização da homepage não-fatal (try/catch + domcontentloaded)
-- [x] Corrigir fetchOne: substituir networkidle por domcontentloaded + 3s de espera para a API web-bff
+- [x] Diagnosticar causa raiz: waitUntil domcontentloaded não aguardava hidratação do React; API web-bff nunca era chamada
+- [x] Corrigir fetchOne: substituir domcontentloaded + waitForTimeout(3s) por commit + waitForResponse (reativo, API responde em ~1-2s)
+- [x] Corrigir enrichBatch: inicialização da homepage usa commit + 1s (não-fatal)
 - [x] 40 testes passando

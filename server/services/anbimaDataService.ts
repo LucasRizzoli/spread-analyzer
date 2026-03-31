@@ -89,34 +89,36 @@ async function fetchOne(
 
   const page = await context.newPage();
   try {
+    // Navegar com 'commit' (apenas aguarda início da resposta HTTP, sem esperar JS)
+    // e usar waitForResponse para aguardar a chamada da API web-bff de forma reativa.
+    // Diagnóstico: com waitUntil 'domcontentloaded' o React não terminava de hidratar
+    // dentro do timeout; com 'commit' + waitForResponse a API responde em ~1-2s.
+    const gotoPromise = page.goto(
+      `https://data.anbima.com.br/debentures/${key}/caracteristicas`,
+      { waitUntil: "commit", timeout: 20000 }
+    );
+
+    // Aguardar a resposta da API web-bff de forma reativa (sem polling)
+    const apiResponsePromise = page.waitForResponse(
+      (r) =>
+        r.url().includes("data-api.prd.anbima.com.br") &&
+        r.url().toLowerCase().includes(key.toLowerCase()) &&
+        r.url().includes("caracteristicas"),
+      { timeout: 15000 }
+    );
+
+    await gotoPromise;
     let apiData: AnbimaBffResponse | null = null;
 
-    page.on("response", async (response) => {
-      const url = response.url();
-      if (
-        url.includes("data-api.prd.anbima.com.br") &&
-        url.toLowerCase().includes(key.toLowerCase()) &&
-        url.includes("caracteristicas")
-      ) {
-        try {
-          const json = await response.json();
-          if (json && (json.isin || json.codigo_b3 || json.emissao)) {
-            apiData = json as AnbimaBffResponse;
-          }
-        } catch {
-          // ignora erros de parse
-        }
+    try {
+      const apiResponse = await apiResponsePromise;
+      const json = await apiResponse.json();
+      if (json && (json.isin || json.codigo_b3 || json.emissao)) {
+        apiData = json as AnbimaBffResponse;
       }
-    });
-
-    // Usar domcontentloaded (não networkidle) para evitar timeout com scripts pesados (Hotjar etc.)
-    // A API web-bff é chamada logo após o DOM carregar — aguardamos até 3s extras para a resposta
-    await page.goto(
-      `https://data.anbima.com.br/debentures/${key}/caracteristicas`,
-      { waitUntil: "domcontentloaded", timeout: 20000 }
-    );
-    // Aguardar a chamada da API web-bff (disparada pelo JS da página)
-    await page.waitForTimeout(3000);
+    } catch {
+      // API não respondeu dentro do timeout — ativo não encontrado
+    }
 
     if (!apiData) {
       cache.set(key, null);
@@ -197,18 +199,19 @@ export async function enrichBatch(
     context = await browser.newContext();
 
     // Inicializar sessão visitando a homepage para estabelecer cookies/tokens.
-    // Falha aqui é não-fatal: se o site estiver lento ou inacessível, continuamos
-    // e cada fetchOne tentará individualmente (com seu próprio timeout).
+    // Usa 'commit' (apenas aguarda início da resposta HTTP) para não bloquear em scripts pesados.
+    // Falha aqui é não-fatal: cada fetchOne funciona de forma independente.
     try {
       const initPage = await context.newPage();
       await initPage.goto("https://data.anbima.com.br", {
-        waitUntil: "domcontentloaded",
-        timeout: 15000,
+        waitUntil: "commit",
+        timeout: 10000,
       });
+      await initPage.waitForTimeout(1000); // aguardar cookies de sessão serem definidos
       await initPage.close();
     } catch (initErr) {
       console.warn("[ANBIMA Data] Aviso: falha ao carregar homepage de inicialização:", (initErr as Error).message);
-      // Continua mesmo sem a inicialização — fetchOne tentará cada ativo individualmente
+      // Continua mesmo sem a inicialização — fetchOne funciona de forma independente
     }
 
     let done = 0;
