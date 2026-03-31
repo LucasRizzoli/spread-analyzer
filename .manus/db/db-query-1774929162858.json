@@ -1,0 +1,150 @@
+{
+  "query": "\nSELECT codigoCetip, emissorNome, durationAnos, CAST(zspread AS DECIMAL(10,4)) as zspread, isOutlier\nFROM spread_analysis\nWHERE indexador = 'IPCA SPREAD' AND rating = 'AAA.br'\nORDER BY CAST(zspread AS DECIMAL(10,6)) DESC\nLIMIT 20;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT codigoCetip, emissorNome, durationAnos, CAST(zspread AS DECIMAL(10,4)) as zspread, isOutlier\nFROM spread_analysis\nWHERE indexador = 'IPCA SPREAD' AND rating = 'AAA.br'\nORDER BY CAST(zspread AS DECIMAL(10,6)) DESC\nLIMIT 20;\n",
+  "rows": [
+    {
+      "codigoCetip": "HVSP11",
+      "emissorNome": "HELIO VALGAS SOLAR PARTICIPACOES S.A. (*)",
+      "durationAnos": "5.0022",
+      "zspread": "2.1700",
+      "isOutlier": "1"
+    },
+    {
+      "codigoCetip": "RENTD1",
+      "emissorNome": "LOCALIZA RENT A CAR (*)",
+      "durationAnos": "5.6746",
+      "zspread": "1.5169",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "CMGTA1",
+      "emissorNome": "CEMIG GERAÇÃO E TRANSMISSÃO S/A (*)",
+      "durationAnos": "7.4232",
+      "zspread": "1.2611",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "AEAB11",
+      "emissorNome": "AES CAJUINA AB1 HOLDINGS S.A. (*)",
+      "durationAnos": "7.7030",
+      "zspread": "1.2352",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "CMGTB1",
+      "emissorNome": "CEMIG GERAÇÃO E TRANSMISSÃO S/A (*)",
+      "durationAnos": "8.7783",
+      "zspread": "1.2186",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "CMGDB4",
+      "emissorNome": "CEMIG DISTRIBUIÇÃO S/A (*)",
+      "durationAnos": "8.7797",
+      "zspread": "1.2120",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "CGASB1",
+      "emissorNome": "COMPANHIA DE GAS DE SÃO PAULO - COMGAS (*)",
+      "durationAnos": "8.3869",
+      "zspread": "1.1675",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "AURP12",
+      "emissorNome": "AUREN PARTICIPACOES S.A. (*)",
+      "durationAnos": "5.9824",
+      "zspread": "1.1368",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "AESLB7",
+      "emissorNome": "RGE SUL DISTRIBUIDORA DE ENERGIA S/A (*)",
+      "durationAnos": "8.2145",
+      "zspread": "1.1103",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "CGASA1",
+      "emissorNome": "COMPANHIA DE GAS DE SÃO PAULO - COMGAS (*)",
+      "durationAnos": "6.4115",
+      "zspread": "1.1041",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "CMGDA4",
+      "emissorNome": "CEMIG DISTRIBUIÇÃO S/A (*)",
+      "durationAnos": "7.4438",
+      "zspread": "1.0986",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "CPFPB1",
+      "emissorNome": "COMPANHIA PIRATININGA DE FORÇA E LUZ (*)",
+      "durationAnos": "6.4850",
+      "zspread": "1.0690",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "CMGDB1",
+      "emissorNome": "CEMIG DISTRIBUIÇÃO S/A (*)",
+      "durationAnos": "7.3591",
+      "zspread": "1.0656",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "EEELB1",
+      "emissorNome": "CPFL TRANSMISSAO S.A (*)",
+      "durationAnos": "8.2352",
+      "zspread": "1.0554",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "CPFPB7",
+      "emissorNome": "COMPANHIA PIRATININGA DE FORÇA E LUZ (*)",
+      "durationAnos": "8.2010",
+      "zspread": "1.0495",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "AESLB0",
+      "emissorNome": "RGE SUL DISTRIBUIDORA DE ENERGIA S/A (*)",
+      "durationAnos": "6.4879",
+      "zspread": "1.0275",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "BCPSA7",
+      "emissorNome": "CLARO S/A (*)",
+      "durationAnos": "6.5941",
+      "zspread": "1.0054",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "CPFPB0",
+      "emissorNome": "COMPANHIA PIRATININGA DE FORÇA E LUZ (*)",
+      "durationAnos": "6.1502",
+      "zspread": "0.9999",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "PALFA7",
+      "emissorNome": "COMPANHIA PAULISTA DE FORÇA E LUZ (*)",
+      "durationAnos": "6.4899",
+      "zspread": "0.9998",
+      "isOutlier": "0"
+    },
+    {
+      "codigoCetip": "TNHL11",
+      "emissorNome": "TUCANO HOLDING III S.A (*)",
+      "durationAnos": "5.9740",
+      "zspread": "0.9835",
+      "isOutlier": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "codigoCetip\temissorNome\tdurationAnos\tzspread\tisOutlier\nHVSP11\tHELIO VALGAS SOLAR PARTICIPACOES S.A. (*)\t5.0022\t2.1700\t1\nRENTD1\tLOCALIZA RENT A CAR (*)\t5.6746\t1.5169\t0\nCMGTA1\tCEMIG GERAÇÃO E TRANSMISSÃO S/A (*)\t7.4232\t1.2611\t0\nAEAB11\tAES CAJUINA AB1 HOLDINGS S.A. (*)\t7.7030\t1.2352\t0\nCMGTB1\tCEMIG GERAÇÃO E TRANSMISSÃO S/A (*)\t8.7783\t1.2186\t0\nCMGDB4\tCEMIG DISTRIBUIÇÃO S/A (*)\t8.7797\t1.2120\t0\nCGASB1\tCOMPANHIA DE GAS DE SÃO PAULO - COMGAS (*)\t8.3869\t1.1675\t0\nAURP12\tAUREN PARTICIPACOES S.A. (*)\t5.9824\t1.1368\t0\nAESLB7\tRGE SUL DISTRIBUIDORA DE ENERGIA S/A (*)\t8.2145\t1.1103\t0\nCGASA1\tCOMPANHIA DE GAS DE SÃO PAULO - COMGAS (*)\t6.4115\t1.1041\t0\nCMGDA4\tCEMIG DISTRIBUIÇÃO S/A (*)\t7.4438\t1.0986\t0\nCPFPB1\tCOMPANHIA PIRATININGA DE FORÇA E LUZ (*)\t6.4850\t1.0690\t0\nCMGDB1\tCEMIG DISTRIBUIÇÃO S/A (*)\t7.3591\t1.0656\t0\nEEELB1\tCPFL TRANSMISSAO S.A (*)\t8.2352\t1.0554\t0\nCPFPB7\tCOMPANHIA PIRATININGA DE FORÇA E LUZ (*)\t8.2010\t1.0495\t0\nAESLB0\tRGE SUL DISTRIBUIDORA DE ENERGIA S/A (*)\t6.4879\t1.0275\t0\nBCPSA7\tCLARO S/A (*)\t6.5941\t1.0054\t0\nCPFPB0\tCOMPANHIA PIRATININGA DE FORÇA E LUZ (*)\t6.1502\t0.9999\t0\nPALFA7\tCOMPANHIA PAULISTA DE FORÇA E LUZ (*)\t6.4899\t0.9998\t0\nTNHL11\tTUCANO HOLDING III S.A (*)\t5.9740\t0.9835\t0\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

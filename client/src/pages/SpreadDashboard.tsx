@@ -550,8 +550,8 @@ export default function SpreadDashboard() {
   const [activeView, setActiveView] = useState<"scatter" | "bar" | "table">("scatter");
   const [tableSearch, setTableSearch] = useState("");
   const [showOutliers, setShowOutliers] = useState(false);
-  // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B) ou DI SPREAD (spread sobre CDI)
-  const [universo, setUniverso] = useState<"IPCA" | "DI">("IPCA");
+  // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B), DI SPREAD (spread sobre CDI em bps) ou DI PERCENTUAL (% do CDI)
+  const [universo, setUniverso] = useState<"IPCA" | "DI" | "DI_PCT">("IPCA");
   // Métrica do gráfico Por Rating: média ou mediana
   const [metrica, setMetrica] = useState<"media" | "mediana">("media");
 
@@ -591,7 +591,9 @@ export default function SpreadDashboard() {
   // Mapear universo para indexadores correspondentes
   const universoIndexadores = universo === "IPCA"
     ? ["IPCA SPREAD"]
-    : ["DI SPREAD", "DI PERCENTUAL"];
+    : universo === "DI"
+    ? ["DI SPREAD"]
+    : ["DI PERCENTUAL"];
   const zspreadByRating = trpc.spread.getZspreadByRating.useQuery({
     durationMin: filters.durationRange[0],
     durationMax: filters.durationRange[1],
@@ -688,7 +690,7 @@ export default function SpreadDashboard() {
     });
   }, [allData]);
 
-  // 2. Filtrar por universo (IPCA SPREAD vs DI SPREAD)
+  // 2. Filtrar por universo (IPCA SPREAD vs DI SPREAD vs DI PERCENTUAL)
   const universoData = useMemo(() => {
     if (universo === "IPCA") {
       return highScoreData.filter((r) => {
@@ -696,10 +698,17 @@ export default function SpreadDashboard() {
         return idx === "IPCA SPREAD";
       });
     }
-    // DI: inclui DI SPREAD e DI PERCENTUAL
+    if (universo === "DI") {
+      // DI+: spread sobre CDI em bps (ex: CDI + 1,5% a.a.)
+      return highScoreData.filter((r) => {
+        const idx = (r as { indexador?: string | null }).indexador;
+        return idx === "DI SPREAD";
+      });
+    }
+    // % DI: percentual do CDI (ex: 110% do CDI) — métrica diferente, eixo diferente
     return highScoreData.filter((r) => {
       const idx = (r as { indexador?: string | null }).indexador;
-      return idx === "DI SPREAD" || idx === "DI PERCENTUAL";
+      return idx === "DI PERCENTUAL";
     });
   }, [highScoreData, universo]);
 
@@ -970,7 +979,7 @@ export default function SpreadDashboard() {
           <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-card">
             <div>
               <h2 className="text-base font-semibold text-foreground">
-                {universo === "IPCA" ? "Spread sobre NTN-B de mesma Duration" : "Spread sobre o CDI"}
+                {universo === "IPCA" ? "Spread sobre NTN-B de mesma Duration" : universo === "DI" ? "Spread sobre o CDI (DI+)" : "Percentual do CDI (% DI)"}
               </h2>
               <p className="text-xs text-muted-foreground">
                 {analysisData.length} ativos com spread calculado
@@ -985,6 +994,7 @@ export default function SpreadDashboard() {
                 {([
                   { key: "IPCA", label: "IPCA+" },
                   { key: "DI", label: "DI+" },
+                  { key: "DI_PCT", label: "% DI" },
                 ] as const).map(({ key, label }) => (
                   <button
                     key={key}

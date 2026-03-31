@@ -1,0 +1,58 @@
+{
+  "query": "\nSELECT rating, \n  COUNT(*) as n,\n  MIN(CAST(zspread AS DECIMAL(10,6))) as min_z,\n  MAX(CAST(zspread AS DECIMAL(10,6))) as max_z,\n  AVG(CAST(zspread AS DECIMAL(10,6))) as avg_z,\n  STDDEV(CAST(zspread AS DECIMAL(10,6))) as std_z\nFROM spread_analysis\nWHERE indexador = 'IPCA SPREAD'\nGROUP BY rating\nORDER BY avg_z DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT rating, \n  COUNT(*) as n,\n  MIN(CAST(zspread AS DECIMAL(10,6))) as min_z,\n  MAX(CAST(zspread AS DECIMAL(10,6))) as max_z,\n  AVG(CAST(zspread AS DECIMAL(10,6))) as avg_z,\n  STDDEV(CAST(zspread AS DECIMAL(10,6))) as std_z\nFROM spread_analysis\nWHERE indexador = 'IPCA SPREAD'\nGROUP BY rating\nORDER BY avg_z DESC;\n",
+  "rows": [
+    {
+      "rating": "A-.br",
+      "n": "1",
+      "min_z": "3.978700",
+      "max_z": "3.978700",
+      "avg_z": "3.9787000000",
+      "std_z": "0"
+    },
+    {
+      "rating": "A+.br",
+      "n": "4",
+      "min_z": "1.422300",
+      "max_z": "5.250800",
+      "avg_z": "2.9539000000",
+      "std_z": "1.4066364331269117"
+    },
+    {
+      "rating": "AA-.br",
+      "n": "4",
+      "min_z": "1.159400",
+      "max_z": "3.013200",
+      "avg_z": "2.1785250000",
+      "std_z": "0.7131592787554544"
+    },
+    {
+      "rating": "AA+.br",
+      "n": "7",
+      "min_z": "0.590400",
+      "max_z": "4.555500",
+      "avg_z": "1.7086714286",
+      "std_z": "1.2921236160614331"
+    },
+    {
+      "rating": "AA.br",
+      "n": "4",
+      "min_z": "0.988900",
+      "max_z": "2.556100",
+      "avg_z": "1.5388750000",
+      "std_z": "0.629271524760973"
+    },
+    {
+      "rating": "AAA.br",
+      "n": "51",
+      "min_z": "0.200000",
+      "max_z": "2.170000",
+      "avg_z": "0.8862725490",
+      "std_z": "0.3122786582892181"
+    }
+  ],
+  "messages": [],
+  "stdout": "rating\tn\tmin_z\tmax_z\tavg_z\tstd_z\nA-.br\t1\t3.978700\t3.978700\t3.9787000000\t0\nA+.br\t4\t1.422300\t5.250800\t2.9539000000\t1.4066364331269117\nAA-.br\t4\t1.159400\t3.013200\t2.1785250000\t0.7131592787554544\nAA+.br\t7\t0.590400\t4.555500\t1.7086714286\t1.2921236160614331\nAA.br\t4\t0.988900\t2.556100\t1.5388750000\t0.629271524760973\nAAA.br\t51\t0.200000\t2.170000\t0.8862725490\t0.3122786582892181\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

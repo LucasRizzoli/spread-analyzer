@@ -202,3 +202,8 @@
 
 ## v3.2 — Restaurar botão de toggle de outliers
 - [x] Corrigir contagem de outliers para não depender dos dados filtrados pelo backend
+
+## v3.3 — Correção grave: DI+ vs % DI e algoritmo de outliers
+- [x] Separar DI+ (spread sobre CDI em bps) de % do DI (percentual do CDI) como universos distintos
+- [x] Revisar algoritmo de outliers: HVSP11 é outlier legítimo (4.1σ acima da média AAA.br); corrigido agrupamento DI_SPREAD vs DI_PCT
+- [x] Garantir que o gráfico DI+ exibe apenas DI SPREAD e o % DI exibe apenas DI PERCENTUAL

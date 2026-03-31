@@ -1,0 +1,30 @@
+{
+  "query": "\nSELECT indexador, COUNT(*) as total,\n  MIN(CAST(taxaIndicativa AS DECIMAL(10,6))) as min_taxa,\n  MAX(CAST(taxaIndicativa AS DECIMAL(10,6))) as max_taxa,\n  AVG(CAST(taxaIndicativa AS DECIMAL(10,6))) as avg_taxa,\n  MIN(CAST(zspread AS DECIMAL(10,4))) as min_z,\n  MAX(CAST(zspread AS DECIMAL(10,4))) as max_z,\n  AVG(CAST(zspread AS DECIMAL(10,4))) as avg_z\nFROM spread_analysis\nGROUP BY indexador\nORDER BY total DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT indexador, COUNT(*) as total,\n  MIN(CAST(taxaIndicativa AS DECIMAL(10,6))) as min_taxa,\n  MAX(CAST(taxaIndicativa AS DECIMAL(10,6))) as max_taxa,\n  AVG(CAST(taxaIndicativa AS DECIMAL(10,6))) as avg_taxa,\n  MIN(CAST(zspread AS DECIMAL(10,4))) as min_z,\n  MAX(CAST(zspread AS DECIMAL(10,4))) as max_z,\n  AVG(CAST(zspread AS DECIMAL(10,4))) as avg_z\nFROM spread_analysis\nGROUP BY indexador\nORDER BY total DESC;\n",
+  "rows": [
+    {
+      "indexador": "DI SPREAD",
+      "total": "86",
+      "min_taxa": "0.443400",
+      "max_taxa": "4.193700",
+      "avg_taxa": "1.3077465116",
+      "min_z": "0.4434",
+      "max_z": "4.1937",
+      "avg_z": "1.30774651"
+    },
+    {
+      "indexador": "IPCA SPREAD",
+      "total": "71",
+      "min_taxa": "6.888600",
+      "max_taxa": "12.853600",
+      "avg_taxa": "7.6977507042",
+      "min_z": "0.2000",
+      "max_z": "5.2508",
+      "avg_z": "1.23696479"
+    }
+  ],
+  "messages": [],
+  "stdout": "indexador\ttotal\tmin_taxa\tmax_taxa\tavg_taxa\tmin_z\tmax_z\tavg_z\nDI SPREAD\t86\t0.443400\t4.193700\t1.3077465116\t0.4434\t4.1937\t1.30774651\nIPCA SPREAD\t71\t6.888600\t12.853600\t7.6977507042\t0.2000\t5.2508\t1.23696479\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

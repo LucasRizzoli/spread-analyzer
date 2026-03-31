@@ -1,0 +1,94 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'spread_analysis' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'spread_analysis' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "codigoCetip"
+    },
+    {
+      "COLUMN_NAME": "isin"
+    },
+    {
+      "COLUMN_NAME": "tipo"
+    },
+    {
+      "COLUMN_NAME": "emissorNome"
+    },
+    {
+      "COLUMN_NAME": "setor"
+    },
+    {
+      "COLUMN_NAME": "indexador"
+    },
+    {
+      "COLUMN_NAME": "incentivado"
+    },
+    {
+      "COLUMN_NAME": "rating"
+    },
+    {
+      "COLUMN_NAME": "tipoMatch"
+    },
+    {
+      "COLUMN_NAME": "moodysRatingId"
+    },
+    {
+      "COLUMN_NAME": "taxaIndicativa"
+    },
+    {
+      "COLUMN_NAME": "durationAnos"
+    },
+    {
+      "COLUMN_NAME": "dataReferencia"
+    },
+    {
+      "COLUMN_NAME": "dataVencimento"
+    },
+    {
+      "COLUMN_NAME": "ntnbReferencia"
+    },
+    {
+      "COLUMN_NAME": "ntnbTaxa"
+    },
+    {
+      "COLUMN_NAME": "ntnbDuration"
+    },
+    {
+      "COLUMN_NAME": "zspread"
+    },
+    {
+      "COLUMN_NAME": "spreadIncentivadoSemGrossUp"
+    },
+    {
+      "COLUMN_NAME": "createdAt"
+    },
+    {
+      "COLUMN_NAME": "updatedAt"
+    },
+    {
+      "COLUMN_NAME": "scoreMatch"
+    },
+    {
+      "COLUMN_NAME": "isOutlier"
+    },
+    {
+      "COLUMN_NAME": "emissorMoodys"
+    },
+    {
+      "COLUMN_NAME": "numeroEmissaoSnd"
+    },
+    {
+      "COLUMN_NAME": "numeroEmissaoMoodys"
+    },
+    {
+      "COLUMN_NAME": "instrumentoMoodys"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\ncodigoCetip\nisin\ntipo\nemissorNome\nsetor\nindexador\nincentivado\nrating\ntipoMatch\nmoodysRatingId\ntaxaIndicativa\ndurationAnos\ndataReferencia\ndataVencimento\nntnbReferencia\nntnbTaxa\nntnbDuration\nzspread\nspreadIncentivadoSemGrossUp\ncreatedAt\nupdatedAt\nscoreMatch\nisOutlier\nemissorMoodys\nnumeroEmissaoSnd\nnumeroEmissaoMoodys\ninstrumentoMoodys\n",
+  "stderr": "",
+  "execution_time_ms": 54
+}

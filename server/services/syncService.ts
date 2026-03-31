@@ -222,15 +222,19 @@ function markOutliers(results: SpreadResult[]): {
   outlierCount: number;
   ratingStats: Record<string, { total: number; outliers: number; cutLow: number; cutHigh: number; mean: number; stdDev: number }>;
 } {
-  // Determinar universo de cada ativo (IPCA ou DI) para agrupar separadamente
+  // Determinar universo de cada ativo para agrupar separadamente.
+  // DI SPREAD (bps sobre CDI) e DI PERCENTUAL (% do CDI) são métricas diferentes
+  // e devem ter seus próprios limites de outlier.
   const getUniverso = (tipoRemuneracao: string): string => {
     const t = tipoRemuneracao.toUpperCase();
     if (t.includes("IPCA")) return "IPCA";
-    if (t.includes("DI")) return "DI";
+    if (t === "DI SPREAD" || t.includes("DI SPREAD")) return "DI_SPREAD";
+    if (t === "DI PERCENTUAL" || t.includes("DI PERCENTUAL")) return "DI_PCT";
+    if (t.includes("DI")) return "DI_SPREAD"; // fallback para outros formatos DI
     return "OUTRO";
   };
 
-  // Agrupar por rating + universo (ex: "AA-.br|IPCA", "AA-.br|DI")
+  // Agrupar por rating + universo (ex: "AA-.br|IPCA", "AA-.br|DI_SPREAD", "AA-.br|DI_PCT")
   const byRating = new Map<string, SpreadResult[]>();
   for (const r of results) {
     const universo = getUniverso(r.tipoRemuneracao);
