@@ -259,3 +259,8 @@
 - [x] Diagnosticar: banco retorna isOutlier como string "0"/"1" (MySQL TINYINT), mas eq(isOutlier, false) comparava com boolean false — filtro nunca funcionava
 - [x] Corrigir db.ts: substituir eq(isOutlier, false) por sql`isOutlier = 0` em getSpreadAnalysis e getZspreadByRating
 - [x] 40 testes de lógica passando
+
+## v3.13 — Gráfico de barras Por Rating não responde ao toggle de outliers
+- [x] Diagnosticar: universoIndexadores era array literal recriado a cada render, causando instabilidade de referência na query tRPC
+- [x] Corrigir: envolver universoIndexadores em useMemo([universo]) para estabilizar a referência
+- [x] 41 testes passando

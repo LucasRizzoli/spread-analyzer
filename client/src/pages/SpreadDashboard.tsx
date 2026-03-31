@@ -591,11 +591,14 @@ export default function SpreadDashboard() {
   });
 
   // Mapear universo para indexadores correspondentes
-  const universoIndexadores = universo === "IPCA"
-    ? ["IPCA SPREAD"]
-    : universo === "DI"
-    ? ["DI SPREAD"]
-    : ["DI PERCENTUAL"];
+  const universoIndexadores = useMemo(
+    () => universo === "IPCA"
+      ? ["IPCA SPREAD"]
+      : universo === "DI"
+      ? ["DI SPREAD"]
+      : ["DI PERCENTUAL"],
+    [universo]
+  );
   const zspreadByRating = trpc.spread.getZspreadByRating.useQuery({
     durationMin: filters.durationRange[0],
     durationMax: filters.durationRange[1],

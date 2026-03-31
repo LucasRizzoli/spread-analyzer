@@ -1,0 +1,35 @@
+{
+  "query": "\nSELECT indexador, isOutlier, COUNT(*) as cnt \nFROM spread_analysis \nWHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\nGROUP BY indexador, isOutlier\nORDER BY indexador, isOutlier;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute \nSELECT indexador, isOutlier, COUNT(*) as cnt \nFROM spread_analysis \nWHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)\nGROUP BY indexador, isOutlier\nORDER BY indexador, isOutlier;\n",
+  "rows": [
+    {
+      "indexador": "DI PERCENTUAL",
+      "isOutlier": "0",
+      "cnt": "1"
+    },
+    {
+      "indexador": "DI SPREAD",
+      "isOutlier": "0",
+      "cnt": "77"
+    },
+    {
+      "indexador": "DI SPREAD",
+      "isOutlier": "1",
+      "cnt": "10"
+    },
+    {
+      "indexador": "IPCA SPREAD",
+      "isOutlier": "0",
+      "cnt": "67"
+    },
+    {
+      "indexador": "IPCA SPREAD",
+      "isOutlier": "1",
+      "cnt": "11"
+    }
+  ],
+  "messages": [],
+  "stdout": "indexador\tisOutlier\tcnt\nDI PERCENTUAL\t0\t1\nDI SPREAD\t0\t77\nDI SPREAD\t1\t10\nIPCA SPREAD\t0\t67\nIPCA SPREAD\t1\t11\n",
+  "stderr": "",
+  "execution_time_ms": 61
+}
