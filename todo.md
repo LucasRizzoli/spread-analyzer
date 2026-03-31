@@ -199,3 +199,6 @@
 - [x] Corrigir getAnalysis para aplicar scoreMin 0.90 (consistência com Por Rating)
 - [x] Corrigir filtro isOutlier no frontend (cast de inteiro 0/1 para boolean)
 - [x] Garantir que excludeOutliers é aplicado no backend via getSpreadAnalysis
+
+## v3.2 — Restaurar botão de toggle de outliers
+- [x] Corrigir contagem de outliers para não depender dos dados filtrados pelo backend

@@ -576,6 +576,18 @@ export default function SpreadDashboard() {
     scoreMin: 0.90,
   });
 
+  // Query separada apenas para contar outliers — sempre sem filtro de exclusão,
+  // para que o botão de toggle apareça mesmo quando outliers estão ocultos.
+  const outlierCountQuery = trpc.spread.getAnalysis.useQuery({
+    durationMin: filters.durationRange[0],
+    durationMax: filters.durationRange[1],
+    indexadores: filters.indexadores.length ? filters.indexadores : undefined,
+    ratings: filters.ratings.length ? filters.ratings : undefined,
+    setores: filters.setores.length ? filters.setores : undefined,
+    excludeOutliers: false,
+    scoreMin: 0.90,
+  });
+
   // Mapear universo para indexadores correspondentes
   const universoIndexadores = universo === "IPCA"
     ? ["IPCA SPREAD"]
@@ -698,9 +710,11 @@ export default function SpreadDashboard() {
     return val === true || val === 1;
   };
   const analysisData = universoData;
+  // Contagem de outliers vem da query sem filtro de exclusão,
+  // garantindo que o botão apareça mesmo quando outliers estão ocultos.
   const outlierCount = useMemo(
-    () => allData.filter(isOutlierTrue).length,
-    [allData]
+    () => (outlierCountQuery.data || []).filter(isOutlierTrue).length,
+    [outlierCountQuery.data]
   );
 
   // Rótulo do eixo Y conforme universo
