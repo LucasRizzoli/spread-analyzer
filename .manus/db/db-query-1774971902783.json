@@ -1,0 +1,18 @@
+{
+  "query": "SELECT isOutlier, COUNT(*) as cnt FROM spread_analysis GROUP BY isOutlier LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute SELECT isOutlier, COUNT(*) as cnt FROM spread_analysis GROUP BY isOutlier LIMIT 10;",
+  "rows": [
+    {
+      "isOutlier": "0",
+      "cnt": "145"
+    },
+    {
+      "isOutlier": "1",
+      "cnt": "21"
+    }
+  ],
+  "messages": [],
+  "stdout": "isOutlier\tcnt\n0\t145\n1\t21\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

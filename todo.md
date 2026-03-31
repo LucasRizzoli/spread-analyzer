@@ -254,3 +254,8 @@
 - [x] Baixar score mínimo para 0.80 em todos os pontos (syncService + frontend)
 - [x] DI PERCENTUAL já separado no frontend (aba % DI existente verificada e funcional)
 - [x] 41 testes passando
+
+## v3.12 — Correção de outliers na aba Por Rating (DI+ e % DI)
+- [x] Diagnosticar: banco retorna isOutlier como string "0"/"1" (MySQL TINYINT), mas eq(isOutlier, false) comparava com boolean false — filtro nunca funcionava
+- [x] Corrigir db.ts: substituir eq(isOutlier, false) por sql`isOutlier = 0` em getSpreadAnalysis e getZspreadByRating
+- [x] 40 testes de lógica passando
