@@ -109,11 +109,14 @@ async function fetchOne(
       }
     });
 
+    // Usar domcontentloaded (não networkidle) para evitar timeout com scripts pesados (Hotjar etc.)
+    // A API web-bff é chamada logo após o DOM carregar — aguardamos até 3s extras para a resposta
     await page.goto(
       `https://data.anbima.com.br/debentures/${key}/caracteristicas`,
-      { waitUntil: "networkidle", timeout: 25000 }
+      { waitUntil: "domcontentloaded", timeout: 20000 }
     );
-    await page.waitForTimeout(1500);
+    // Aguardar a chamada da API web-bff (disparada pelo JS da página)
+    await page.waitForTimeout(3000);
 
     if (!apiData) {
       cache.set(key, null);
@@ -193,13 +196,20 @@ export async function enrichBatch(
     browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
     context = await browser.newContext();
 
-    // Inicializar sessão visitando a homepage para estabelecer cookies/tokens
-    const initPage = await context.newPage();
-    await initPage.goto("https://data.anbima.com.br", {
-      waitUntil: "networkidle",
-      timeout: 20000,
-    });
-    await initPage.close();
+    // Inicializar sessão visitando a homepage para estabelecer cookies/tokens.
+    // Falha aqui é não-fatal: se o site estiver lento ou inacessível, continuamos
+    // e cada fetchOne tentará individualmente (com seu próprio timeout).
+    try {
+      const initPage = await context.newPage();
+      await initPage.goto("https://data.anbima.com.br", {
+        waitUntil: "domcontentloaded",
+        timeout: 15000,
+      });
+      await initPage.close();
+    } catch (initErr) {
+      console.warn("[ANBIMA Data] Aviso: falha ao carregar homepage de inicialização:", (initErr as Error).message);
+      // Continua mesmo sem a inicialização — fetchOne tentará cada ativo individualmente
+    }
 
     let done = 0;
 

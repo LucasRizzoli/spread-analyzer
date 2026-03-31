@@ -235,3 +235,9 @@
 - [x] Ajustar syncService: enrichBatch recebe apenas CETIPs que passaram no Dice
 - [x] Manter crossByEmissao: confirmação final por número de emissão (sem mudança)
 - [x] 40 testes passando
+
+## v3.9 — Correção de erro na atualização de dados
+- [x] Diagnosticar: timeout no Playwright ao carregar homepage data.anbima.com.br (scripts Hotjar bloqueavam networkidle)
+- [x] Corrigir enrichBatch: inicialização da homepage não-fatal (try/catch + domcontentloaded)
+- [x] Corrigir fetchOne: substituir networkidle por domcontentloaded + 3s de espera para a API web-bff
+- [x] 40 testes passando
