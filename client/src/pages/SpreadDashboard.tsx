@@ -25,6 +25,9 @@ import {
   EyeOff,
   X,
   ClipboardCheck,
+  Database,
+  TrendingDown,
+  Activity,
 } from "lucide-react";
 import {
   ScatterChart,
@@ -40,6 +43,8 @@ import {
   ReferenceLine,
   ComposedChart,
   Line,
+  LineChart,
+  Legend,
 } from "recharts";
 import { toast } from "sonner";
 import { sortRatings } from "../lib/ratings";
@@ -549,7 +554,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
 
 export default function SpreadDashboard() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
-  const [activeView, setActiveView] = useState<"scatter" | "bar" | "table">("scatter");
+  const [activeView, setActiveView] = useState<"scatter" | "bar" | "table" | "dados">("scatter");
   const [tableSearch, setTableSearch] = useState("");
   const [showOutliers, setShowOutliers] = useState(false);
   // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B), DI SPREAD (spread sobre CDI em bps) ou DI PERCENTUAL (% do CDI)
@@ -567,6 +572,9 @@ export default function SpreadDashboard() {
   const filterOptions = trpc.spread.getFilterOptions.useQuery();
   const syncState = trpc.spread.getSyncState.useQuery(undefined, { refetchInterval: 3000 });
   const lastSync = trpc.spread.getLastSync.useQuery();
+
+  const windowSummary = trpc.spread.getWindowSummary.useQuery();
+  const historicalSnapshots = trpc.spread.getHistoricalSnapshots.useQuery({ limit: 90 });
 
   const analysisQuery = trpc.spread.getAnalysis.useQuery({
     durationMin: filters.durationRange[0],
@@ -591,23 +599,6 @@ export default function SpreadDashboard() {
   });
 
   // Mapear universo para indexadores correspondentes
-  const universoIndexadores = useMemo(
-    () => universo === "IPCA"
-      ? ["IPCA SPREAD"]
-      : universo === "DI"
-      ? ["DI SPREAD"]
-      : ["DI PERCENTUAL"],
-    [universo]
-  );
-  const zspreadByRating = trpc.spread.getZspreadByRating.useQuery({
-    durationMin: filters.durationRange[0],
-    durationMax: filters.durationRange[1],
-    indexadores: universoIndexadores,
-    ratings: filters.ratings.length ? filters.ratings : undefined,
-    setores: filters.setores.length ? filters.setores : undefined,
-    excludeOutliers: !showOutliers,
-    scoreMin: 0.80,
-  });
   const triggerSync = trpc.spread.triggerSync.useMutation({
     onSuccess: () => {
       toast.success("Sincronização iniciada", {
@@ -733,6 +724,44 @@ export default function SpreadDashboard() {
 
   // Rótulo do eixo Y conforme universo
   const yAxisLabel = "Spread (bps)";
+
+  // byRating: agregado em memória a partir de analysisData (fonte única de verdade)
+  // Isso garante que o gráfico de barras responde a TODOS os filtros (outliers, duration, setor, rating)
+  const byRatingData = useMemo(() => {
+    const groups = new Map<string, number[]>();
+    for (const r of analysisData) {
+      if (r.zspread == null || !r.rating) continue;
+      const zs = Number(r.zspread);
+      if (!isFinite(zs)) continue;
+      if (!groups.has(r.rating)) groups.set(r.rating, []);
+      groups.get(r.rating)!.push(zs);
+    }
+    const result: {
+      rating: string;
+      avgZspread: number;
+      medianZspread: number;
+      count: number;
+      minZspread: number;
+      maxZspread: number;
+    }[] = [];
+    for (const [rating, vals] of Array.from(groups.entries())) {
+      const sorted = [...vals].sort((a, b) => a - b);
+      const n = sorted.length;
+      const avg = sorted.reduce((s, v) => s + v, 0) / n;
+      const median = n % 2 === 0
+        ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
+        : sorted[Math.floor(n / 2)];
+      result.push({
+        rating,
+        avgZspread: avg,
+        medianZspread: median,
+        count: n,
+        minZspread: sorted[0],
+        maxZspread: sorted[n - 1],
+      });
+    }
+    return result;
+  }, [analysisData]);
 
   // Filtrar tabela por busca
   const filteredTableData = useMemo(() => {
@@ -1064,6 +1093,7 @@ export default function SpreadDashboard() {
                     { key: "scatter", icon: TrendingUp, label: "Dispersão" },
                     { key: "bar", icon: BarChart3, label: "Por Rating" },
                     { key: "table", icon: Table2, label: "Tabela" },
+                    { key: "dados", icon: Database, label: "Dados" },
                   ] as const
                 ).map(({ key, icon: Icon, label }) => (
                   <button
@@ -1101,7 +1131,20 @@ export default function SpreadDashboard() {
             ) : activeView === "scatter" ? (
               <ScatterView data={scatterData} ratingGroups={ratingGroups} yAxisLabel={yAxisLabel} />
             ) : activeView === "bar" ? (
-              <BarView data={zspreadByRating.data || []} yAxisLabel={yAxisLabel} metrica={metrica} />
+              <BarView data={byRatingData} yAxisLabel={yAxisLabel} metrica={metrica} />
+            ) : activeView === "dados" ? (
+              <DadosView
+                windowSummary={windowSummary.data || null}
+                snapshots={historicalSnapshots.data || []}
+                isSyncing={isSyncing}
+                syncProgress={syncState.data?.progress?.step || null}
+                moodysFile={moodysFile}
+                anbimaFile={anbimaFile}
+                onMoodysSelect={() => moodysInputRef.current?.click()}
+                onAnbimaSelect={() => anbimaInputRef.current?.click()}
+                onSync={handleSync}
+                lastSync={lastSync.data || null}
+              />
             ) : (
               <TableView
                 data={filteredTableData}
@@ -1727,6 +1770,384 @@ function TableView({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Dados View ───────────────────────────────────────────────────────────────
+
+type SnapshotRow = {
+  id: number;
+  snapshotAt: Date | string | number;
+  dataRefIni: string;
+  dataRefFim: string;
+  indexador: string;
+  rating: string;
+  nPapeis: number;
+  mediaSpread: number | null;
+  medianaSpread: number | null;
+  p25Spread: number | null;
+  p75Spread: number | null;
+  stdSpread: number | null;
+};
+
+type WindowSummary = {
+  dataMin: string | null;
+  dataMax: string | null;
+  totalPapeis: number;
+  totalDatas: number;
+  totalCetips: number;
+  totalOutliers: number;
+};
+
+type LastSyncRow = {
+  finalizadoEm?: Date | string | number | null;
+  status?: string | null;
+  totalAtivos?: number | null;
+  matchedAtivos?: number | null;
+  dataReferencia?: string | null;
+};
+
+function DadosView({
+  windowSummary,
+  snapshots,
+  isSyncing,
+  syncProgress,
+  moodysFile,
+  anbimaFile,
+  onMoodysSelect,
+  onAnbimaSelect,
+  onSync,
+  lastSync,
+}: {
+  windowSummary: WindowSummary | null;
+  snapshots: SnapshotRow[];
+  isSyncing: boolean;
+  syncProgress: string | null;
+  moodysFile: File | null;
+  anbimaFile: File | null;
+  onMoodysSelect: () => void;
+  onAnbimaSelect: () => void;
+  onSync: () => void;
+  lastSync: LastSyncRow | null;
+}) {
+  const [dragOver, setDragOver] = useState<"moodys" | "anbima" | null>(null);
+  const [selectedIndexador, setSelectedIndexador] = useState<string>("IPCA SPREAD");
+  const [selectedMetrica, setSelectedMetrica] = useState<"media" | "mediana">("mediana");
+
+  // Indexadores disponíveis nos snapshots
+  const indexadoresDisponiveis = useMemo(() => {
+    const set = new Set(snapshots.map((s) => s.indexador));
+    return Array.from(set).sort();
+  }, [snapshots]);
+
+  // Filtrar snapshots pelo indexador selecionado
+  const snapshotsFiltrados = useMemo(() => {
+    return snapshots.filter((s) => s.indexador === selectedIndexador);
+  }, [snapshots, selectedIndexador]);
+
+  // Agrupar por dataRefFim e rating para o gráfico de linha
+  const chartData = useMemo(() => {
+    const byDate = new Map<string, Record<string, number>>();
+    for (const s of snapshotsFiltrados) {
+      if (!byDate.has(s.dataRefFim)) byDate.set(s.dataRefFim, {});
+      const val = selectedMetrica === "media" ? s.mediaSpread : s.medianaSpread;
+      if (val != null) {
+        byDate.get(s.dataRefFim)![s.rating] = Math.round(Number(val) * 100);
+      }
+    }
+    return Array.from(byDate.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, values]) => ({ date, ...values }));
+  }, [snapshotsFiltrados, selectedMetrica]);
+
+  // Ratings presentes nos snapshots filtrados
+  const ratingsPresentes = useMemo(() => {
+    const set = new Set(snapshotsFiltrados.map((s) => s.rating));
+    return sortRatings(Array.from(set));
+  }, [snapshotsFiltrados]);
+
+  const handleDrop = (tipo: "moodys" | "anbima") => (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(null);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+      return;
+    }
+    // Simular clique no input correto
+    if (tipo === "moodys") onMoodysSelect();
+    else onAnbimaSelect();
+  };
+
+  return (
+    <div className="h-full overflow-y-auto space-y-6 pr-1">
+      {/* ── Seção 1: Janela Ativa ── */}
+      <section>
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Activity className="h-4 w-4 text-primary" />
+          Janela Ativa
+        </h3>
+        {windowSummary ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-card border border-border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Período</p>
+              <p className="text-sm font-semibold text-foreground">
+                {windowSummary.dataMin
+                  ? new Date(windowSummary.dataMin + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+                  : "—"}
+                {" → "}
+                {windowSummary.dataMax
+                  ? new Date(windowSummary.dataMax + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+                  : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{windowSummary.totalDatas} datas</p>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Total de Registros</p>
+              <p className="text-sm font-semibold text-foreground">{windowSummary.totalPapeis.toLocaleString("pt-BR")}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{windowSummary.totalCetips} CETIPs únicos</p>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Outliers</p>
+              <p className="text-sm font-semibold text-yellow-400">{windowSummary.totalOutliers}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {windowSummary.totalPapeis > 0
+                  ? ((windowSummary.totalOutliers / windowSummary.totalPapeis) * 100).toFixed(1)
+                  : "0"}% do total
+              </p>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Último Sync</p>
+              <p className="text-sm font-semibold text-foreground">
+                {lastSync?.finalizadoEm
+                  ? new Date(lastSync.finalizadoEm as number).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+                  : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {lastSync?.matchedAtivos != null ? `${lastSync.matchedAtivos} matches` : "—"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-card border border-border rounded-lg p-4 text-sm text-muted-foreground text-center">
+            Nenhum dado na janela ativa. Faça a primeira sincronização abaixo.
+          </div>
+        )}
+      </section>
+
+      {/* ── Seção 2: Upload ── */}
+      <section>
+        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+          <Upload className="h-4 w-4 text-primary" />
+          Atualizar Dados
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          {/* Drop zone Moody's */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver("moodys"); }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={handleDrop("moodys")}
+            onClick={onMoodysSelect}
+            className={`relative flex flex-col items-center justify-center gap-2 p-5 rounded-lg border-2 border-dashed cursor-pointer transition-all ${
+              dragOver === "moodys"
+                ? "border-primary bg-primary/10"
+                : moodysFile
+                ? "border-emerald-500/60 bg-emerald-500/5"
+                : "border-border hover:border-primary/50 hover:bg-muted/30"
+            }`}
+          >
+            {moodysFile ? (
+              <>
+                <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                <p className="text-xs font-medium text-emerald-400 text-center truncate max-w-full px-2">{moodysFile.name}</p>
+                <p className="text-[10px] text-muted-foreground">{(moodysFile.size / 1024).toFixed(0)} KB</p>
+              </>
+            ) : (
+              <>
+                <Upload className="h-6 w-6 text-muted-foreground" />
+                <p className="text-xs font-medium text-foreground">Planilha Moody's</p>
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Arraste ou clique para selecionar<br />
+                  <a
+                    href="https://moodyslocal.com.br"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-primary hover:underline"
+                  >
+                    moodyslocal.com.br
+                  </a>
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Drop zone ANBIMA */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver("anbima"); }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={handleDrop("anbima")}
+            onClick={onAnbimaSelect}
+            className={`relative flex flex-col items-center justify-center gap-2 p-5 rounded-lg border-2 border-dashed cursor-pointer transition-all ${
+              dragOver === "anbima"
+                ? "border-primary bg-primary/10"
+                : anbimaFile
+                ? "border-emerald-500/60 bg-emerald-500/5"
+                : "border-border hover:border-primary/50 hover:bg-muted/30"
+            }`}
+          >
+            {anbimaFile ? (
+              <>
+                <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                <p className="text-xs font-medium text-emerald-400 text-center truncate max-w-full px-2">{anbimaFile.name}</p>
+                <p className="text-[10px] text-muted-foreground">{(anbimaFile.size / 1024).toFixed(0)} KB</p>
+              </>
+            ) : (
+              <>
+                <Upload className="h-6 w-6 text-muted-foreground" />
+                <p className="text-xs font-medium text-foreground">Planilha ANBIMA Data</p>
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Arraste ou clique para selecionar<br />
+                  <a
+                    href="https://data.anbima.com.br/datasets/data-debentures-precificacao-anbima"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-primary hover:underline"
+                  >
+                    data.anbima.com.br
+                  </a>
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Botão de sync + progresso */}
+        <button
+          onClick={onSync}
+          disabled={isSyncing}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+          {isSyncing ? "Sincronizando..." : "Atualizar dados"}
+        </button>
+        {isSyncing && syncProgress && (
+          <div className="mt-2 flex items-center gap-2 text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
+            <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
+            <span>{syncProgress}</span>
+          </div>
+        )}
+      </section>
+
+      {/* ── Seção 3: Histórico ── */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <TrendingDown className="h-4 w-4 text-primary" />
+            Histórico de Spreads
+          </h3>
+          <div className="flex items-center gap-2">
+            {/* Seletor de indexador */}
+            {indexadoresDisponiveis.length > 1 && (
+              <div className="flex items-center gap-1 bg-secondary rounded-md p-0.5">
+                {indexadoresDisponiveis.map((idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedIndexador(idx)}
+                    className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
+                      selectedIndexador === idx
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {idx === "IPCA SPREAD" ? "IPCA+" : idx === "DI SPREAD" ? "DI+" : "% DI"}
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Seletor de métrica */}
+            <div className="flex items-center gap-1 bg-secondary rounded-md p-0.5">
+              {(["mediana", "media"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setSelectedMetrica(m)}
+                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
+                    selectedMetrica === m
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {m === "media" ? "Média" : "Mediana"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {chartData.length === 0 ? (
+          <div className="bg-card border border-border rounded-lg p-8 text-center">
+            <TrendingDown className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              Nenhum histórico disponível ainda.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              O histórico será construído automaticamente a cada sincronização.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-card border border-border rounded-lg p-4">
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tickFormatter={(v: string) =>
+                    new Date(v + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+                  }
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tickFormatter={(v: number) => `${v}bps`}
+                  width={50}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "11px",
+                  }}
+                  labelFormatter={(v: string) =>
+                    new Date(v + "T12:00:00").toLocaleDateString("pt-BR", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    })
+                  }
+                  formatter={(value: number, name: string) => [`${value} bps`, name]}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: "10px", paddingTop: "8px" }}
+                />
+                {ratingsPresentes.map((rating) => (
+                  <Line
+                    key={rating}
+                    type="monotone"
+                    dataKey={rating}
+                    stroke={RATING_COLORS[rating] || "#94a3b8"}
+                    strokeWidth={1.5}
+                    dot={false}
+                    connectNulls
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

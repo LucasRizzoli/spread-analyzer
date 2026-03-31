@@ -29,6 +29,20 @@
       "when": 1774921358677,
       "tag": "0003_huge_polaris",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1774991688579,
+      "tag": "0004_low_tombstone",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1774992816441,
+      "tag": "0005_classy_ultron",
+      "breakpoints": true
     }
   ]
 }

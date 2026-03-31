@@ -18,6 +18,7 @@ import {
   anbimaAssets,
   spreadAnalysis,
   syncLog,
+  historicalSnapshots,
 } from "../../drizzle/schema";
 import {
   parseMoodysXlsx,
@@ -573,11 +574,80 @@ export async function runFullSync(
       );
     }
 
-    // ── 10. Deduplicação: manter apenas o registro mais recente por codigoCetip ──
-    report("Deduplicando registros por papel...", 0, 1);
-    // Para cada codigoCetip, manter apenas o registro de MAIOR id (o mais recentemente inserido).
-    // Isso garante que syncs repetidos na mesma dataReferencia também sejam deduplicados.
-    // Estratégia: encontrar o max(id) por codigoCetip e deletar todos os outros.
+    // -- Passo B: Snapshot historico (antes da limpeza) --
+    report("Calculando snapshot historico...", 0, 1);
+    const snapshotNow = new Date();
+
+    const windowRows = await db.execute(sql`
+      SELECT rating, zspread, dataReferencia, indexador
+      FROM spread_analysis
+      WHERE isOutlier = 0
+      AND zspread IS NOT NULL
+    `) as unknown as { rating: string; zspread: string; dataReferencia: string; indexador: string | null }[][];
+
+    const windowData = (windowRows[0] || []) as { rating: string; zspread: string; dataReferencia: string; indexador: string | null }[];
+    const datas = windowData.map((r) => r.dataReferencia).filter(Boolean);
+    const dataRefIni = datas.length ? datas.reduce((a: string, b: string) => a < b ? a : b) : "";
+    const dataRefFim = datas.length ? datas.reduce((a: string, b: string) => a > b ? a : b) : "";
+
+    // Segregar por indexador + rating
+    const byIndexadorRatingMap = new Map<string, Map<string, number[]>>();
+    for (const row of windowData) {
+      if (!row.rating || row.zspread == null) continue;
+      const zs = parseFloat(row.zspread);
+      if (!isFinite(zs)) continue;
+      const idx = row.indexador || "OUTROS";
+      if (!byIndexadorRatingMap.has(idx)) byIndexadorRatingMap.set(idx, new Map());
+      const ratingMap = byIndexadorRatingMap.get(idx)!;
+      if (!ratingMap.has(row.rating)) ratingMap.set(row.rating, []);
+      ratingMap.get(row.rating)!.push(zs);
+    }
+
+    const calcPercentile = (sorted: number[], p: number): number => {
+      const idx = (p / 100) * (sorted.length - 1);
+      const lo = Math.floor(idx);
+      const hi = Math.ceil(idx);
+      return lo === hi ? sorted[lo] : sorted[lo] + (idx - lo) * (sorted[hi] - sorted[lo]);
+    };
+
+    const snapshotRows: typeof historicalSnapshots.$inferInsert[] = [];
+    for (const [indexador, ratingMap] of Array.from(byIndexadorRatingMap.entries())) {
+      for (const [rating, vals] of Array.from(ratingMap.entries())) {
+        const sorted = [...vals].sort((a, b) => a - b);
+        const n = sorted.length;
+        const media = sorted.reduce((s, v) => s + v, 0) / n;
+        const mediana = n % 2 === 0
+          ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
+          : sorted[Math.floor(n / 2)];
+        const p25 = calcPercentile(sorted, 25);
+        const p75 = calcPercentile(sorted, 75);
+        const variance = sorted.reduce((s, v) => s + Math.pow(v - media, 2), 0) / n;
+        const std = Math.sqrt(variance);
+        snapshotRows.push({
+          snapshotAt: snapshotNow,
+          dataRefIni,
+          dataRefFim,
+          indexador,
+          rating,
+          nPapeis: n,
+          mediaSpread: String(media.toFixed(4)),
+          medianaSpread: String(mediana.toFixed(4)),
+          p25Spread: String(p25.toFixed(4)),
+          p75Spread: String(p75.toFixed(4)),
+          stdSpread: String(std.toFixed(4)),
+        });
+      }
+    }
+
+    let snapshotId: number | null = null;
+    if (snapshotRows.length > 0) {
+      const [snapResult] = await db.insert(historicalSnapshots).values(snapshotRows);
+      snapshotId = (snapResult as { insertId?: number }).insertId || null;
+    }
+    report(`Snapshot historico criado (${snapshotRows.length} ratings)`, 1, 1);
+
+    // -- Passo C: Deduplicacao + janela rolling 28 dias --
+    report("Deduplicando e aplicando janela rolling de 28 dias...", 0, 1);
     await db.execute(sql`
       DELETE sa FROM spread_analysis sa
       INNER JOIN (
@@ -587,42 +657,78 @@ export async function runFullSync(
       ) latest ON sa.codigoCetip = latest.codigoCetip
       WHERE sa.id < latest.maxId
     `);
-    report("Deduplicação concluída", 1, 1);
-
-    // ── 11. Limpeza de janela: deletar registros com mais de 30 dias ─────────
-    // Usa tabela derivada para evitar self-reference (erro MySQL: can't specify target table)
-    report("Aplicando janela de 30 dias...", 0, 1);
     await db.execute(sql`
       DELETE FROM spread_analysis
       WHERE dataReferencia < (
-        SELECT cutoff FROM (
+        SELECT data_ref FROM (
           SELECT DATE_FORMAT(
-            DATE_SUB(MAX(dataReferencia), INTERVAL 30 DAY),
+            DATE_SUB(MAX(dataReferencia), INTERVAL 28 DAY),
             '%Y-%m-%d'
-          ) AS cutoff
+          ) AS data_ref
           FROM spread_analysis
         ) AS tmp
       )
     `);
-    report("Janela de 30 dias aplicada", 1, 1);
+    report("Janela rolling de 28 dias aplicada", 1, 1);
+
+    // -- Passo D: Detectar variacao de spread por rating --
+    const ALERT_THRESHOLD = parseFloat(process.env.ALERT_THRESHOLD_PCT || "15") / 100;
+    const alertas: { rating: string; variacao_pct: number; de: number; para: number }[] = [];
+
+    if (snapshotId && snapshotRows.length > 0) {
+      const prevSnapshotRows = await db.execute(sql`
+        SELECT rating, mediaSpread
+        FROM historical_snapshots
+        WHERE id < ${snapshotId}
+        ORDER BY snapshotAt DESC
+        LIMIT ${snapshotRows.length * 2}
+      `) as unknown as { rating: string; mediaSpread: string }[][];
+
+      const prevMap = new Map<string, number>();
+      for (const row of ((prevSnapshotRows[0] || []) as { rating: string; mediaSpread: string }[])) {
+        if (!prevMap.has(row.rating)) {
+          prevMap.set(row.rating, parseFloat(row.mediaSpread));
+        }
+      }
+
+      for (const snap of snapshotRows) {
+        const prev = prevMap.get(snap.rating);
+        if (prev == null || prev === 0) continue;
+        const atual = parseFloat(snap.mediaSpread as string);
+        const variacao = Math.abs((atual - prev) / prev);
+        if (variacao > ALERT_THRESHOLD) {
+          alertas.push({
+            rating: snap.rating,
+            variacao_pct: parseFloat((variacao * 100).toFixed(1)),
+            de: Math.round(prev * 10000),
+            para: Math.round(atual * 10000),
+          });
+        }
+      }
+    }
+
+    if (alertas.length > 0) {
+      console.log(`[Sync] ${alertas.length} alertas de variacao detectados:`);
+      for (const a of alertas) {
+        console.log(`  ${a.rating}: ${a.variacao_pct}% (${a.de} -> ${a.para} bps)`);
+      }
+    }
 
     const comRating = marked.length;
     const semMatch = anbimaData.length - comRating;
 
-    report(
-      "Sincronização concluída!",
-      marked.length,
-      marked.length
-    );
+    report("Sincronizacao concluida!", marked.length, marked.length);
 
-    // Atualizar log
+    // -- Passo E: Atualizar sync_log --
     if (logId) {
       await db
         .update(syncLog)
         .set({
           status: "success",
-          mensagem: `Concluído: ${moodysData.length} ratings Moody's, ${anbimaData.length} ativos ANBIMA, ${enriquecidos} enriquecidos via ANBIMA Data, ${comRating} com match de emissão, ${outlierCount} outliers marcados`,
+          mensagem: `Concluido: ${moodysData.length} ratings Moody's, ${anbimaData.length} ativos ANBIMA, ${enriquecidos} enriquecidos via ANBIMA Data, ${comRating} com match de emissao, ${outlierCount} outliers marcados${alertas.length > 0 ? `, ${alertas.length} alertas de variacao` : ""}`,
           totalProcessados: marked.length,
+          papeisNaJanela: comRating,
+          alertas: alertas.length > 0 ? alertas : null,
           finalizadoEm: new Date(),
         })
         .where(eq(syncLog.id, logId));

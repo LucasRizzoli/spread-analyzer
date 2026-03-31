@@ -264,3 +264,42 @@
 - [x] Diagnosticar: universoIndexadores era array literal recriado a cada render, causando instabilidade de referência na query tRPC
 - [x] Corrigir: envolver universoIndexadores em useMemo([universo]) para estabilizar a referência
 - [x] 41 testes passando
+
+## v4.0 — Janela rolling, snapshots históricos, aba Dados, correção gráfico de barras
+
+### Banco
+- [ ] Migração: tabela historical_snapshots
+- [ ] Migração: colunas data_referencia, papeis_na_janela, snapshot_id, alertas em sync_log
+
+### Backend
+- [ ] Corrigir gráfico de barras: aggregação por rating em memória no frontend (eliminar getZspreadByRating do frontend)
+- [ ] syncService: janela rolling 28 dias (DELETE registros antigos)
+- [ ] syncService: calcular e persistir snapshot histórico antes da limpeza
+- [ ] syncService: detectar alerta de variação > 15% vs snapshot anterior
+- [ ] syncService: atualizar sync_log com data_referencia, papeis_na_janela, snapshot_id
+- [ ] Endpoint getHistoricalSnapshots
+- [ ] Endpoint getWindowSummary
+- [ ] Endpoint getAvailableDateRefs
+- [ ] Parâmetro allWindow nas queries existentes (para calculadora de pricing)
+- [ ] Cache in-memory 30s para getLatestDataReferencia
+
+### Frontend
+- [ ] Aba "Dados" — seção Upload: drag-and-drop, progresso, card de janela ativa
+- [ ] Aba "Dados" — seção Histórico: gráfico de linha temporal por rating, alertas
+- [ ] Calculadora de pricing usa allWindow: true
+
+### Testes
+- [ ] Testes de janela rolling
+- [ ] Testes de snapshot histórico (mediana, p25, p75)
+- [ ] Testes de alerta de variação
+- [ ] Testes de getWindowSummary
+
+## v4.0 — Janela rolling, snapshots históricos, aba Dados, gráfico de barras corrigido
+- [x] Migração: tabela historical_snapshots + colunas novas em sync_log
+- [x] Coluna indexador adicionada ao historical_snapshots (migração 0005)
+- [x] Gráfico de barras Por Rating: usa analysisData em memória (eliminou getZspreadByRating)
+- [x] syncService: janela rolling 28 dias, snapshot histórico por indexador+rating, alertas de variação
+- [x] Endpoints tRPC: getHistoricalSnapshots, getWindowSummary
+- [x] Aba Dados: card de janela ativa, upload drag-and-drop, progresso em tempo real
+- [x] Aba Dados: gráfico de linha histórico por rating com seletor de indexador e métrica
+- [x] 41 testes passando

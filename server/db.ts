@@ -358,3 +358,62 @@ export async function getAvailableDates(): Promise<string[]> {
 
   return rows.map((r) => r.dataReferencia).filter(Boolean) as string[];
 }
+
+// ─── Historical Snapshots Queries ────────────────────────────────────────────
+
+import { historicalSnapshots } from "../drizzle/schema";
+
+/**
+ * Retorna os snapshots históricos agrupados por data de referência final.
+ * Usado para o gráfico de linha temporal na aba Dados.
+ */
+export async function getHistoricalSnapshots(limit = 90) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select()
+    .from(historicalSnapshots)
+    .orderBy(desc(historicalSnapshots.snapshotAt))
+    .limit(limit * 12); // até 12 ratings por snapshot
+
+  return rows.map((r) => ({
+    ...r,
+    mediaSpread: r.mediaSpread ? Number(r.mediaSpread) : null,
+    medianaSpread: r.medianaSpread ? Number(r.medianaSpread) : null,
+    p25Spread: r.p25Spread ? Number(r.p25Spread) : null,
+    p75Spread: r.p75Spread ? Number(r.p75Spread) : null,
+    stdSpread: r.stdSpread ? Number(r.stdSpread) : null,
+  }));
+}
+
+/**
+ * Retorna o resumo da janela ativa: datas, total de papéis, último sync.
+ */
+export async function getWindowSummary() {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [dateRange] = await db.execute(sql`
+    SELECT
+      MIN(dataReferencia) AS dataMin,
+      MAX(dataReferencia) AS dataMax,
+      COUNT(*) AS totalPapeis,
+      COUNT(DISTINCT dataReferencia) AS totalDatas,
+      COUNT(DISTINCT codigoCetip) AS totalCetips,
+      SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END) AS totalOutliers
+    FROM spread_analysis
+  `) as unknown as { dataMin: string; dataMax: string; totalPapeis: number; totalDatas: number; totalCetips: number; totalOutliers: number }[][];
+
+  const summary = (dateRange as unknown as { dataMin: string; dataMax: string; totalPapeis: number; totalDatas: number; totalCetips: number; totalOutliers: number }[])[0];
+  if (!summary) return null;
+
+  return {
+    dataMin: summary.dataMin || null,
+    dataMax: summary.dataMax || null,
+    totalPapeis: Number(summary.totalPapeis) || 0,
+    totalDatas: Number(summary.totalDatas) || 0,
+    totalCetips: Number(summary.totalCetips) || 0,
+    totalOutliers: Number(summary.totalOutliers) || 0,
+  };
+}

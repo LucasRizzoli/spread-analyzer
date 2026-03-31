@@ -8,6 +8,9 @@ import {
   decimal,
   boolean,
   index,
+  datetime,
+  date,
+  json,
 } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
@@ -174,6 +177,40 @@ export const syncLog = mysqlTable("sync_log", {
   totalErros: int("totalErros").default(0),
   iniciadoEm: timestamp("iniciadoEm").defaultNow().notNull(),
   finalizadoEm: timestamp("finalizadoEm"),
+  // v4.0: campos de janela rolling e snapshot
+  dataReferencia: varchar("dataReferencia", { length: 16 }),
+  papeisNaJanela: int("papeisNaJanela"),
+  snapshotId: int("snapshotId"),
+  alertas: json("alertas"),
 });
 
 export type SyncLog = typeof syncLog.$inferSelect;
+
+/**
+ * Snapshots históricos agregados por rating
+ * Calculados a cada sync bem-sucedido — nunca deletados
+ */
+export const historicalSnapshots = mysqlTable(
+  "historical_snapshots",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    snapshotAt: datetime("snapshotAt").notNull(),
+    dataRefIni: varchar("dataRefIni", { length: 16 }).notNull(),
+    dataRefFim: varchar("dataRefFim", { length: 16 }).notNull(),
+    indexador: varchar("indexador", { length: 32 }).notNull().default("IPCA SPREAD"),
+    rating: varchar("rating", { length: 20 }).notNull(),
+    nPapeis: int("nPapeis").notNull(),
+    mediaSpread: decimal("mediaSpread", { precision: 10, scale: 4 }),
+    medianaSpread: decimal("medianaSpread", { precision: 10, scale: 4 }),
+    p25Spread: decimal("p25Spread", { precision: 10, scale: 4 }),
+    p75Spread: decimal("p75Spread", { precision: 10, scale: 4 }),
+    stdSpread: decimal("stdSpread", { precision: 10, scale: 4 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [
+    index("idx_snapshot_at_rating").on(t.snapshotAt, t.rating),
+    index("idx_snapshot_rating").on(t.rating),
+  ]
+);
+
+export type HistoricalSnapshot = typeof historicalSnapshots.$inferSelect;

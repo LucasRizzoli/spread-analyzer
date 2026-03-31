@@ -1,0 +1,986 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "35fc3414-a6d6-42c0-b559-2828ce1b4693",
+  "prevId": "1603f5f6-e72d-4859-88b3-3a30d95a00b3",
+  "tables": {
+    "anbima_assets": {
+      "name": "anbima_assets",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "codigoCetip": {
+          "name": "codigoCetip",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "isin": {
+          "name": "isin",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "enum('DEB','CRI','CRA')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "emissorNome": {
+          "name": "emissorNome",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "emissorCnpj": {
+          "name": "emissorCnpj",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "setor": {
+          "name": "setor",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "numeroEmissao": {
+          "name": "numeroEmissao",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "numeroSerie": {
+          "name": "numeroSerie",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dataEmissao": {
+          "name": "dataEmissao",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dataVencimento": {
+          "name": "dataVencimento",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "remuneracao": {
+          "name": "remuneracao",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "indexador": {
+          "name": "indexador",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "incentivado": {
+          "name": "incentivado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "taxaIndicativa": {
+          "name": "taxaIndicativa",
+          "type": "decimal(10,6)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "taxaCompra": {
+          "name": "taxaCompra",
+          "type": "decimal(10,6)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "taxaVenda": {
+          "name": "taxaVenda",
+          "type": "decimal(10,6)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "durationDias": {
+          "name": "durationDias",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "durationAnos": {
+          "name": "durationAnos",
+          "type": "decimal(8,4)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dataReferencia": {
+          "name": "dataReferencia",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "idx_anbima_isin": {
+          "name": "idx_anbima_isin",
+          "columns": [
+            "isin"
+          ],
+          "isUnique": false
+        },
+        "idx_anbima_emissor": {
+          "name": "idx_anbima_emissor",
+          "columns": [
+            "emissorNome"
+          ],
+          "isUnique": false
+        },
+        "idx_anbima_tipo": {
+          "name": "idx_anbima_tipo",
+          "columns": [
+            "tipo"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "anbima_assets_id": {
+          "name": "anbima_assets_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "anbima_assets_codigoCetip_unique": {
+          "name": "anbima_assets_codigoCetip_unique",
+          "columns": [
+            "codigoCetip"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "historical_snapshots": {
+      "name": "historical_snapshots",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "snapshotAt": {
+          "name": "snapshotAt",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dataRefIni": {
+          "name": "dataRefIni",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dataRefFim": {
+          "name": "dataRefFim",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "indexador": {
+          "name": "indexador",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'IPCA SPREAD'"
+        },
+        "rating": {
+          "name": "rating",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nPapeis": {
+          "name": "nPapeis",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mediaSpread": {
+          "name": "mediaSpread",
+          "type": "decimal(10,4)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "medianaSpread": {
+          "name": "medianaSpread",
+          "type": "decimal(10,4)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "p25Spread": {
+          "name": "p25Spread",
+          "type": "decimal(10,4)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "p75Spread": {
+          "name": "p75Spread",
+          "type": "decimal(10,4)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "stdSpread": {
+          "name": "stdSpread",
+          "type": "decimal(10,4)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "idx_snapshot_at_rating": {
+          "name": "idx_snapshot_at_rating",
+          "columns": [
+            "snapshotAt",
+            "rating"
+          ],
+          "isUnique": false
+        },
+        "idx_snapshot_rating": {
+          "name": "idx_snapshot_rating",
+          "columns": [
+            "rating"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "historical_snapshots_id": {
+          "name": "historical_snapshots_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "moodys_ratings": {
+      "name": "moodys_ratings",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "setor": {
+          "name": "setor",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "emissor": {
+          "name": "emissor",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "produto": {
+          "name": "produto",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "instrumento": {
+          "name": "instrumento",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "objeto": {
+          "name": "objeto",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rating": {
+          "name": "rating",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "perspectiva": {
+          "name": "perspectiva",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dataAtualizacao": {
+          "name": "dataAtualizacao",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "numeroEmissao": {
+          "name": "numeroEmissao",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "idx_moodys_emissor": {
+          "name": "idx_moodys_emissor",
+          "columns": [
+            "emissor"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "moodys_ratings_id": {
+          "name": "moodys_ratings_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "ntnb_curve": {
+      "name": "ntnb_curve",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "dataReferencia": {
+          "name": "dataReferencia",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "codigoCetip": {
+          "name": "codigoCetip",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "vencimento": {
+          "name": "vencimento",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "taxaIndicativa": {
+          "name": "taxaIndicativa",
+          "type": "decimal(10,6)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "durationAnos": {
+          "name": "durationAnos",
+          "type": "decimal(8,4)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "ntnb_curve_id": {
+          "name": "ntnb_curve_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "spread_analysis": {
+      "name": "spread_analysis",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "codigoCetip": {
+          "name": "codigoCetip",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "isin": {
+          "name": "isin",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "enum('DEB','CRI','CRA')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "emissorNome": {
+          "name": "emissorNome",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "setor": {
+          "name": "setor",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "indexador": {
+          "name": "indexador",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "incentivado": {
+          "name": "incentivado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "rating": {
+          "name": "rating",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tipoMatch": {
+          "name": "tipoMatch",
+          "type": "enum('emissao','emissor','sem_match')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'sem_match'"
+        },
+        "moodysRatingId": {
+          "name": "moodysRatingId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "taxaIndicativa": {
+          "name": "taxaIndicativa",
+          "type": "decimal(10,6)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "durationAnos": {
+          "name": "durationAnos",
+          "type": "decimal(8,4)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dataReferencia": {
+          "name": "dataReferencia",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ntnbReferencia": {
+          "name": "ntnbReferencia",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ntnbTaxa": {
+          "name": "ntnbTaxa",
+          "type": "decimal(10,6)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ntnbDuration": {
+          "name": "ntnbDuration",
+          "type": "decimal(8,4)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dataVencimento": {
+          "name": "dataVencimento",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "zspread": {
+          "name": "zspread",
+          "type": "decimal(10,6)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "spreadIncentivadoSemGrossUp": {
+          "name": "spreadIncentivadoSemGrossUp",
+          "type": "decimal(10,6)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "scoreMatch": {
+          "name": "scoreMatch",
+          "type": "decimal(5,4)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "isOutlier": {
+          "name": "isOutlier",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "emissorMoodys": {
+          "name": "emissorMoodys",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "numeroEmissaoSnd": {
+          "name": "numeroEmissaoSnd",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "numeroEmissaoMoodys": {
+          "name": "numeroEmissaoMoodys",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "instrumentoMoodys": {
+          "name": "instrumentoMoodys",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "idx_spread_cetip": {
+          "name": "idx_spread_cetip",
+          "columns": [
+            "codigoCetip"
+          ],
+          "isUnique": false
+        },
+        "idx_spread_cetip_data": {
+          "name": "idx_spread_cetip_data",
+          "columns": [
+            "codigoCetip",
+            "dataReferencia"
+          ],
+          "isUnique": false
+        },
+        "idx_spread_data_ref": {
+          "name": "idx_spread_data_ref",
+          "columns": [
+            "dataReferencia"
+          ],
+          "isUnique": false
+        },
+        "idx_spread_rating": {
+          "name": "idx_spread_rating",
+          "columns": [
+            "rating"
+          ],
+          "isUnique": false
+        },
+        "idx_spread_tipo": {
+          "name": "idx_spread_tipo",
+          "columns": [
+            "tipo"
+          ],
+          "isUnique": false
+        },
+        "idx_spread_indexador": {
+          "name": "idx_spread_indexador",
+          "columns": [
+            "indexador"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "spread_analysis_id": {
+          "name": "spread_analysis_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "sync_log": {
+      "name": "sync_log",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "enum('running','success','error')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mensagem": {
+          "name": "mensagem",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "totalProcessados": {
+          "name": "totalProcessados",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
+        "totalErros": {
+          "name": "totalErros",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
+        "iniciadoEm": {
+          "name": "iniciadoEm",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "finalizadoEm": {
+          "name": "finalizadoEm",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dataReferencia": {
+          "name": "dataReferencia",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "papeisNaJanela": {
+          "name": "papeisNaJanela",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "snapshotId": {
+          "name": "snapshotId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "alertas": {
+          "name": "alertas",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "sync_log_id": {
+          "name": "sync_log_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "users": {
+      "name": "users",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "openId": {
+          "name": "openId",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "loginMethod": {
+          "name": "loginMethod",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "enum('user','admin')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'user'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        },
+        "lastSignedIn": {
+          "name": "lastSignedIn",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "users_id": {
+          "name": "users_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "users_openId_unique": {
+          "name": "users_openId_unique",
+          "columns": [
+            "openId"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    }
+  },
+  "views": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {},
+    "indexes": {}
+  }
+}

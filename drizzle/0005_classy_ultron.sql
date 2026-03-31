@@ -1,0 +1,1 @@
+ALTER TABLE `historical_snapshots` ADD `indexador` varchar(32) DEFAULT 'IPCA SPREAD' NOT NULL;

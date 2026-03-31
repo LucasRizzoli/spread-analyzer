@@ -8,6 +8,8 @@ import {
   getSyncLogs,
   getMatchQualityReport,
   getAvailableDates,
+  getHistoricalSnapshots,
+  getWindowSummary,
 } from "../db";
 import { getSyncState, runFullSync } from "../services/syncService";
 import { sortRatings } from "../services/spreadCalculatorService";
@@ -123,6 +125,22 @@ export const spreadRouter = router({
    */
   getAvailableDates: publicProcedure.query(async () => {
     return getAvailableDates();
+  }),
+
+  /**
+   * Retorna snapshots históricos para o gráfico de linha temporal
+   */
+  getHistoricalSnapshots: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(365).default(90) }).optional())
+    .query(async ({ input }) => {
+      return getHistoricalSnapshots(input?.limit || 90);
+    }),
+
+  /**
+   * Retorna o resumo da janela ativa (datas, total de papéis, outliers)
+   */
+  getWindowSummary: publicProcedure.query(async () => {
+    return getWindowSummary();
   }),
 
   /**

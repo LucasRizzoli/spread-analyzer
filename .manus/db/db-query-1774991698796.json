@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `historical_snapshots` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`snapshotAt` datetime NOT NULL,\n\t`dataRefIni` varchar(16) NOT NULL,\n\t`dataRefFim` varchar(16) NOT NULL,\n\t`rating` varchar(20) NOT NULL,\n\t`nPapeis` int NOT NULL,\n\t`mediaSpread` decimal(10,4),\n\t`medianaSpread` decimal(10,4),\n\t`p25Spread` decimal(10,4),\n\t`p75Spread` decimal(10,4),\n\t`stdSpread` decimal(10,4),\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `historical_snapshots_id` PRIMARY KEY(`id`)\n);\nCREATE INDEX `idx_snapshot_at_rating` ON `historical_snapshots` (`snapshotAt`,`rating`);\nCREATE INDEX `idx_snapshot_rating` ON `historical_snapshots` (`rating`);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute CREATE TABLE `historical_snapshots` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`snapshotAt` datetime NOT NULL,\n\t`dataRefIni` varchar(16) NOT NULL,\n\t`dataRefFim` varchar(16) NOT NULL,\n\t`rating` varchar(20) NOT NULL,\n\t`nPapeis` int NOT NULL,\n\t`mediaSpread` decimal(10,4),\n\t`medianaSpread` decimal(10,4),\n\t`p25Spread` decimal(10,4),\n\t`p75Spread` decimal(10,4),\n\t`stdSpread` decimal(10,4),\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `historical_snapshots_id` PRIMARY KEY(`id`)\n);\nCREATE INDEX `idx_snapshot_at_rating` ON `historical_snapshots` (`snapshotAt`,`rating`);\nCREATE INDEX `idx_snapshot_rating` ON `historical_snapshots` (`rating`);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 771
+}

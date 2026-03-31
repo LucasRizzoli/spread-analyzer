@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `historical_snapshots` ADD `indexador` varchar(32) DEFAULT 'IPCA SPREAD' NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3TCbxwuMo8bqgEH.3d9f28c4dd9f --database ibSgD3x7K24f8UHUmWHZV3 --execute ALTER TABLE `historical_snapshots` ADD `indexador` varchar(32) DEFAULT 'IPCA SPREAD' NOT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 511
+}
