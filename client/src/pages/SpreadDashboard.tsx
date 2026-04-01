@@ -2192,19 +2192,27 @@ function DadosView({
     return snapshots.filter((s) => s.indexador === selectedIndexador);
   }, [snapshots, selectedIndexador]);
 
-  // Agrupar por dataRefFim e rating para o gráfico de linha
+  // Agrupar por snapshotAt (timestamp do sync) para garantir que cada sync
+  // gera um ponto distinto na linha temporal, mesmo com a mesma dataReferencia.
   const chartData = useMemo(() => {
-    const byDate = new Map<string, Record<string, number>>();
+    const bySnapshot = new Map<string, Record<string, number | string>>();
     for (const s of snapshotsFiltrados) {
-      if (!byDate.has(s.dataRefFim)) byDate.set(s.dataRefFim, {});
+      const key = s.snapshotAt instanceof Date
+        ? s.snapshotAt.toISOString()
+        : String(s.snapshotAt);
+      if (!bySnapshot.has(key)) {
+        bySnapshot.set(key, {
+          date: key,
+          dataRef: s.dataRefFim || "",
+        });
+      }
       const val = selectedMetrica === "media" ? s.mediaSpread : s.medianaSpread;
       if (val != null) {
-        byDate.get(s.dataRefFim)![s.rating] = Math.round(Number(val) * 100);
+        bySnapshot.get(key)![s.rating] = Math.round(Number(val) * 100);
       }
     }
-    return Array.from(byDate.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, values]) => ({ date, ...values }));
+    return Array.from(bySnapshot.values())
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
   }, [snapshotsFiltrados, selectedMetrica]);
 
   // Ratings presentes nos snapshots filtrados
@@ -2449,7 +2457,7 @@ function DadosView({
                   dataKey="date"
                   tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                   tickFormatter={(v: string) =>
-                    new Date(v + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+                    new Date(v).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "2-digit" })
                   }
                 />
                 <YAxis
@@ -2464,13 +2472,19 @@ function DadosView({
                     borderRadius: "8px",
                     fontSize: "11px",
                   }}
-                  labelFormatter={(v: string) =>
-                    new Date(v + "T12:00:00").toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    })
-                  }
+                  labelFormatter={(v: string, payload) => {
+                    const dataRef = payload?.[0]?.payload?.dataRef;
+                    const syncDate = new Date(v).toLocaleDateString("pt-BR", {
+                      day: "2-digit", month: "long", year: "numeric",
+                    });
+                    if (dataRef) {
+                      const refDate = new Date(dataRef + "T12:00:00").toLocaleDateString("pt-BR", {
+                        day: "2-digit", month: "long", year: "numeric",
+                      });
+                      return `Sync: ${syncDate} · Dados: ${refDate}`;
+                    }
+                    return `Sync: ${syncDate}`;
+                  }}
                   formatter={(value: number, name: string) => [`${value} bps`, name]}
                 />
                 <Legend

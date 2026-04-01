@@ -349,3 +349,9 @@
 ## v4.7 — Corrigir upload e data de referência
 - [x] Diagnosticar e corrigir problema de upload na aba Dados
 - [x] Exibir data de referência dos dados (campo dataReferencia) em vez de data de inserção
+
+## v4.8 — Histórico de spreads corrigido
+- [x] Diagnosticar por que múltiplos uploads não geravam série histórica
+- [x] Corrigir chartData para usar snapshotAt (timestamp do sync) como eixo X em vez de dataRefFim
+- [x] Atualizar Tooltip para mostrar "Sync: data · Dados: dataRef" no hover
+- [x] Gráfico histórico agora exibe um ponto distinto por sync, independente da data dos dados
