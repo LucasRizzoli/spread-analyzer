@@ -341,3 +341,7 @@
 - [x] Implementar fallback de interpolação entre ratings adjacentes
 - [x] Atualizar textos de abordagem na interface (4 casos)
 - [x] Atualizar detecção de inversão para usar média (não mediana) do rating inferior
+
+## v4.6 — Remover duration da calculadora
+- [x] Remover slider de duration e estado pricingDur da calculadora
+- [x] Adaptar calcPricing para não usar filtro de duration (usar todos os comparáveis do rating)

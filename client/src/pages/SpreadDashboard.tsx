@@ -1171,7 +1171,6 @@ const SHRINKAGE_K = 5;
 
 function calcPricing(
   targetRating: string,
-  targetDuration: number,
   data: { rating: string | null | undefined; durationAnos: number | null; zspread: number | null }[]
 ): {
   pointEst: number;
@@ -1197,17 +1196,15 @@ function calcPricing(
 
   if (validData.length === 0) return null;
 
-  // Comparáveis diretos: mesmo rating, duration ±2 anos
+  // Comparáveis diretos: mesmo rating (sem filtro de duration)
   const directRating = validData.filter(
-    (d) => d.rating === targetRating && Math.abs(d.durationAnos - targetDuration) <= 2
+    (d) => d.rating === targetRating
   );
-
-  // Comparáveis adjacentes: rating ±1 nível, duration ±2 anos
+  // Comparáveis adjacentes: rating ±1 nível (sem filtro de duration)
   const adjacentRating = validData.filter(
     (d) =>
       d.rating !== targetRating &&
-      Math.abs((ratingOrder[d.rating] ?? 99) - ratingIdx) <= 1 &&
-      Math.abs(d.durationAnos - targetDuration) <= 2
+      Math.abs((ratingOrder[d.rating] ?? 99) - ratingIdx) <= 1
   );
 
   // Âncora por rating: média de todos os spreads do mesmo rating no banco (sem filtro de duration)
@@ -1353,7 +1350,6 @@ function AnaliseView({
   analysisData: AnalysisRow[];
 }) {
   const [pricingRating, setPricingRating] = useState("AA-.br");
-  const [pricingDur, setPricingDur] = useState(4);
   const [pricingResult, setPricingResult] = useState<ReturnType<typeof calcPricing>>(null);
 
   const ratingsDisponiveis = useMemo(() => {
@@ -1362,18 +1358,17 @@ function AnaliseView({
   }, [analysisData]);
 
   const handleCalc = () => {
-    const result = calcPricing(pricingRating, pricingDur, analysisData as unknown as { rating: string | null | undefined; durationAnos: number | null; zspread: number | null }[]);
+    const result = calcPricing(pricingRating, analysisData as unknown as { rating: string | null | undefined; durationAnos: number | null; zspread: number | null }[]);
     setPricingResult(result);
   };
-
   // Recalcular automaticamente quando os dados mudam
   useEffect(() => {
     if (analysisData.length > 0) {
-      const result = calcPricing(pricingRating, pricingDur, analysisData as unknown as { rating: string | null | undefined; durationAnos: number | null; zspread: number | null }[]);
+      const result = calcPricing(pricingRating, analysisData as unknown as { rating: string | null | undefined; durationAnos: number | null; zspread: number | null }[]);
       setPricingResult(result);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pricingRating, pricingDur, analysisData]);
+  }, [pricingRating, analysisData]);
 
   return (
     <div className="h-full overflow-hidden flex flex-col gap-3">
@@ -1514,24 +1509,7 @@ function AnaliseView({
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground uppercase tracking-wide block mb-1">
-                  Duration — {pricingDur.toFixed(1)} anos
-                </label>
-                <input
-                  type="range"
-                  min={0.5}
-                  max={15}
-                  step={0.5}
-                  value={pricingDur}
-                  onChange={(e) => setPricingDur(Number(e.target.value))}
-                  className="w-full accent-primary"
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
-                  <span>0.5a</span>
-                  <span>15a</span>
-                </div>
-              </div>
+
               <button
                 onClick={handleCalc}
                 className="w-full h-8 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
