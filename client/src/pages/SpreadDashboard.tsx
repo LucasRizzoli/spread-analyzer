@@ -1210,15 +1210,44 @@ function calcPricing(
       Math.abs(d.durationAnos - targetDuration) <= 2
   );
 
-  // Linha estrutural global: regressão OLS spread ~ duration
-  const allSpreads = validData.map((d) => d.zspread * 100);
-  const allDurs = validData.map((d) => d.durationAnos);
-  const globalMean = allSpreads.reduce((a, b) => a + b, 0) / allSpreads.length;
-  const meanDur = allDurs.reduce((a, b) => a + b, 0) / allDurs.length;
-  const num = validData.reduce((a, d) => a + (d.durationAnos - meanDur) * (d.zspread * 100 - globalMean), 0);
-  const den = validData.reduce((a, d) => a + (d.durationAnos - meanDur) ** 2, 0);
-  const globalSlope = den ? num / den : 0;
-  const globalEst = globalMean - globalSlope * meanDur + globalSlope * targetDuration;
+  // Âncora por rating: média de todos os spreads do mesmo rating no banco (sem filtro de duration)
+  const sameRatingVals = validData
+    .filter((d) => d.rating === targetRating)
+    .map((d) => d.zspread * 100);
+  // Fallback: se rating-alvo não tem papéis, interpola entre adjacentes disponíveis
+  const ratingAboveKey = Object.keys(ratingOrder).find((r) => ratingOrder[r] === ratingIdx - 1) ?? null;
+  const ratingBelowKey = Object.keys(ratingOrder).find((r) => ratingOrder[r] === ratingIdx + 1) ?? null;
+  const aboveVals = ratingAboveKey
+    ? validData.filter((d) => d.rating === ratingAboveKey).map((d) => d.zspread * 100)
+    : [];
+  const belowVals = ratingBelowKey
+    ? validData.filter((d) => d.rating === ratingBelowKey).map((d) => d.zspread * 100)
+    : [];
+  const meanOf = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+  let ratingAnchor: number;
+  let anchorType: "direto" | "interpolado" | "fallback_global" = "direto";
+  if (sameRatingVals.length > 0) {
+    ratingAnchor = meanOf(sameRatingVals)!;
+    anchorType = "direto";
+  } else {
+    const aboveMean = meanOf(aboveVals);
+    const belowMean = meanOf(belowVals);
+    if (aboveMean !== null && belowMean !== null) {
+      ratingAnchor = (aboveMean + belowMean) / 2;
+      anchorType = "interpolado";
+    } else if (aboveMean !== null) {
+      ratingAnchor = aboveMean;
+      anchorType = "interpolado";
+    } else if (belowMean !== null) {
+      ratingAnchor = belowMean;
+      anchorType = "interpolado";
+    } else {
+      // Último recurso: média global
+      const allSpreads = validData.map((d) => d.zspread * 100);
+      ratingAnchor = allSpreads.reduce((a, b) => a + b, 0) / allSpreads.length;
+      anchorType = "fallback_global";
+    }
+  }
 
   // Bucket efetivo: diretos + adjacentes com peso 0.7
   const adjVals = adjacentRating.map((d) => d.zspread * 100 * 0.7);
@@ -1230,8 +1259,8 @@ function calcPricing(
   const w = n / (n + SHRINKAGE_K);
   const bucketMean = effectiveVals.length
     ? effectiveVals.reduce((a, b) => a + b, 0) / effectiveVals.length
-    : globalEst;
-  const pointEst = w * bucketMean + (1 - w) * globalEst;
+    : ratingAnchor;
+  const pointEst = w * bucketMean + (1 - w) * ratingAnchor;
 
   // Intervalo de confiança t-student
   const tCrit = n >= 10 ? 1.96 : n >= 5 ? 2.13 : n >= 3 ? 2.92 : 3.18;
@@ -1262,14 +1291,27 @@ function calcPricing(
         return vals.length % 2 ? vals[m] : (vals[m - 1] + vals[m]) / 2;
       })()
     : null;
-  const inversao = nextMedian !== null && pointEst < nextMedian * 0.95;
+  // Detecção de inversão: usa média (não mediana) do rating inferior, conforme metodologia
+  const nextMean = nextKey
+    ? (() => {
+        const vals = validData
+          .filter((d) => d.rating === nextKey)
+          .map((d) => d.zspread * 100);
+        return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+      })()
+    : null;
+  const inversao = nextMean !== null && pointEst < nextMean * 0.95;
 
   const approach =
     n >= 3
-      ? "bucket direto"
+      ? "bucket direto (±2 anos)"
       : n >= 1
-      ? "bucket + adjacentes (shrinkage)"
-      : "linha global (sem comparáveis diretos)";
+      ? "bucket + adjacentes com desconto 0.7 (shrinkage)"
+      : anchorType === "interpolado"
+      ? "interpolação entre ratings adjacentes"
+      : anchorType === "fallback_global"
+      ? "média global (rating sem papéis no banco)"
+      : "âncora por rating (sem comparáveis na janela de duration)";
 
   return {
     pointEst,

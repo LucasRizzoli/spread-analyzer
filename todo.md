@@ -335,3 +335,9 @@
 - [x] Adicionar contador "X ativos · Y ratings" no header do gráfico de barras
 - [x] Adicionar label n=X em cima de cada barra (LabelList)
 - [x] Confirmar que toggle de outliers atualiza todos os contadores corretamente
+
+## v4.5 — Nova âncora por rating na calcPricing
+- [x] Substituir regressão OLS global por âncora de média por rating
+- [x] Implementar fallback de interpolação entre ratings adjacentes
+- [x] Atualizar textos de abordagem na interface (4 casos)
+- [x] Atualizar detecção de inversão para usar média (não mediana) do rating inferior
