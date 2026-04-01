@@ -721,6 +721,18 @@ export async function runFullSync(
 
     // -- Passo E: Atualizar sync_log --
     if (logId) {
+      // Obter a data de referência mais recente dos dados processados
+      const normalizeDate = (d: string | null | undefined): string | null => {
+        if (!d) return null;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+        const parts = d.split("/");
+        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        return d;
+      };
+      const maxDataRef = marked
+        .map((s) => normalizeDate(s.dataReferencia))
+        .filter((d): d is string => !!d)
+        .reduce((a, b) => (a > b ? a : b), "") || null;
       await db
         .update(syncLog)
         .set({
@@ -730,6 +742,7 @@ export async function runFullSync(
           papeisNaJanela: comRating,
           alertas: alertas.length > 0 ? alertas : null,
           finalizadoEm: new Date(),
+          dataReferencia: maxDataRef,
         })
         .where(eq(syncLog.id, logId));
     }

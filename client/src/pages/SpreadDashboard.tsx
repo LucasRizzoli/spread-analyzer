@@ -839,10 +839,12 @@ export default function SpreadDashboard() {
                 </Badge>
               ) : null}
             </div>
-            {lastSync.data?.finalizadoEm && (
+            {(lastSync.data?.dataReferencia || lastSync.data?.finalizadoEm) && (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {new Date(lastSync.data.finalizadoEm).toLocaleString("pt-BR")}
+                {lastSync.data.dataReferencia
+                  ? new Date(lastSync.data.dataReferencia + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+                  : new Date(lastSync.data.finalizadoEm!).toLocaleString("pt-BR")}
               </p>
             )}
             {isSyncing && syncState.data?.progress && (
@@ -1057,6 +1059,8 @@ export default function SpreadDashboard() {
                 anbimaFile={anbimaFile}
                 onMoodysSelect={() => moodysInputRef.current?.click()}
                 onAnbimaSelect={() => anbimaInputRef.current?.click()}
+                onSetMoodysFile={setMoodysFile}
+                onSetAnbimaFile={setAnbimaFile}
                 onSync={handleSync}
                 lastSync={lastSync.data || null}
               />
@@ -1070,11 +1074,33 @@ export default function SpreadDashboard() {
           </div>
         </main>
       </div>
+      {/* Inputs hidden para seleção de arquivo */}
+      <input
+        ref={moodysInputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) setMoodysFile(file);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={anbimaInputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) setAnbimaFile(file);
+          e.target.value = "";
+        }}
+      />
     </>
   );
 }
-
-// ─── Empty State ──────────────────────────────────────────────────────────────
+// ─── Empty State ───────────────────────────────────────────────────────────────
 
 function EmptyState({
   onSync,
@@ -2133,6 +2159,8 @@ function DadosView({
   anbimaFile,
   onMoodysSelect,
   onAnbimaSelect,
+  onSetMoodysFile,
+  onSetAnbimaFile,
   onSync,
   lastSync,
 }: {
@@ -2144,6 +2172,8 @@ function DadosView({
   anbimaFile: File | null;
   onMoodysSelect: () => void;
   onAnbimaSelect: () => void;
+  onSetMoodysFile: (f: File) => void;
+  onSetAnbimaFile: (f: File) => void;
   onSync: () => void;
   lastSync: LastSyncRow | null;
 }) {
@@ -2188,12 +2218,10 @@ function DadosView({
     setDragOver(null);
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
-    if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
-      return;
-    }
-    // Simular clique no input correto
-    if (tipo === "moodys") onMoodysSelect();
-    else onAnbimaSelect();
+    if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) return;
+    // Usar o arquivo arrastado diretamente
+    if (tipo === "moodys") onSetMoodysFile(file);
+    else onSetAnbimaFile(file);
   };
 
   return (

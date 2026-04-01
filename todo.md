@@ -345,3 +345,7 @@
 ## v4.6 — Remover duration da calculadora
 - [x] Remover slider de duration e estado pricingDur da calculadora
 - [x] Adaptar calcPricing para não usar filtro de duration (usar todos os comparáveis do rating)
+
+## v4.7 — Corrigir upload e data de referência
+- [x] Diagnosticar e corrigir problema de upload na aba Dados
+- [x] Exibir data de referência dos dados (campo dataReferencia) em vez de data de inserção
