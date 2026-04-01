@@ -641,10 +641,22 @@ export async function runFullSync(
 
     let snapshotId: number | null = null;
     if (snapshotRows.length > 0) {
-      const [snapResult] = await db.insert(historicalSnapshots).values(snapshotRows);
+      // UPSERT: se já existe snapshot para (dataRefFim, indexador, rating), atualiza em vez de inserir
+      const [snapResult] = await db.insert(historicalSnapshots).values(snapshotRows).onDuplicateKeyUpdate({
+        set: {
+          snapshotAt: snapshotNow,
+          dataRefIni: snapshotRows[0].dataRefIni,
+          nPapeis: sql`VALUES(nPapeis)`,
+          mediaSpread: sql`VALUES(mediaSpread)`,
+          medianaSpread: sql`VALUES(medianaSpread)`,
+          p25Spread: sql`VALUES(p25Spread)`,
+          p75Spread: sql`VALUES(p75Spread)`,
+          stdSpread: sql`VALUES(stdSpread)`,
+        },
+      });
       snapshotId = (snapResult as { insertId?: number }).insertId || null;
     }
-    report(`Snapshot historico criado (${snapshotRows.length} ratings)`, 1, 1);
+    report(`Snapshot historico criado/atualizado (${snapshotRows.length} ratings)`, 1, 1);
 
     // -- Passo C: Deduplicacao + janela rolling 28 dias --
     report("Deduplicando e aplicando janela rolling de 28 dias...", 0, 1);

@@ -8,6 +8,7 @@ import {
   decimal,
   boolean,
   index,
+  uniqueIndex,
   datetime,
   date,
   json,
@@ -210,6 +211,7 @@ export const historicalSnapshots = mysqlTable(
   (t) => [
     index("idx_snapshot_at_rating").on(t.snapshotAt, t.rating),
     index("idx_snapshot_rating").on(t.rating),
+    uniqueIndex("uq_snapshot_date_idx_rating").on(t.dataRefFim, t.indexador, t.rating),
   ]
 );
 

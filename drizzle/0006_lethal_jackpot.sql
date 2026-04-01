@@ -1,0 +1,1 @@
+ALTER TABLE `historical_snapshots` ADD CONSTRAINT `uq_snapshot_date_idx_rating` UNIQUE(`dataRefFim`,`indexador`,`rating`);

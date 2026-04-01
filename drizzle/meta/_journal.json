@@ -43,6 +43,13 @@
       "when": 1774992816441,
       "tag": "0005_classy_ultron",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1775007706930,
+      "tag": "0006_lethal_jackpot",
+      "breakpoints": true
     }
   ]
 }

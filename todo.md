@@ -355,3 +355,8 @@
 - [x] Corrigir chartData para usar snapshotAt (timestamp do sync) como eixo X em vez de dataRefFim
 - [x] Atualizar Tooltip para mostrar "Sync: data · Dados: dataRef" no hover
 - [x] Gráfico histórico agora exibe um ponto distinto por sync, independente da data dos dados
+
+## v4.9 — Histórico por data da planilha
+- [ ] Zerar banco (spread_analysis, historical_snapshots, sync_log)
+- [ ] Corrigir snapshot: usar dataRefFim como chave, sobrescrever se mesma data já existe (UPSERT)
+- [ ] Corrigir eixo X do gráfico histórico para usar dataRefFim (data da planilha)
