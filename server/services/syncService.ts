@@ -246,11 +246,13 @@ function crossByEmissao(
 /**
  * Marca outliers por rating+universo usando critério adaptativo:
  *
- * Critério uniforme:
- * - n ≥ 3: ±3σ (desvio padrão amostral, n-1) — remove valores além de 3 desvios da média.
- *   Conservador o suficiente para não remover variação legítima, mas captura extremos
- *   em qualquer grupo com dados mínimos.
- * - n < 3: Sem remoção — amostra insuficiente para qualquer critério estatístico.
+ * Critério adaptativo por tamanho de grupo:
+ * - n < 5:  Sem remoção — amostra insuficiente para qualquer critério estatístico.
+ * - 5 ≤ n < 10: ±2σ amostral — grupos pequenos têm alta variância amostral;
+ *   usar 2σ captura extremos óbvios sem ser excessivamente conservador.
+ * - 10 ≤ n < 20: ±2,5σ amostral — grupos médios com mais estabilidade.
+ * - n ≥ 20: Winsorização 10% — corta os 10% extremos de cada lado (P10–P90),
+ *   robusto para distribuições assimétricas típicas de spreads de crédito.
  *
  * O agrupamento por universo (IPCA vs DI) é essencial: misturar os dois universos
  * faria com que ativos DI+ (spreads menores em bps) fossem penalizados ao serem
@@ -292,18 +294,38 @@ function markOutliers(results: SpreadResult[]): {
     const n = group.length;
     const spreads = group.map((r) => r.zSpread);
 
-    // n < 3: amostra insuficiente — sem remoção
-    if (n < 3) {
+    // n < 5: amostra insuficiente — sem remoção
+    if (n < 5) {
       ratingStats[rating] = { total: n, outliers: 0, cutLow: -Infinity, cutHigh: Infinity, mean: 0, stdDev: 0 };
       continue;
     }
 
-    // n ≥ 3: critério uniforme ±3σ (desvio padrão amostral)
-    const mean = spreads.reduce((s, v) => s + v, 0) / n;
-    const variance = spreads.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (n - 1);
-    const stdDev = Math.sqrt(variance);
-    const cutLow  = mean - 3 * stdDev;
-    const cutHigh = mean + 3 * stdDev;
+    let cutLow: number;
+    let cutHigh: number;
+    let mean = 0;
+    let stdDev = 0;
+
+    if (n >= 20) {
+      // Winsorização 10%: corta os 10% extremos de cada lado (P10–P90)
+      const sorted = [...spreads].sort((a, b) => a - b);
+      const k = Math.floor(n * 0.10);
+      cutLow  = sorted[k];
+      cutHigh = sorted[n - 1 - k];
+      // mean/stdDev calculados sobre o núcleo (para stats)
+      const core = sorted.slice(k, n - k);
+      mean = core.reduce((s, v) => s + v, 0) / core.length;
+      const variance = core.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / core.length;
+      stdDev = Math.sqrt(variance);
+    } else {
+      // Grupos médios/pequenos: z-score com sigma adaptativo
+      // 10 ≤ n < 20 → ±2,5σ | 5 ≤ n < 10 → ±2σ
+      const sigma = n >= 10 ? 2.5 : 2.0;
+      mean = spreads.reduce((s, v) => s + v, 0) / n;
+      const variance = spreads.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (n - 1);
+      stdDev = Math.sqrt(variance);
+      cutLow  = mean - sigma * stdDev;
+      cutHigh = mean + sigma * stdDev;
+    }
 
     let outliers = 0;
     for (const item of group) {
