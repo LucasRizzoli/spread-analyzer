@@ -419,3 +419,105 @@ export async function getWindowSummary() {
     totalOutliers: Number(summary.totalOutliers) || 0,
   };
 }
+
+/**
+ * Retorna os pontos da curva NTN-B implícita calculados por engenharia reversa.
+ * Para cada papel da data de referência mais recente com taxaIndicativa, zspread
+ * (ou spreadIncentivadoSemGrossUp para incentivados) e durationAnos preenchidos,
+ * calcula:
+ *   taxa_ntnb = (1 + taxaIndicativa) / (1 + spread) - 1
+ * onde spread = spreadIncentivadoSemGrossUp se incentivado, senão zspread.
+ */
+export async function getNtnbImplicitaCurve(): Promise<
+  {
+    codigoCetip: string;
+    emissorNome: string | null;
+    rating: string | null;
+    durationAnos: number;
+    taxaNtnb: number; // em decimal, ex: 0.0630 = 6,30%
+    taxaIndicativa: number;
+    spread: number;
+    incentivado: boolean;
+  }[]
+> {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Buscar apenas a data de referência mais recente
+  const [dateRows] = await db.execute(sql`
+    SELECT MAX(dataReferencia) AS maxData FROM spread_analysis
+  `) as unknown as { maxData: string }[][];
+
+  const maxData = (dateRows as unknown as { maxData: string }[])[0]?.maxData;
+  if (!maxData) return [];
+
+  const [rows] = await db.execute(sql`
+    SELECT
+      codigoCetip,
+      emissorNome,
+      rating,
+      durationAnos,
+      taxaIndicativa,
+      zspread,
+      spreadIncentivadoSemGrossUp,
+      incentivado
+    FROM spread_analysis
+    WHERE dataReferencia = ${maxData}
+      AND indexador = 'IPCA SPREAD'
+      AND taxaIndicativa IS NOT NULL
+      AND durationAnos IS NOT NULL
+      AND (zspread IS NOT NULL OR spreadIncentivadoSemGrossUp IS NOT NULL)
+    ORDER BY durationAnos ASC
+  `) as unknown as {
+    codigoCetip: string;
+    emissorNome: string | null;
+    rating: string | null;
+    durationAnos: string;
+    taxaIndicativa: string;
+    zspread: string | null;
+    spreadIncentivadoSemGrossUp: string | null;
+    incentivado: number | boolean;
+  }[][];
+
+  const data = rows as unknown as {
+    codigoCetip: string;
+    emissorNome: string | null;
+    rating: string | null;
+    durationAnos: string;
+    taxaIndicativa: string;
+    zspread: string | null;
+    spreadIncentivadoSemGrossUp: string | null;
+    incentivado: number | boolean;
+  }[];
+
+  const result = [];
+  for (const r of data) {
+    const incentivado = r.incentivado === true || r.incentivado === 1;
+    const taxaIndicativa = Number(r.taxaIndicativa);
+    const spreadRaw = incentivado
+      ? Number(r.spreadIncentivadoSemGrossUp ?? r.zspread ?? 0)
+      : Number(r.zspread ?? 0);
+
+    if (!isFinite(taxaIndicativa) || !isFinite(spreadRaw) || spreadRaw === 0) continue;
+    if (Number(r.durationAnos) <= 0) continue;
+
+    // Fórmula: taxa_ntnb = (1 + taxaIndicativa/100) / (1 + spread/100) - 1
+    // taxaIndicativa e zspread estão em percentual inteiro no banco (ex: 6.7302 = 6,73% a.a.)
+    const taxaNtnb = (1 + taxaIndicativa / 100) / (1 + spreadRaw / 100) - 1;
+
+    if (!isFinite(taxaNtnb) || taxaNtnb <= 0) continue;
+
+    result.push({
+      codigoCetip: r.codigoCetip,
+      emissorNome: r.emissorNome,
+      rating: r.rating,
+      durationAnos: Number(Number(r.durationAnos).toFixed(4)),
+      taxaNtnb: Number(taxaNtnb.toFixed(6)),
+      taxaIndicativa,
+      spread: spreadRaw,
+      incentivado,
+    });
+  }
+
+  return result;
+}

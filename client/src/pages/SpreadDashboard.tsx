@@ -555,7 +555,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
 
 export default function SpreadDashboard() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
-  const [activeView, setActiveView] = useState<"analise" | "table" | "dados">("analise");
+  const [activeView, setActiveView] = useState<"analise" | "table" | "dados" | "ntnb">("analise");
   const [tableSearch, setTableSearch] = useState("");
   const [showOutliers, setShowOutliers] = useState(false);
   // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B), DI SPREAD (spread sobre CDI em bps) ou DI PERCENTUAL (% do CDI)
@@ -1005,6 +1005,7 @@ export default function SpreadDashboard() {
                   [
                     { key: "analise", icon: TrendingUp, label: "Análise" },
                     { key: "table", icon: Table2, label: "Tabela" },
+                    { key: "ntnb", icon: Activity, label: "Curva NTN-B" },
                     { key: "dados", icon: Database, label: "Dados" },
                   ] as const
                 ).map(({ key, icon: Icon, label }) => (
@@ -1049,6 +1050,8 @@ export default function SpreadDashboard() {
                 metrica={metrica}
                 analysisData={analysisData}
               />
+            ) : activeView === "ntnb" ? (
+              <NtnbCurveView />
             ) : activeView === "dados" ? (
               <DadosView
                 windowSummary={windowSummary.data || null}
@@ -2494,6 +2497,128 @@ function DadosView({
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+// ─── Curva NTN-B Implícita ────────────────────────────────────────────────────
+
+function NtnbCurveView() {
+  const { data: curveData, isLoading } = trpc.spread.getNtnbCurve.useQuery();
+
+  const scatterPoints = useMemo(() => {
+    if (!curveData) return [];
+    return curveData.map((p) => ({
+      x: p.durationAnos,
+      y: parseFloat((p.taxaNtnb * 100).toFixed(4)),
+      cetip: p.codigoCetip,
+      emissor: p.emissorNome,
+      rating: p.rating,
+      incentivado: p.incentivado,
+    }));
+  }, [curveData]);
+
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: typeof scatterPoints[0] }[] }) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0].payload;
+    return (
+      <div className="bg-popover border border-border rounded-lg p-3 shadow-lg text-xs">
+        <p className="font-semibold text-foreground mb-1">{d.cetip}</p>
+        {d.emissor && <p className="text-muted-foreground mb-1">{d.emissor}</p>}
+        <div className="flex gap-3">
+          <span className="text-muted-foreground">Duration: <span className="text-foreground font-medium">{d.x.toFixed(2)}a</span></span>
+          <span className="text-muted-foreground">NTN-B: <span className="text-primary font-semibold">{d.y.toFixed(2)}%</span></span>
+        </div>
+        {d.rating && <p className="text-muted-foreground mt-1">Rating: <span className="text-foreground">{d.rating}</span></p>}
+        {d.incentivado && <p className="text-emerald-400 mt-1 text-[10px]">Lei 12.431 (incentivado)</p>}
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!scatterPoints.length) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center">
+        <Activity className="h-10 w-10 text-muted-foreground mb-3" />
+        <p className="text-sm text-muted-foreground">Nenhum dado disponível.</p>
+        <p className="text-xs text-muted-foreground mt-1">Sincronize as planilhas para gerar a curva NTN-B.</p>
+      </div>
+    );
+  }
+
+  // Calcular domínio do eixo Y com margem
+  const ys = scatterPoints.map((p) => p.y);
+  const yMin = Math.floor(Math.min(...ys) * 10) / 10 - 0.1;
+  const yMax = Math.ceil(Math.max(...ys) * 10) / 10 + 0.1;
+
+  return (
+    <div className="h-full flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">Curva NTN-B Implícita</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Taxa NTN-B extraída por engenharia reversa · {scatterPoints.length} papéis · data mais recente
+          </p>
+        </div>
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-primary" />
+            Não incentivado
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
+            Lei 12.431
+          </span>
+        </div>
+      </div>
+
+      <div className="flex-1 bg-card border border-border rounded-lg p-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <ScatterChart margin={{ top: 10, right: 30, left: 20, bottom: 30 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
+            <XAxis
+              type="number"
+              dataKey="x"
+              name="Duration"
+              domain={[0, "auto"]}
+              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              tickFormatter={(v: number) => `${v.toFixed(1)}a`}
+              label={{ value: "Duration (anos)", position: "insideBottom", offset: -15, fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+            />
+            <YAxis
+              type="number"
+              dataKey="y"
+              name="Taxa NTN-B"
+              domain={[yMin, yMax]}
+              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              tickFormatter={(v: number) => `${v.toFixed(2)}%`}
+              tickCount={8}
+              width={60}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: "3 3" }} />
+            <Scatter
+              name="Curva NTN-B"
+              data={scatterPoints}
+              r={4}
+            >
+              {scatterPoints.map((p, i) => (
+                <Cell
+                  key={i}
+                  fill={p.incentivado ? "hsl(142 71% 45%)" : "hsl(var(--primary))"}
+                  fillOpacity={0.75}
+                />
+              ))}
+            </Scatter>
+          </ScatterChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

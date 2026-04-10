@@ -10,6 +10,7 @@ import {
   getAvailableDates,
   getHistoricalSnapshots,
   getWindowSummary,
+  getNtnbImplicitaCurve,
 } from "../db";
 import { getSyncState, runFullSync } from "../services/syncService";
 import { sortRatings } from "../services/spreadCalculatorService";
@@ -141,6 +142,13 @@ export const spreadRouter = router({
    */
   getWindowSummary: publicProcedure.query(async () => {
     return getWindowSummary();
+  }),
+
+  /**
+   * Retorna os pontos da curva NTN-B implícita (duration x taxa) para o scatter chart
+   */
+  getNtnbCurve: publicProcedure.query(async () => {
+    return getNtnbImplicitaCurve();
   }),
 
   /**
