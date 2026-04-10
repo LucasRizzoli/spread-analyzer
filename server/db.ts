@@ -403,7 +403,11 @@ export async function getWindowSummary() {
       COUNT(*) AS totalPapeis,
       COUNT(DISTINCT dataReferencia) AS totalDatas,
       COUNT(DISTINCT codigoCetip) AS totalCetips,
-      SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END) AS totalOutliers
+      (
+        SELECT SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END)
+        FROM spread_analysis
+        WHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)
+      ) AS totalOutliers
     FROM spread_analysis
   `) as unknown as { dataMin: string; dataMax: string; totalPapeis: number; totalDatas: number; totalCetips: number; totalOutliers: number }[][];
 
