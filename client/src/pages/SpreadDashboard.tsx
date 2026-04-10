@@ -684,6 +684,8 @@ export default function SpreadDashboard() {
       triggerSync.mutate({
         moodysFileBase64: moodysBase64,
         anbimaFileBase64: anbimaBase64,
+        moodysFileName: moodysFile.name,
+        anbimaFileName: anbimaFile.name,
       });
     } catch (err) {
       toast.error("Erro ao processar arquivos", {
@@ -2577,8 +2579,81 @@ function DadosView({
             </ResponsiveContainer>
           </div>
         )}
-      </section>
+        </section>
+
+      {/* ─── Backlog de Planilhas ─────────────────────────────────────────────── */}
+      <BacklogSection />
     </div>
+  );
+}
+
+function BacklogSection() {
+  const { data: files, isLoading } = trpc.spread.getUploadedFiles.useQuery();
+
+  const moodysFiles = files?.filter((f) => f.tipo === "moodys") ?? [];
+  const anbimaFiles = files?.filter((f) => f.tipo === "anbima") ?? [];
+
+  const formatBytes = (bytes: number | null) => {
+    if (!bytes) return "";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const formatDate = (d: Date | string) => {
+    const date = typeof d === "string" ? new Date(d) : d;
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+
+  const FileList = ({ items, label }: { items: typeof moodysFiles; label: string }) => (
+    <div className="flex-1 min-w-0">
+      <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-primary inline-block" />
+        {label}
+        <span className="text-xs font-normal text-muted-foreground">({items.length} arquivo{items.length !== 1 ? "s" : ""})</span>
+      </h3>
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => <div key={i} className="h-10 bg-muted/40 rounded animate-pulse" />)}
+        </div>
+      ) : items.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">Nenhuma planilha enviada ainda.</p>
+      ) : (
+        <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+          {items.map((f) => (
+            <div key={f.id} className="flex items-center gap-3 px-3 py-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">{f.nomeArquivo}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {formatDate(f.uploadadoEm)}
+                  {f.dataReferencia && <span className="ml-2 text-primary/70">ref: {f.dataReferencia}</span>}
+                  {f.tamanhoBytes && <span className="ml-2">{formatBytes(f.tamanhoBytes)}</span>}
+                </p>
+              </div>
+              <a
+                href={f.s3Url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-primary hover:underline shrink-0"
+              >
+                Baixar
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <section className="mt-8">
+      <h2 className="text-sm font-semibold text-foreground mb-4">Backlog de Planilhas</h2>
+      <div className="flex gap-6">
+        <FileList items={moodysFiles} label="Planilhas Moody's" />
+        <div className="w-px bg-border" />
+        <FileList items={anbimaFiles} label="Planilhas ANBIMA" />
+      </div>
+    </section>
   );
 }
 

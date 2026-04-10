@@ -11,8 +11,11 @@ import {
   getHistoricalSnapshots,
   getWindowSummary,
   getNtnbImplicitaCurve,
+  registerUploadedFile,
+  getUploadedFiles,
 } from "../db";
 import { getSyncState, runFullSync } from "../services/syncService";
+import { storagePut } from "../storage";
 import { sortRatings } from "../services/spreadCalculatorService";
 
 const SpreadFiltersSchema = z.object({
@@ -161,15 +164,57 @@ export const spreadRouter = router({
       z.object({
         moodysFileBase64: z.string(),
         anbimaFileBase64: z.string(),
+        moodysFileName: z.string().optional(),
+        anbimaFileName: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const moodysBuffer = Buffer.from(input.moodysFileBase64, "base64");
       const anbimaBuffer = Buffer.from(input.anbimaFileBase64, "base64");
+
+      // Salvar arquivos no S3 e registrar no backlog (em background, sem bloquear)
+      const now = Date.now();
+      const moodysKey = `planilhas/moodys/${now}-${input.moodysFileName ?? "moodys.xlsx"}`;
+      const anbimaKey = `planilhas/anbima/${now}-${input.anbimaFileName ?? "anbima.xlsx"}`;
+
+      Promise.all([
+        storagePut(moodysKey, moodysBuffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+          .then(({ url }) => registerUploadedFile({
+            tipo: "moodys",
+            nomeArquivo: input.moodysFileName ?? "moodys.xlsx",
+            s3Key: moodysKey,
+            s3Url: url,
+            tamanhoBytes: moodysBuffer.length,
+          }))
+          .catch((err) => console.error("[Backlog] Erro ao salvar Moody's no S3:", err)),
+        storagePut(anbimaKey, anbimaBuffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+          .then(({ url }) => {
+            // Extrair data de referência do nome do arquivo ANBIMA (ex: debentures-precos-2026-04-09.xlsx)
+            const dateMatch = (input.anbimaFileName ?? "").match(/(\d{4}-\d{2}-\d{2})/);
+            const dataReferencia = dateMatch ? dateMatch[1] : undefined;
+            return registerUploadedFile({
+              tipo: "anbima",
+              nomeArquivo: input.anbimaFileName ?? "anbima.xlsx",
+              dataReferencia,
+              s3Key: anbimaKey,
+              s3Url: url,
+              tamanhoBytes: anbimaBuffer.length,
+            });
+          })
+          .catch((err) => console.error("[Backlog] Erro ao salvar ANBIMA no S3:", err)),
+      ]);
+
       // Rodar em background sem bloquear a resposta
       runFullSync(moodysBuffer, anbimaBuffer).catch((err) => {
         console.error("[Sync] Erro na sincronização:", err);
       });
       return { started: true, message: "Sincronização iniciada em background" };
     }),
+
+  /**
+   * Retorna o backlog de planilhas enviadas (Moody's e ANBIMA)
+   */
+  getUploadedFiles: protectedProcedure.query(async () => {
+    return getUploadedFiles();
+  }),
 });

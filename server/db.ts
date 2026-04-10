@@ -521,3 +521,63 @@ export async function getNtnbImplicitaCurve(): Promise<
 
   return result;
 }
+
+// ─── Backlog de planilhas ────────────────────────────────────────────────────
+
+export async function registerUploadedFile(params: {
+  tipo: "moodys" | "anbima";
+  nomeArquivo: string;
+  dataReferencia?: string;
+  s3Key: string;
+  s3Url: string;
+  tamanhoBytes?: number;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { uploadedFiles } = await import("../drizzle/schema");
+  const result = await db.insert(uploadedFiles).values({
+    tipo: params.tipo,
+    nomeArquivo: params.nomeArquivo,
+    dataReferencia: params.dataReferencia ?? null,
+    s3Key: params.s3Key,
+    s3Url: params.s3Url,
+    tamanhoBytes: params.tamanhoBytes ?? null,
+  });
+  return (result as unknown as { insertId: number }).insertId;
+}
+
+export async function getUploadedFiles(): Promise<{
+  id: number;
+  tipo: "moodys" | "anbima";
+  nomeArquivo: string;
+  dataReferencia: string | null;
+  s3Url: string;
+  tamanhoBytes: number | null;
+  uploadadoEm: Date;
+}[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const { uploadedFiles } = await import("../drizzle/schema");
+  const { desc } = await import("drizzle-orm");
+  const rows = await db
+    .select({
+      id: uploadedFiles.id,
+      tipo: uploadedFiles.tipo,
+      nomeArquivo: uploadedFiles.nomeArquivo,
+      dataReferencia: uploadedFiles.dataReferencia,
+      s3Url: uploadedFiles.s3Url,
+      tamanhoBytes: uploadedFiles.tamanhoBytes,
+      uploadadoEm: uploadedFiles.uploadadoEm,
+    })
+    .from(uploadedFiles)
+    .orderBy(desc(uploadedFiles.uploadadoEm));
+  return rows as {
+    id: number;
+    tipo: "moodys" | "anbima";
+    nomeArquivo: string;
+    dataReferencia: string | null;
+    s3Url: string;
+    tamanhoBytes: number | null;
+    uploadadoEm: Date;
+  }[];
+}
