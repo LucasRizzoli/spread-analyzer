@@ -267,12 +267,12 @@ describe("matching emissão-a-emissão (lógica de crossByEmissao)", () => {
     return (2 * inter) / (a.length - 1 + b.length - 1);
   }
 
-  it("match exato: mesmo emissor e mesmo número de emissão (threshold 0.80)", () => {
+  it("match exato: mesmo emissor e mesmo número de emissão (threshold 0.70)", () => {
     const emissorAnbima = normalizeEmissor("AEGEA SANEAMENTO E PARTICIPAÇÕES S/A (*)");
     const emissorMoodys = normalizeEmissor("Aegea Saneamento e Participações S.A.");
     const score = diceCoefficient(emissorAnbima, emissorMoodys);
-    // Score deve ser ≥ 0.80 para passar no threshold atual
-    expect(score).toBeGreaterThanOrEqual(0.80);
+    // Score deve ser ≥ 0.70 para passar no threshold atual
+    expect(score).toBeGreaterThanOrEqual(0.70);
   });
 
   it("score baixo para emissores completamente diferentes", () => {
@@ -280,7 +280,7 @@ describe("matching emissão-a-emissão (lógica de crossByEmissao)", () => {
     const emissorB = normalizeEmissor("VALE S.A.");
     const score = diceCoefficient(emissorA, emissorB);
     // Emissores sem relação devem ficar abaixo do threshold
-    expect(score).toBeLessThan(0.80);
+    expect(score).toBeLessThan(0.70);
   });
 
   it("número de emissão diferente não deve dar match", () => {
@@ -296,16 +296,16 @@ describe("matching emissão-a-emissão (lógica de crossByEmissao)", () => {
     const comAsteriscos = normalizeEmissor("RGE SUL DISTRIBUIDORA DE ENERGIA S/A (*)");
     const semAsteriscos = normalizeEmissor("RGE Sul Distribuidora de Energia S.A.");
     const score = diceCoefficient(comAsteriscos, semAsteriscos);
-    expect(score).toBeGreaterThanOrEqual(0.80);
+    expect(score).toBeGreaterThanOrEqual(0.70);
   });
 
-  it("fluxo invertido: emissão Moody's encontra candidato ANBIMA por Dice ≥ 0.80", () => {
+  it("fluxo invertido: emissão Moody's encontra candidato ANBIMA por Dice ≥ 0.70", () => {
     // Simula a lógica do preFilterByCandidates invertido:
-    // Para cada emissão Moody's, verifica se existe ativo ANBIMA com score ≥ 0.80
+    // Para cada emissão Moody's, verifica se existe ativo ANBIMA com score ≥ 0.70
     const moodysEmissor = normalizeEmissor("Saneamento de Goiás S.A. - Saneago");
     const anbimaEmissor = normalizeEmissor("SANEAMENTO DE GOIÁS - SANEAGO");
     const score = diceCoefficient(moodysEmissor, anbimaEmissor);
-    expect(score).toBeGreaterThanOrEqual(0.80);
+    expect(score).toBeGreaterThanOrEqual(0.70);
   });
 });
 

@@ -8,7 +8,7 @@
  * 3. Para cada emissão Moody's com número de emissão, buscar candidatos ANBIMA
  *    via Dice ≥ 0.70 (pré-filtro em memória, sem browser)
  * 4. Enriquecer via ANBIMA Data (Playwright, retry 3x) APENAS os CETIPs candidatos
- * 5. Confirmar match por número de emissão idêntico + Dice ≥ 0.80
+ * 5. Confirmar match por número de emissão idêntico + Dice ≥ 0.70
  * 6. Marcar outliers: por rating+universo, critério adaptativo
  * 7. Persistir resultados com scoreMatch, isOutlier e campos de rastreabilidade
  */
@@ -118,7 +118,7 @@ function diceCoefficient(a: string, b: string): number {
 
 /**
  * Pré-filtro Dice invertido: parte das emissões Moody's (com número de emissão)
- * e para cada uma busca candidatos na planilha ANBIMA com Dice ≥ 0.80.
+ * e para cada uma busca candidatos na planilha ANBIMA com Dice ≥ 0.70.
  *
  * Retorna os códigos CETIP únicos que têm ao menos um candidato plausível
  * na Moody's — sem abrir nenhuma aba do browser.
@@ -404,8 +404,8 @@ export async function runFullSync(
 
     // ── 3. Pré-filtro Dice invertido: parte das emissões Moody's ────────────
     // Para cada emissão Moody's com número de emissão, busca candidatos ANBIMA
-    // com Dice ≥ 0.80. Garante cobertura total das emissões Moody's.
-    report("Identificando candidatos ANBIMA para cada emissão Moody's (Dice ≥ 0.80)...", 0, 1);
+    // com Dice ≥ 0.70. Garante cobertura total das emissões Moody's.
+    report("Identificando candidatos ANBIMA para cada emissão Moody's (Dice ≥ 0.70)...", 0, 1);
     const candidatosCetip = preFilterByCandidates(anbimaData, moodysData);
     const emissoesMoodysCount = moodysData.filter((r) => r.isEmissao && r.numeroEmissao !== null).length;
     report(
