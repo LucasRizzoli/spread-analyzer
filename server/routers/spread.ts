@@ -17,6 +17,7 @@ import {
 import { getSyncState, runFullSync } from "../services/syncService";
 import { storagePut } from "../storage";
 import { sortRatings } from "../services/spreadCalculatorService";
+import { SCORE_MIN_THRESHOLD } from "../../shared/const";
 
 const SpreadFiltersSchema = z.object({
   durationMin: z.number().min(0).max(100).optional(),

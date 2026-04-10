@@ -29,6 +29,7 @@ import {
 } from "./moodysScraperService";
 import { enrichBatch, clearAnbimaDataCache, AnbimaDataRecord as SndRecord } from "./anbimaDataService";
 import { eq, sql } from "drizzle-orm";
+import { SCORE_MIN_THRESHOLD } from "../../shared/const";
 
 export interface SyncProgress {
   step: string;
@@ -144,7 +145,7 @@ function preFilterByCandidates(
 
   for (const moodysNorm of emissoesMoodys) {
     for (const asset of assetsNorm) {
-      if (diceCoefficient(asset.norm, moodysNorm) >= 0.70) {
+      if (diceCoefficient(asset.norm, moodysNorm) >= SCORE_MIN_THRESHOLD) {
         candidatosSet.add(asset.cetip);
       }
     }
@@ -200,7 +201,7 @@ function crossByEmissao(
 
       // Filtro secundário: nome do emissor deve ser similar (Dice ≥ 0.70)
       const score = diceCoefficient(item.emissorNorm, r.emissorNorm);
-      if (score >= 0.70 && score > bestScore) {
+      if (score >= SCORE_MIN_THRESHOLD && score > bestScore) {
         bestScore = score;
         bestAsset = item;
       }

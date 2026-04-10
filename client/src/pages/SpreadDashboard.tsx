@@ -49,6 +49,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { sortRatings } from "../lib/ratings";
+import { SCORE_MIN_THRESHOLD } from "../../../shared/const";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -248,7 +249,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
 
   const filtered = useMemo(() => {
     // Nunca exibir matches com score < 0.70 no relatório de qualidade
-    let rows = data.filter((r) => r.scoreMatch == null || r.scoreMatch >= 0.70); // limiar único: 0.70
+    let rows = data.filter((r) => r.scoreMatch == null || r.scoreMatch >= SCORE_MIN_THRESHOLD); // limiar único: SCORE_MIN_THRESHOLD
     if (showOutliersOnly) rows = rows.filter((r) => r.isOutlier);
     if (search) {
       const q = search.toLowerCase();
@@ -602,7 +603,7 @@ export default function SpreadDashboard() {
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
     excludeOutliers: !showOutliers,
-    scoreMin: 0.80,
+    scoreMin: SCORE_MIN_THRESHOLD,
   });
 
   // Query separada apenas para contar outliers — sempre sem filtro de exclusão,
@@ -614,7 +615,7 @@ export default function SpreadDashboard() {
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
     excludeOutliers: false,
-    scoreMin: 0.80,
+    scoreMin: SCORE_MIN_THRESHOLD,
   });
 
   // Mapear universo para indexadores correspondentes

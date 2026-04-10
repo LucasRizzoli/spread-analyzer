@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { SCORE_MIN_THRESHOLD } from '../shared/const';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -172,10 +173,9 @@ export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
   if (filters.excludeOutliers) {
     conditions.push(sql`${spreadAnalysis.isOutlier} = 0`);
   }
-  if (filters.scoreMin !== undefined) {
-    // CAST para DECIMAL evita comparação lexicográfica de strings (DECIMAL(5,4) armazenado como texto)
-    conditions.push(sql`CAST(${spreadAnalysis.scoreMatch} AS DECIMAL(5,4)) >= ${filters.scoreMin}`);
-  }
+  // Aplica o threshold mínimo de score — usa o valor do filtro ou o padrão global SCORE_MIN_THRESHOLD
+  const scoreMin = filters.scoreMin !== undefined ? filters.scoreMin : SCORE_MIN_THRESHOLD;
+  conditions.push(sql`CAST(${spreadAnalysis.scoreMatch} AS DECIMAL(5,4)) >= ${scoreMin}`);
   return db
     .select()
     .from(spreadAnalysis)
@@ -237,10 +237,9 @@ export async function getZspreadByRating(filters: SpreadFilters = {}) {
   if (filters.excludeOutliers) {
     conditions.push(sql`${spreadAnalysis.isOutlier} = 0`);
   }
-  if (filters.scoreMin !== undefined) {
-    // CAST para DECIMAL evita comparação lexicográfica de strings (DECIMAL(5,4) armazenado como texto)
-    conditions.push(sql`CAST(${spreadAnalysis.scoreMatch} AS DECIMAL(5,4)) >= ${filters.scoreMin}`);
-  }
+  // Aplica o threshold mínimo de score — usa o valor do filtro ou o padrão global SCORE_MIN_THRESHOLD
+  const scoreMin = filters.scoreMin !== undefined ? filters.scoreMin : SCORE_MIN_THRESHOLD;
+  conditions.push(sql`CAST(${spreadAnalysis.scoreMatch} AS DECIMAL(5,4)) >= ${scoreMin}`);
 
   // Buscar todos os valores brutos para calcular mediana no servidor
   const rows = await db
