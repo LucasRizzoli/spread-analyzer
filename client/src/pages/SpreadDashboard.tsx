@@ -247,8 +247,8 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
   const data = reportQuery.data || [];
 
   const filtered = useMemo(() => {
-    // Nunca exibir matches com score < 0.80 no relatório de qualidade
-    let rows = data.filter((r) => r.scoreMatch == null || r.scoreMatch >= 0.80); // limiar único: 0.80
+    // Nunca exibir matches com score < 0.70 no relatório de qualidade
+    let rows = data.filter((r) => r.scoreMatch == null || r.scoreMatch >= 0.70); // limiar único: 0.70
     if (showOutliersOnly) rows = rows.filter((r) => r.isOutlier);
     if (search) {
       const q = search.toLowerCase();
