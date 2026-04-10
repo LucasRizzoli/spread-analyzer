@@ -1379,25 +1379,95 @@ function AnaliseView({
   analysisData: AnalysisRow[];
 }) {
   const [pricingRating, setPricingRating] = useState("AA-.br");
-  const [pricingResult, setPricingResult] = useState<ReturnType<typeof calcPricing>>(null);
+  const [pricingDuration, setPricingDuration] = useState<string>("5");
+  const [pricingResult, setPricingResult] = useState<{
+    spreadEsperadoBps: number;
+    taxaNtnbPct: number | null;
+    taxaTotalPct: number | null;
+    ntnbInterpolado: boolean;
+    ratingIdx: number;
+    totalRatings: number;
+  } | null>(null);
+
+  const { data: ntnbCurveData } = trpc.spread.getNtnbCurve.useQuery();
 
   const ratingsDisponiveis = useMemo(() => {
     const set = new Set(analysisData.map((d) => d.rating).filter(Boolean) as string[]);
     return sortRatings(Array.from(set));
   }, [analysisData]);
 
+  // Regressão sobre byRatingData (mesma lógica do BarView)
+  const ratingRegression = useMemo(() => {
+    const sorted = [...byRatingData].sort((a, b) => {
+      const order = sortRatings([a.rating, b.rating]);
+      return order.indexOf(a.rating) - order.indexOf(b.rating);
+    });
+    if (sorted.length < 2) return { sorted, slope: 0, intercept: 0 };
+    const xs = sorted.map((_, i) => i);
+    const ys = sorted.map((d) => {
+      const val = metrica === "mediana" ? (d.medianZspread ?? d.avgZspread) : d.avgZspread;
+      return Math.round(val * 100);
+    });
+    const n = xs.length;
+    const sumX = xs.reduce((a, b) => a + b, 0);
+    const sumY = ys.reduce((a, b) => a + b, 0);
+    const sumXY = xs.reduce((s, x, i) => s + x * ys[i], 0);
+    const sumX2 = xs.reduce((s, x) => s + x * x, 0);
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    return { sorted, slope, intercept };
+  }, [byRatingData, metrica]);
+
   const handleCalc = () => {
-    const result = calcPricing(pricingRating, analysisData as unknown as { rating: string | null | undefined; durationAnos: number | null; zspread: number | null }[]);
-    setPricingResult(result);
+    const dur = parseFloat(pricingDuration);
+    if (!isFinite(dur) || dur <= 0) return;
+
+    // 1. Spread esperado do rating via regressão
+    const { sorted, slope, intercept } = ratingRegression;
+    const ratingIdx = sorted.findIndex((d) => d.rating === pricingRating);
+    if (ratingIdx === -1) return;
+    const spreadEsperadoBps = Math.round(slope * ratingIdx + intercept);
+
+    // 2. Taxa NTN-B implícita via interpolação linear na curva
+    let taxaNtnbPct: number | null = null;
+    let ntnbInterpolado = false;
+    if (ntnbCurveData && ntnbCurveData.length >= 2) {
+      const pts = [...ntnbCurveData].sort((a, b) => a.durationAnos - b.durationAnos);
+      if (dur <= pts[0].durationAnos) {
+        taxaNtnbPct = pts[0].taxaNtnb * 100;
+      } else if (dur >= pts[pts.length - 1].durationAnos) {
+        taxaNtnbPct = pts[pts.length - 1].taxaNtnb * 100;
+      } else {
+        const lo = pts.findLast((p) => p.durationAnos <= dur)!;
+        const hi = pts.find((p) => p.durationAnos > dur)!;
+        const t = (dur - lo.durationAnos) / (hi.durationAnos - lo.durationAnos);
+        taxaNtnbPct = (lo.taxaNtnb + t * (hi.taxaNtnb - lo.taxaNtnb)) * 100;
+        ntnbInterpolado = true;
+      }
+    }
+
+    // 3. Taxa total
+    const taxaTotalPct = taxaNtnbPct !== null
+      ? taxaNtnbPct + spreadEsperadoBps / 100
+      : null;
+
+    setPricingResult({
+      spreadEsperadoBps,
+      taxaNtnbPct,
+      taxaTotalPct,
+      ntnbInterpolado,
+      ratingIdx,
+      totalRatings: sorted.length,
+    });
   };
+
   // Recalcular automaticamente quando os dados mudam
   useEffect(() => {
-    if (analysisData.length > 0) {
-      const result = calcPricing(pricingRating, analysisData as unknown as { rating: string | null | undefined; durationAnos: number | null; zspread: number | null }[]);
-      setPricingResult(result);
+    if (analysisData.length > 0 && byRatingData.length > 0) {
+      handleCalc();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pricingRating, analysisData]);
+  }, [pricingRating, pricingDuration, analysisData, byRatingData, ntnbCurveData]);
 
   return (
     <div className="h-full overflow-hidden flex flex-col gap-3">
@@ -1522,8 +1592,8 @@ function AnaliseView({
           {/* Controles: rating + duration + botao */}
           <div className="flex-shrink-0 w-64">
             <div className="mb-3">
-              <p className="text-xs font-semibold text-foreground">Spread Esperado</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Estimativa com IC 95% · shrinkage hierárquico</p>
+              <p className="text-xs font-semibold text-foreground">Precificação Estimada</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">NTN-B implícita (interpolada) + spread da regressão por rating</p>
             </div>
             <div className="flex flex-col gap-3">
               <div>
@@ -1538,7 +1608,18 @@ function AnaliseView({
                   ))}
                 </select>
               </div>
-
+              <div>
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wide block mb-1">Duration (anos)</label>
+                <input
+                  type="number"
+                  min="0.1"
+                  max="30"
+                  step="0.1"
+                  value={pricingDuration}
+                  onChange={(e) => setPricingDuration(e.target.value)}
+                  className="w-full h-8 px-2 text-xs bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
               <button
                 onClick={handleCalc}
                 className="w-full h-8 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
@@ -1551,71 +1632,48 @@ function AnaliseView({
           {/* Resultado */}
           <div className="flex-1 min-w-0">
             {pricingResult ? (
-              <div className="space-y-3">
-                {pricingResult.inversao && (
-                  <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-400">
-                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                    <span>
-                      Inversão: spread estimado ({Math.round(pricingResult.pointEst)} bps) inferior ao rating{" "}
-                      {pricingResult.nextRatingKey} abaixo.
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-end gap-6">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-0.5">Ponto médio</p>
-                    <p className="text-2xl font-bold font-mono text-primary">
-                      {Math.round(pricingResult.pointEst)}
-                      <span className="text-sm font-normal text-muted-foreground ml-1">bps</span>
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-0.5">IC 95%</p>
-                    <p className="text-sm font-mono text-foreground">
-                      [{Math.round(pricingResult.lo)} — {Math.round(pricingResult.hi)}]
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-0.5">Comparáveis</p>
-                    <p className="text-sm font-bold text-foreground">{pricingResult.n}</p>
-                  </div>
+              <div className="flex items-start gap-8 flex-wrap">
+                {/* NTN-B */}
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wide">NTN-B implícita</p>
+                  <p className="text-2xl font-bold font-mono text-foreground">
+                    {pricingResult.taxaNtnbPct !== null ? pricingResult.taxaNtnbPct.toFixed(2) : "—"}
+                    <span className="text-sm font-normal text-muted-foreground ml-1">% a.a.</span>
+                  </p>
+                  {pricingResult.ntnbInterpolado && (
+                    <p className="text-[9px] text-muted-foreground/60 mt-0.5">interpolado</p>
+                  )}
                 </div>
-                {(() => {
-                  const range = Math.max(500, pricingResult.hi * 1.1);
-                  const pct = (v: number) => Math.min(100, Math.max(0, (v / range) * 100));
-                  return (
-                    <div className="relative h-6 bg-muted rounded overflow-hidden">
-                      <div className="absolute h-full bg-primary/20" style={{ left: `${pct(pricingResult.lo)}%`, width: `${pct(pricingResult.hi) - pct(pricingResult.lo)}%` }} />
-                      <div className="absolute top-1 bottom-1 w-0.5 bg-primary rounded" style={{ left: `${pct(pricingResult.pointEst)}%`, transform: "translateX(-50%)" }} />
-                      <span className="absolute text-[9px] text-primary font-bold" style={{ left: `${pct(pricingResult.lo)}%`, top: "50%", transform: "translateY(-50%) translateX(-50%)" }}>{Math.round(pricingResult.lo)}</span>
-                      <span className="absolute text-[9px] text-primary font-bold" style={{ left: `${pct(pricingResult.hi)}%`, top: "50%", transform: "translateY(-50%) translateX(-50%)" }}>{Math.round(pricingResult.hi)}</span>
-                    </div>
-                  );
-                })()}
-                {pricingResult.comparaveis.length > 0 && (
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-1">Papéis comparáveis</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {pricingResult.comparaveis.slice(0, 8).map((c, i) => (
-                        <div key={i} className="px-2 py-1 rounded bg-muted border border-border text-[10px] text-foreground">
-                          <span className="font-medium">{c.emissorNome || c.codigoCetip}</span>
-                          {" · "}{c.durationAnos?.toFixed(1)}a{" · "}
-                          <span className="text-primary font-semibold">{c.zspread != null ? Math.round(c.zspread * 100) : "—"} bps</span>
-                        </div>
-                      ))}
-                      {pricingResult.comparaveis.length > 8 && (
-                        <span className="text-[10px] text-muted-foreground self-center">+{pricingResult.comparaveis.length - 8} mais</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <p className="text-[9px] text-muted-foreground/60 leading-relaxed">
-                  Abordagem: <em>{pricingResult.approach}</em>. Peso do bucket = n/(n+5). IC usa distribuição t com (n−1) g.l.
-                </p>
+
+                {/* Separador */}
+                <div className="flex items-center text-muted-foreground text-xl font-light self-center">+</div>
+
+                {/* Spread esperado */}
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wide">Spread esperado ({pricingRating})</p>
+                  <p className="text-2xl font-bold font-mono text-primary">
+                    {pricingResult.spreadEsperadoBps}
+                    <span className="text-sm font-normal text-muted-foreground ml-1">bps</span>
+                  </p>
+                  <p className="text-[9px] text-muted-foreground/60 mt-0.5">regressão por rating</p>
+                </div>
+
+                {/* Separador */}
+                <div className="flex items-center text-muted-foreground text-xl font-light self-center">=</div>
+
+                {/* Taxa total */}
+                <div className="bg-primary/10 border border-primary/30 rounded-lg px-4 py-2">
+                  <p className="text-[10px] text-primary/70 mb-0.5 uppercase tracking-wide">Taxa total estimada</p>
+                  <p className="text-2xl font-bold font-mono text-primary">
+                    {pricingResult.taxaTotalPct !== null ? pricingResult.taxaTotalPct.toFixed(2) : "—"}
+                    <span className="text-sm font-normal text-primary/70 ml-1">% a.a.</span>
+                  </p>
+                  <p className="text-[9px] text-primary/50 mt-0.5">IPCA + {pricingResult.spreadEsperadoBps} bps</p>
+                </div>
               </div>
             ) : (
               <div className="flex items-center justify-center h-full text-[10px] text-muted-foreground">
-                Selecione rating e duration para calcular o spread esperado.
+                Informe a duration e selecione o rating para calcular.
               </div>
             )}
           </div>
