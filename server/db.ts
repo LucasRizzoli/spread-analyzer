@@ -398,17 +398,14 @@ export async function getWindowSummary() {
 
   const [dateRange] = await db.execute(sql`
     SELECT
-      MIN(dataReferencia) AS dataMin,
-      MAX(dataReferencia) AS dataMax,
+      (SELECT MIN(dataReferencia) FROM spread_analysis) AS dataMin,
+      (SELECT MAX(dataReferencia) FROM spread_analysis) AS dataMax,
       COUNT(*) AS totalPapeis,
-      COUNT(DISTINCT dataReferencia) AS totalDatas,
+      (SELECT COUNT(DISTINCT dataReferencia) FROM spread_analysis) AS totalDatas,
       COUNT(DISTINCT codigoCetip) AS totalCetips,
-      (
-        SELECT SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END)
-        FROM spread_analysis
-        WHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)
-      ) AS totalOutliers
+      SUM(CASE WHEN isOutlier = 1 THEN 1 ELSE 0 END) AS totalOutliers
     FROM spread_analysis
+    WHERE dataReferencia = (SELECT MAX(dataReferencia) FROM spread_analysis)
   `) as unknown as { dataMin: string; dataMax: string; totalPapeis: number; totalDatas: number; totalCetips: number; totalOutliers: number }[][];
 
   const summary = (dateRange as unknown as { dataMin: string; dataMax: string; totalPapeis: number; totalDatas: number; totalCetips: number; totalOutliers: number }[])[0];
