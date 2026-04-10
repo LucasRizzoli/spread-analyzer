@@ -6,7 +6,7 @@
  * 1. Parsear planilha Moody's → ratings por emissão específica
  * 2. Parsear planilha ANBIMA Data → ativos com Z-spread (data mais recente)
  * 3. Para cada emissão Moody's com número de emissão, buscar candidatos ANBIMA
- *    via Dice ≥ 0.80 (pré-filtro em memória, sem browser)
+ *    via Dice ≥ 0.70 (pré-filtro em memória, sem browser)
  * 4. Enriquecer via ANBIMA Data (Playwright, retry 3x) APENAS os CETIPs candidatos
  * 5. Confirmar match por número de emissão idêntico + Dice ≥ 0.80
  * 6. Marcar outliers: por rating+universo, critério adaptativo
@@ -144,7 +144,7 @@ function preFilterByCandidates(
 
   for (const moodysNorm of emissoesMoodys) {
     for (const asset of assetsNorm) {
-      if (diceCoefficient(asset.norm, moodysNorm) >= 0.80) {
+      if (diceCoefficient(asset.norm, moodysNorm) >= 0.70) {
         candidatosSet.add(asset.cetip);
       }
     }
@@ -156,7 +156,7 @@ function preFilterByCandidates(
 /**
  * Realiza o cruzamento emissão-a-emissão (v3.11 — invertido: parte da Moody's):
  * Para cada emissão Moody's com número de emissão, busca na planilha ANBIMA
- * o ativo com emissor similar (Dice ≥ 0.80) que foi enriquecido com o mesmo
+ * o ativo com emissor similar (Dice ≥ 0.70) que foi enriquecido com o mesmo
  * número de emissão via ANBIMA Data.
  *
  * Garante cobertura total: toda emissão Moody's é verificada.
@@ -198,9 +198,9 @@ function crossByEmissao(
       // Filtro primário: número de emissão deve ser idêntico
       if (item.snd.numeroEmissao !== r.emissaoNum) continue;
 
-      // Filtro secundário: nome do emissor deve ser similar (Dice ≥ 0.80)
+      // Filtro secundário: nome do emissor deve ser similar (Dice ≥ 0.70)
       const score = diceCoefficient(item.emissorNorm, r.emissorNorm);
-      if (score >= 0.80 && score > bestScore) {
+      if (score >= 0.70 && score > bestScore) {
         bestScore = score;
         bestAsset = item;
       }
