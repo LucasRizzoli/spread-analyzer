@@ -50,6 +50,13 @@
       "when": 1775007706930,
       "tag": "0006_lethal_jackpot",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1775841436578,
+      "tag": "0007_yellow_unus",
+      "breakpoints": true
     }
   ]
 }

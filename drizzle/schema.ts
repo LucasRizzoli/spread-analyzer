@@ -156,7 +156,7 @@ export const spreadAnalysis = mysqlTable(
   },
   (t) => [
     index("idx_spread_cetip").on(t.codigoCetip),
-    index("idx_spread_cetip_data").on(t.codigoCetip, t.dataReferencia),
+    uniqueIndex("uq_spread_cetip_data").on(t.codigoCetip, t.dataReferencia),
     index("idx_spread_data_ref").on(t.dataReferencia),
     index("idx_spread_rating").on(t.rating),
     index("idx_spread_tipo").on(t.tipo),

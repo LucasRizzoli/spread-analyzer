@@ -246,11 +246,11 @@ function crossByEmissao(
 /**
  * Marca outliers por rating+universo usando critério adaptativo:
  *
- * - n ≥ 20: Winsorização 10% — remove os 10% extremos de cada lado.
- *           Robusto, não depende de normalidade, remove quantidade previsível.
- * - 10 ≤ n < 20: ±2,5σ — mais conservador que ±3σ, captura outliers em grupos médios.
- * - 5 ≤ n < 10: ±2σ — mais agressivo, grupos pequenos têm distribuição instável.
- * - n < 5: Sem remoção — amostra insuficiente para qualquer critério.
+ * Critério uniforme:
+ * - n ≥ 3: ±3σ (desvio padrão amostral, n-1) — remove valores além de 3 desvios da média.
+ *   Conservador o suficiente para não remover variação legítima, mas captura extremos
+ *   em qualquer grupo com dados mínimos.
+ * - n < 3: Sem remoção — amostra insuficiente para qualquer critério estatístico.
  *
  * O agrupamento por universo (IPCA vs DI) é essencial: misturar os dois universos
  * faria com que ativos DI+ (spreads menores em bps) fossem penalizados ao serem
@@ -292,38 +292,18 @@ function markOutliers(results: SpreadResult[]): {
     const n = group.length;
     const spreads = group.map((r) => r.zSpread);
 
-    // n < 5: amostra insuficiente — sem remoção
-    if (n < 5) {
+    // n < 3: amostra insuficiente — sem remoção
+    if (n < 3) {
       ratingStats[rating] = { total: n, outliers: 0, cutLow: -Infinity, cutHigh: Infinity, mean: 0, stdDev: 0 };
       continue;
     }
 
-    let cutLow: number;
-    let cutHigh: number;
-    let mean = 0;
-    let stdDev = 0;
-
-    if (n >= 20) {
-      // Winsorização 10%: remove os 10% extremos de cada lado
-      const sorted = [...spreads].sort((a, b) => a - b);
-      const k = Math.floor(n * 0.10); // número de pontos a remover de cada lado
-      cutLow  = sorted[k];            // 10º percentil
-      cutHigh = sorted[n - 1 - k];    // 90º percentil
-      // mean/stdDev calculados sobre o núcleo (para stats)
-      const core = sorted.slice(k, n - k);
-      mean = core.reduce((s, v) => s + v, 0) / core.length;
-      const variance = core.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / core.length;
-      stdDev = Math.sqrt(variance);
-    } else {
-      // Grupos médios/pequenos: usar z-score com sigma adaptativo
-      // 10 ≤ n < 20 → ±2,5σ | 5 ≤ n < 10 → ±2σ
-      const sigma = n >= 10 ? 2.5 : 2.0;
-      mean = spreads.reduce((s, v) => s + v, 0) / n;
-      const variance = spreads.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (n - 1); // desvio amostral (n-1)
-      stdDev = Math.sqrt(variance);
-      cutLow  = mean - sigma * stdDev;
-      cutHigh = mean + sigma * stdDev;
-    }
+    // n ≥ 3: critério uniforme ±3σ (desvio padrão amostral)
+    const mean = spreads.reduce((s, v) => s + v, 0) / n;
+    const variance = spreads.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (n - 1);
+    const stdDev = Math.sqrt(variance);
+    const cutLow  = mean - 3 * stdDev;
+    const cutHigh = mean + 3 * stdDev;
 
     let outliers = 0;
     for (const item of group) {
@@ -571,7 +551,23 @@ export async function runFullSync(
           numeroEmissaoMoodys: s.numeroEmissaoMoodys || null,
           instrumentoMoodys: s.instrumentoMoodys || null,
         }))
-      );
+      ).onDuplicateKeyUpdate({
+        // Ao sincronizar a mesma planilha (mesmo papel, mesma data), atualiza os dados
+        // sem criar duplicata. Preserva a serie historica de outras datas intacta.
+        set: {
+          rating: sql`VALUES(rating)`,
+          tipoMatch: sql`VALUES(tipoMatch)`,
+          taxaIndicativa: sql`VALUES(taxaIndicativa)`,
+          durationAnos: sql`VALUES(durationAnos)`,
+          zspread: sql`VALUES(zspread)`,
+          spreadIncentivadoSemGrossUp: sql`VALUES(spreadIncentivadoSemGrossUp)`,
+          scoreMatch: sql`VALUES(scoreMatch)`,
+          isOutlier: sql`VALUES(isOutlier)`,
+          emissorNome: sql`VALUES(emissorNome)`,
+          setor: sql`VALUES(setor)`,
+          indexador: sql`VALUES(indexador)`,
+        },
+      });
     }
 
     // -- Passo B: Snapshot historico (antes da limpeza) --
@@ -659,14 +655,18 @@ export async function runFullSync(
     report(`Snapshot historico criado/atualizado (${snapshotRows.length} ratings)`, 1, 1);
 
     // -- Passo C: Deduplicacao + janela rolling 28 dias --
+    // A chave de deduplicacao e (codigoCetip, dataReferencia): cada papel pode ter
+    // um registro por data de referencia, preservando a serie historica completa.
+    // Apenas duplicatas exatas (mesmo papel, mesma data) sao removidas.
     report("Deduplicando e aplicando janela rolling de 28 dias...", 0, 1);
     await db.execute(sql`
       DELETE sa FROM spread_analysis sa
       INNER JOIN (
-        SELECT codigoCetip, MAX(id) AS maxId
+        SELECT codigoCetip, dataReferencia, MAX(id) AS maxId
         FROM spread_analysis
-        GROUP BY codigoCetip
+        GROUP BY codigoCetip, dataReferencia
       ) latest ON sa.codigoCetip = latest.codigoCetip
+        AND sa.dataReferencia = latest.dataReferencia
       WHERE sa.id < latest.maxId
     `);
     await db.execute(sql`
