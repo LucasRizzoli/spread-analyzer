@@ -1049,6 +1049,7 @@ export default function SpreadDashboard() {
                 yAxisLabel={yAxisLabel}
                 metrica={metrica}
                 analysisData={analysisData}
+                universo={universo}
               />
             ) : activeView === "ntnb" ? (
               <NtnbCurveView />
@@ -1363,6 +1364,7 @@ function AnaliseView({
   yAxisLabel,
   metrica,
   analysisData,
+  universo,
 }: {
   scatterData: ScatterPoint[];
   ratingGroups: string[];
@@ -1377,6 +1379,7 @@ function AnaliseView({
   yAxisLabel: string;
   metrica: "media" | "mediana";
   analysisData: AnalysisRow[];
+  universo: "IPCA" | "DI" | "DI_PCT";
 }) {
   const [pricingRating, setPricingRating] = useState("AA-.br");
   const [pricingDuration, setPricingDuration] = useState<string>("5");
@@ -1633,15 +1636,23 @@ function AnaliseView({
           <div className="flex-1 min-w-0">
             {pricingResult ? (
               <div className="flex items-start gap-8 flex-wrap">
-                {/* NTN-B */}
+                {/* NTN-B / CDI */}
                 <div>
-                  <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wide">NTN-B implícita</p>
-                  <p className="text-2xl font-bold font-mono text-foreground">
-                    {pricingResult.taxaNtnbPct !== null ? pricingResult.taxaNtnbPct.toFixed(2) : "—"}
-                    <span className="text-sm font-normal text-muted-foreground ml-1">% a.a.</span>
+                  <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wide">
+                    {universo === "IPCA" ? "NTN-B implícita" : "Referência"}
                   </p>
-                  {pricingResult.ntnbInterpolado && (
-                    <p className="text-[9px] text-muted-foreground/60 mt-0.5">interpolado</p>
+                  {universo === "IPCA" ? (
+                    <>
+                      <p className="text-2xl font-bold font-mono text-foreground">
+                        {pricingResult.taxaNtnbPct !== null ? pricingResult.taxaNtnbPct.toFixed(2) : "—"}
+                        <span className="text-sm font-normal text-muted-foreground ml-1">% a.a.</span>
+                      </p>
+                      {pricingResult.ntnbInterpolado && (
+                        <p className="text-[9px] text-muted-foreground/60 mt-0.5">interpolado</p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-2xl font-bold font-mono text-foreground">CDI</p>
                   )}
                 </div>
 
@@ -1664,11 +1675,23 @@ function AnaliseView({
                 {/* Taxa total */}
                 <div className="bg-primary/10 border border-primary/30 rounded-lg px-4 py-2">
                   <p className="text-[10px] text-primary/70 mb-0.5 uppercase tracking-wide">Taxa total estimada</p>
-                  <p className="text-2xl font-bold font-mono text-primary">
-                    {pricingResult.taxaTotalPct !== null ? pricingResult.taxaTotalPct.toFixed(2) : "—"}
-                    <span className="text-sm font-normal text-primary/70 ml-1">% a.a.</span>
-                  </p>
-                  <p className="text-[9px] text-primary/50 mt-0.5">IPCA + {pricingResult.spreadEsperadoBps} bps</p>
+                  {universo === "IPCA" ? (
+                    <>
+                      <p className="text-2xl font-bold font-mono text-primary">
+                        {pricingResult.taxaTotalPct !== null ? pricingResult.taxaTotalPct.toFixed(2) : "—"}
+                        <span className="text-sm font-normal text-primary/70 ml-1">% a.a.</span>
+                      </p>
+                      <p className="text-[9px] text-primary/50 mt-0.5">IPCA + {pricingResult.spreadEsperadoBps} bps</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold font-mono text-primary">
+                        CDI + {pricingResult.spreadEsperadoBps}
+                        <span className="text-sm font-normal text-primary/70 ml-1">bps</span>
+                      </p>
+                      <p className="text-[9px] text-primary/50 mt-0.5">spread esperado {pricingRating}</p>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
