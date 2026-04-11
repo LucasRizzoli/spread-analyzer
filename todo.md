@@ -365,3 +365,6 @@
 - [x] Corrigir query do snapshot: filtrar por data específica da planilha (não acumulado de todas as datas)
 - [x] Regravar snapshots históricos para todas as datas existentes com valores corretos
 - [x] Trocar padrão do gráfico histórico de mediana para média
+
+## v4.12 — Correção de crash do servidor durante sync
+- [x] Corrigir TimeoutError não tratado no Playwright (anbimaDataService): waitForResponse agora envolto em try/catch robusto que nunca deixa o erro escapar para unhandledRejection

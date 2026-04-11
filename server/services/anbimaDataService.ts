@@ -81,32 +81,43 @@ async function fetchOneAttempt(
   context: BrowserContext,
   key: string
 ): Promise<AnbimaDataRecord | null> {
-  const page = await context.newPage();
+   const page = await context.newPage();
   try {
-    const gotoPromise = page.goto(
-      `https://data.anbima.com.br/debentures/${key}/caracteristicas`,
-      { waitUntil: "commit", timeout: 20000 }
-    );
-
-    const apiResponsePromise = page.waitForResponse(
-      (r) =>
-        r.url().includes("data-api.prd.anbima.com.br") &&
-        r.url().toLowerCase().includes(key.toLowerCase()) &&
-        r.url().includes("caracteristicas"),
-      { timeout: 15000 }
-    );
-
-    await gotoPromise;
-    let apiData: AnbimaBffResponse | null = null;
+    // Criar a promise de waitForResponse ANTES de navegar,
+    // mas envolver tudo em try/catch para garantir que TimeoutError nunca escapa.
+    let apiResponsePromise: Promise<import('playwright').Response> | null = null;
+    try {
+      apiResponsePromise = page.waitForResponse(
+        (r) =>
+          r.url().includes("data-api.prd.anbima.com.br") &&
+          r.url().toLowerCase().includes(key.toLowerCase()) &&
+          r.url().includes("caracteristicas"),
+        { timeout: 15000 }
+      );
+    } catch {
+      apiResponsePromise = null;
+    }
 
     try {
-      const apiResponse = await apiResponsePromise;
-      const json = await apiResponse.json();
-      if (json && (json.isin || json.codigo_b3 || json.emissao)) {
-        apiData = json as AnbimaBffResponse;
+      await page.goto(
+        `https://data.anbima.com.br/debentures/${key}/caracteristicas`,
+        { waitUntil: "commit", timeout: 20000 }
+      );
+    } catch {
+      // timeout de navegação — continua tentando capturar a resposta da API
+    }
+
+    let apiData: AnbimaBffResponse | null = null;
+    try {
+      if (apiResponsePromise) {
+        const apiResponse = await apiResponsePromise;
+        const json = await apiResponse.json();
+        if (json && (json.isin || json.codigo_b3 || json.emissao)) {
+          apiData = json as AnbimaBffResponse;
+        }
       }
     } catch {
-      // API não respondeu dentro do timeout
+      // API não respondeu dentro do timeout — tratar como null silenciosamente
     }
 
     if (!apiData) return null;
