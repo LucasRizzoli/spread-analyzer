@@ -81,44 +81,52 @@ async function fetchOneAttempt(
   context: BrowserContext,
   key: string
 ): Promise<AnbimaDataRecord | null> {
-   const page = await context.newPage();
+  const page = await context.newPage();
   try {
-    // Criar a promise de waitForResponse ANTES de navegar,
-    // mas envolver tudo em try/catch para garantir que TimeoutError nunca escapa.
-    let apiResponsePromise: Promise<import('playwright').Response> | null = null;
-    try {
-      apiResponsePromise = page.waitForResponse(
-        (r) =>
-          r.url().includes("data-api.prd.anbima.com.br") &&
-          r.url().toLowerCase().includes(key.toLowerCase()) &&
-          r.url().includes("caracteristicas"),
-        { timeout: 15000 }
-      );
-    } catch {
-      apiResponsePromise = null;
-    }
+    // Usar route interception em vez de waitForResponse para capturar a resposta
+    // sem depender do mecanismo de timeout interno do Playwright que lança erros
+    // não-capturáveis via triggerUncaughtException.
+    let capturedJson: AnbimaBffResponse | null = null;
 
+    // Criar uma promise que resolve quando a rota da API for interceptada
+    const capturePromise = new Promise<void>((resolve) => {
+      page.route(
+        (url) =>
+          url.hostname.includes("data-api.prd.anbima.com.br") &&
+          url.pathname.toLowerCase().includes(key.toLowerCase()) &&
+          url.pathname.includes("caracteristicas"),
+        async (route) => {
+          try {
+            const response = await route.fetch();
+            const json = await response.json();
+            if (json && (json.isin || json.codigo_b3 || json.emissao)) {
+              capturedJson = json as AnbimaBffResponse;
+            }
+          } catch {
+            // ignora erros de parsing
+          } finally {
+            resolve();
+            await route.continue().catch(() => {});
+          }
+        }
+      ).catch(() => { resolve(); }); // se page.route falhar, resolve imediatamente
+    });
+
+    // Navegar para a página (não bloquear em timeout)
     try {
       await page.goto(
         `https://data.anbima.com.br/debentures/${key}/caracteristicas`,
         { waitUntil: "commit", timeout: 20000 }
       );
     } catch {
-      // timeout de navegação — continua tentando capturar a resposta da API
+      // timeout de navegação — continua aguardando a rota
     }
 
-    let apiData: AnbimaBffResponse | null = null;
-    try {
-      if (apiResponsePromise) {
-        const apiResponse = await apiResponsePromise;
-        const json = await apiResponse.json();
-        if (json && (json.isin || json.codigo_b3 || json.emissao)) {
-          apiData = json as AnbimaBffResponse;
-        }
-      }
-    } catch {
-      // API não respondeu dentro do timeout — tratar como null silenciosamente
-    }
+    // Aguardar a captura da rota com timeout manual via Promise.race
+    const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 15000));
+    await Promise.race([capturePromise, timeoutPromise]);
+
+    const apiData = capturedJson;
 
     if (!apiData) return null;
 

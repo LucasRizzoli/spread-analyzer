@@ -368,3 +368,7 @@
 
 ## v4.12 — Correção de crash do servidor durante sync
 - [x] Corrigir TimeoutError não tratado no Playwright (anbimaDataService): waitForResponse agora envolto em try/catch robusto que nunca deixa o erro escapar para unhandledRejection
+
+## v4.13 — Correção definitiva do crash do servidor (route interception)
+- [x] Substituir waitForResponse (causa triggerUncaughtException) por page.route() + Promise.race com timeout manual
+- [x] Servidor nunca mais cai por timeout do Playwright durante sync
