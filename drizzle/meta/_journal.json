@@ -64,6 +64,13 @@
       "when": 1775850489257,
       "tag": "0008_short_blur",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1775881912850,
+      "tag": "0009_tough_power_pack",
+      "breakpoints": true
     }
   ]
 }

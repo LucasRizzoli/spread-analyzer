@@ -240,3 +240,34 @@ export const uploadedFiles = mysqlTable(
 );
 
 export type UploadedFile = typeof uploadedFiles.$inferSelect;
+
+/**
+ * Histórico de buscas de emissões comparáveis
+ * Cada busca armazena a query, os atributos extraídos e os resultados consolidados
+ */
+export const comparableSearches = mysqlTable(
+  "comparable_searches",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId"),
+    query: text("query").notNull(),
+    // Atributos estruturados extraídos pelo Orquestrador (JSON)
+    attributes: json("attributes"),
+    // Termos de busca gerados pelo Orquestrador (JSON array)
+    searchTerms: json("searchTerms"),
+    // Status da busca
+    status: mysqlEnum("status", ["pending", "running", "done", "error"]).default("pending").notNull(),
+    // Resultados consolidados pelo Sintetizador (JSON array de ComparableResult)
+    results: json("results"),
+    // Mensagem de erro se status=error
+    errorMessage: text("errorMessage"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    index("idx_comparable_user").on(t.userId),
+    index("idx_comparable_status").on(t.status),
+    index("idx_comparable_created").on(t.createdAt),
+  ]
+);
+export type ComparableSearch = typeof comparableSearches.$inferSelect;

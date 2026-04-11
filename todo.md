@@ -372,3 +372,12 @@
 ## v4.13 — Correção definitiva do crash do servidor (route interception)
 - [x] Substituir waitForResponse (causa triggerUncaughtException) por page.route() + Promise.race com timeout manual
 - [x] Servidor nunca mais cai por timeout do Playwright durante sync
+
+## Feature: Busca de Emissões Comparáveis (Multi-Agentes)
+- [x] Schema: tabela comparable_searches (histórico de buscas e resultados)
+- [x] Agente Orquestrador: extrai atributos estruturados e gera termos de busca criativos via LLM
+- [x] Agente Interno: busca na base ANBIMA local (~1.284 ativos) por tipo, indexador, setor, prazo
+- [x] Agente Web/Notícias: Google Search + visita a fontes (gestoras, CVM, InfoMoney, Valor, B3)
+- [x] Agente Sintetizador: consolida resultados, remove duplicatas, gera relatório com contexto de negócio
+- [x] Router tRPC: searchComparables (polling de status) + getSearchHistory
+- [x] Frontend: nova aba "Comparáveis" com campo de busca, progresso em tempo real e cards de resultado

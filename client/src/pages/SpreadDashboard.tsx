@@ -28,7 +28,9 @@ import {
   Database,
   TrendingDown,
   Activity,
+  Sparkles,
 } from "lucide-react";
+import ComparableSearch from "./ComparableSearch";
 import {
   ScatterChart,
   Scatter,
@@ -556,7 +558,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
 
 export default function SpreadDashboard() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
-  const [activeView, setActiveView] = useState<"analise" | "table" | "dados" | "ntnb">("analise");
+  const [activeView, setActiveView] = useState<"analise" | "table" | "dados" | "ntnb" | "comparaveis">("analise");
   const [tableSearch, setTableSearch] = useState("");
   const [showOutliers, setShowOutliers] = useState(false);
   // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B), DI SPREAD (spread sobre CDI em bps) ou DI PERCENTUAL (% do CDI)
@@ -1010,6 +1012,7 @@ export default function SpreadDashboard() {
                     { key: "table", icon: Table2, label: "Tabela" },
                     { key: "ntnb", icon: Activity, label: "Curva NTN-B" },
                     { key: "dados", icon: Database, label: "Dados" },
+                    { key: "comparaveis", icon: Sparkles, label: "Comparáveis" },
                   ] as const
                 ).map(({ key, icon: Icon, label }) => (
                   <button
@@ -1071,6 +1074,10 @@ export default function SpreadDashboard() {
                 onSync={handleSync}
                 lastSync={lastSync.data || null}
               />
+            ) : activeView === "comparaveis" ? (
+              <div className="h-full -m-6">
+                <ComparableSearch />
+              </div>
             ) : (
               <TableView
                 data={filteredTableData}
