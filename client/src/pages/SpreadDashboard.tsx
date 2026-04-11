@@ -2266,7 +2266,7 @@ function DadosView({
 }) {
   const [dragOver, setDragOver] = useState<"moodys" | "anbima" | null>(null);
   const [selectedIndexador, setSelectedIndexador] = useState<string>("IPCA SPREAD");
-  const [selectedMetrica, setSelectedMetrica] = useState<"media" | "mediana">("mediana");
+  const [selectedMetrica, setSelectedMetrica] = useState<"media" | "mediana">("media");
 
   // Indexadores disponíveis nos snapshots
   const indexadoresDisponiveis = useMemo(() => {

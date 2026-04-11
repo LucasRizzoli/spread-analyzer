@@ -597,17 +597,23 @@ export async function runFullSync(
     report("Calculando snapshot historico...", 0, 1);
     const snapshotNow = new Date();
 
+    // Determinar a data de referência da planilha recém-sincronizada
+    // (cada planilha tem uma única data; o snapshot deve ser calculado
+    //  APENAS com os papéis dessa data, não com todo o histórico acumulado)
+    const dataAtualRows = await db.execute(sql`
+      SELECT MAX(dataReferencia) AS dataMax FROM spread_analysis
+    `) as unknown as { dataMax: string }[][];
+    const dataRefFim = ((dataAtualRows[0] || []) as { dataMax: string }[])[0]?.dataMax || "";
+    const dataRefIni = dataRefFim;
+
     const windowRows = await db.execute(sql`
       SELECT rating, zspread, dataReferencia, indexador
       FROM spread_analysis
       WHERE isOutlier = 0
       AND zspread IS NOT NULL
+      AND dataReferencia = ${dataRefFim}
     `) as unknown as { rating: string; zspread: string; dataReferencia: string; indexador: string | null }[][];
-
     const windowData = (windowRows[0] || []) as { rating: string; zspread: string; dataReferencia: string; indexador: string | null }[];
-    const datas = windowData.map((r) => r.dataReferencia).filter(Boolean);
-    const dataRefIni = datas.length ? datas.reduce((a: string, b: string) => a < b ? a : b) : "";
-    const dataRefFim = datas.length ? datas.reduce((a: string, b: string) => a > b ? a : b) : "";
 
     // Segregar por indexador + rating
     const byIndexadorRatingMap = new Map<string, Map<string, number[]>>();

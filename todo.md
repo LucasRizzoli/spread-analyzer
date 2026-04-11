@@ -360,3 +360,8 @@
 - [ ] Zerar banco (spread_analysis, historical_snapshots, sync_log)
 - [ ] Corrigir snapshot: usar dataRefFim como chave, sobrescrever se mesma data já existe (UPSERT)
 - [ ] Corrigir eixo X do gráfico histórico para usar dataRefFim (data da planilha)
+
+## v4.11 — Correção do snapshot histórico e padrão de métrica
+- [x] Corrigir query do snapshot: filtrar por data específica da planilha (não acumulado de todas as datas)
+- [x] Regravar snapshots históricos para todas as datas existentes com valores corretos
+- [x] Trocar padrão do gráfico histórico de mediana para média
