@@ -445,3 +445,10 @@
 - [x] Corrigir calculadora: usar taxaNtnb (decimal) e converter bps → decimal corretamente
 - [x] Re-sincronizar dados CRI/CRA: 500 registros com z-spreads corretos (231 IPCA+, 197 DI+, 72 % DI)
 - [x] Atualizar testes: 75 passando (10 novos testes com escala % a.a.)
+
+## Fix: CRI/CRA — Dados misturados por múltiplas datas (CONCLUÍDO)
+- [x] Diagnosticar: banco tinha 5 datas distintas para CRI/CRA, mesmo papel aparecia 5x distorcendo médias
+- [x] Corrigir getAnalysis: filtrar por MAX(dataReferencia) igual às debêntures
+- [x] Corrigir getZspreadByRating: filtrar por MAX(dataReferencia)
+- [x] Re-marcar outliers apenas na data mais recente (IQR, 2 outliers identificados)
+- [x] 75 testes passando

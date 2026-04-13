@@ -80,9 +80,17 @@ export const criCraRouter = router({
       const db = await getDb();
       if (!db) return [];
 
+      // Buscar apenas a data de referência mais recente de CRI/CRA
+      const [dateRows] = await db.execute(sql`
+        SELECT MAX(dataReferencia) AS maxData FROM spread_analysis WHERE tipo IN ('CRI','CRA')
+      `) as unknown as { maxData: string }[][];
+      const maxData = (dateRows as unknown as { maxData: string }[])[0]?.maxData;
+      if (!maxData) return [];
+
       const conditions = [
         inArray(spreadAnalysis.tipo, ["CRI", "CRA"]),
         isNotNull(spreadAnalysis.zspread),
+        eq(spreadAnalysis.dataReferencia, maxData),
       ];
 
       if (input?.excludeOutliers !== false) {
@@ -103,7 +111,7 @@ export const criCraRouter = router({
 
       const rows = await db.select().from(spreadAnalysis)
         .where(and(...conditions))
-        .orderBy(sql`dataReferencia DESC, durationAnos ASC`);
+        .orderBy(sql`durationAnos ASC`);
 
       return rows.map(r => ({
         ...r,
@@ -124,10 +132,18 @@ export const criCraRouter = router({
       const db = await getDb();
       if (!db) return [];
 
+      // Filtrar apenas pela data mais recente
+      const [dateRows2] = await db.execute(sql`
+        SELECT MAX(dataReferencia) AS maxData FROM spread_analysis WHERE tipo IN ('CRI','CRA')
+      `) as unknown as { maxData: string }[][];
+      const maxData2 = (dateRows2 as unknown as { maxData: string }[])[0]?.maxData;
+      if (!maxData2) return [];
+
       const whereClause = sql`
         tipo IN ('CRI', 'CRA')
         AND zspread IS NOT NULL
         AND rating IS NOT NULL
+        AND dataReferencia = ${maxData2}
         ${input?.excludeOutliers !== false ? sql`AND isOutlier = 0` : sql``}
         ${input?.indexadores?.length ? sql`AND indexador IN (${sql.join(input.indexadores.map(i => sql`${i}`), sql`, `)})` : sql``}
         ${input?.tipos?.length ? sql`AND tipo IN (${sql.join(input.tipos.map(t => sql`${t}`), sql`, `)})` : sql``}
