@@ -469,3 +469,8 @@
 
 ## Fix: CRI/CRA — Threshold 0.90 (CONCLUÍDO)
 - [x] Alterar CRI_CRA_SCORE_MIN_THRESHOLD para 0.90: 412 papéis com rating, todos score ≥0.90
+
+## Fix: CRI/CRA — Rating de emissão (CONCLUÍDO)
+- [x] Investigar: planilha CRI/CRA não tem número de emissão — match por devedor vs emissor Moody's
+- [x] Filtrar apenas produto IN ('Rating de Dívida', 'Rating de Emissão') no criCraSyncService
+- [x] Re-sincronizar: 355 papéis com rating de emissão, todos score=100% | 75 testes passando

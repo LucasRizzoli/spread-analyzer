@@ -227,12 +227,19 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
     // ── 3. Carregar ratings Moody's ───────────────────────────────────────────
     criCraSyncProgress = { step: "Carregando ratings Moody's", done: 0, total: rows.length };
     const moodysRows = await db.select().from(moodysRatings);
-    const moodysNormalized = moodysRows.map((r: typeof moodysRows[0]) => ({
-      ...r,
-      emissorNorm: normalizeEmissor(r.emissor),
-    }));
+    // Filtrar apenas ratings de emissão/dívida (excluir Rating de Emissor, Rating Corporativo, etc.)
+    // Mesma lógica das debêntures: isEmissao = produto IN ('Rating de Dívida', 'Rating de Emissão')
+    const PRODUTOS_EMISSAO = new Set(["Rating de Dívida", "Rating de Emissão"]);
+    const moodysNormalized = moodysRows
+      .filter((r: typeof moodysRows[0]) => PRODUTOS_EMISSAO.has(r.produto ?? ""))
+      .map((r: typeof moodysRows[0]) => ({
+        ...r,
+        emissorNorm: normalizeEmissor(r.emissor),
+      }));
 
-    console.log(`[CriCraSync] ${moodysNormalized.length} ratings Moody's carregados`);
+    const totalMoodys = moodysRows.length;
+    const totalEmissao = moodysNormalized.length;
+    console.log(`[CriCraSync] ${totalEmissao} ratings de emissão/dívida carregados (de ${totalMoodys} total)`);
 
     // ── 4. Processar cada ativo ───────────────────────────────────────────────
     criCraSyncProgress = { step: "Calculando z-spreads e cruzando ratings", done: 0, total: rows.length };
