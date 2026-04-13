@@ -505,3 +505,11 @@
 - [x] Usar taxaGrossUp no cálculo do z-spread (IPCA SPREAD e DI SPREAD)
 - [x] Re-sincronizar dados CRI/CRA com gross-up aplicado
 - [x] Atualizar testes unitários (83 testes passando)
+
+## Fix: CRI/CRA — Gross-up DI+/DI% com CDI real (API BCB)
+- [x] Buscar CDI anualizado via API BCB (série 4389) no início do sync
+- [x] DI+ gross-up simples: z-spread = taxaIndicativa / (1−IR)
+- [x] DI% gross-up do retorno total: taxaIsenta = (pctCDI/100)×CDI; taxaBruta = taxaIsenta/(1−IR); z-spread = taxaBruta−CDI
+- [x] Passar cdiAnual para calcZspread como parâmetro opcional
+- [x] Atualizar testes unitários com CDI = 14.65% (77 testes passando)
+- [x] Re-sincronizar dados CRI/CRA (DI SPREAD AAA.br ~49bps, DI% AA+.br ~272bps)

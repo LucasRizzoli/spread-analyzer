@@ -3,16 +3,17 @@
  *
  * Fluxo:
  * 1. Parsear planilha CRI/CRA → lista de CriCraRow com taxa indicativa e duration
- * 2. Para cada ativo, calcular z-spread conforme o indexador:
- *    - IPCA: z-spread = (taxaIndicativa − NTN-B interpolada) × 100 bps
- *    - DI ADITIVO: z-spread = taxaCorrecao × 100 bps (spread contratado sobre CDI)
- *    - DI MULTIPLICATIVO: z-spread = taxaIndicativa − 100 (% do CDI acima de 100%)
+ * 2. Buscar CDI anualizado via API BCB (série 4389) para gross-up DI+/DI%
+ * 3. Para cada ativo, calcular z-spread com gross-up de IR conforme o indexador:
+ *    - IPCA SPREAD: gross-up direto sobre taxa total; fórmula geométrica com NTN-B
+ *    - DI ADITIVO: gross-up composto (1+CDI)×(1+spread)/(1−IR)−1; z-spread = bruto−CDI
+ *    - DI MULTIPLICATIVO: gross-up composto sobre retorno total; z-spread = bruto−CDI
  *    - PRE FIXADO: descartado
- * 3. Cruzar o devedor com a planilha Moody's (Dice ≥ SCORE_MIN_THRESHOLD no nome do devedor)
- * 4. Descartar registros sem match de rating (igual às debêntures)
- * 5. Marcar outliers por rating+grupo analítico
- * 6. Persistir em spread_analysis com tipo CRI ou CRA e indexador = grupo analítico
- * 7. Gravar snapshot histórico
+ * 4. Cruzar o devedor com a planilha Moody's (Dice ≥ SCORE_MIN_THRESHOLD no nome do devedor)
+ * 5. Descartar registros sem match de rating (igual às debêntures)
+ * 6. Marcar outliers por rating+grupo analítico
+ * 7. Persistir em spread_analysis com tipo CRI ou CRA e indexador = grupo analítico
+ * 8. Gravar snapshot histórico
  *
  * Grupos analíticos:
  *   IPCA → "IPCA SPREAD"
@@ -26,6 +27,31 @@ import { parseCriCraXlsx, CriCraRow } from "./criCraParser";
 import { normalizeEmissor } from "./moodysScraperService";
 import { sql } from "drizzle-orm";
 import { CRI_CRA_SCORE_MIN_THRESHOLD } from "../../shared/const";
+
+// ── Busca do CDI via API BCB ───────────────────────────────────────────────────
+
+/**
+ * Busca o CDI anualizado mais recente via API pública do Banco Central (SGS série 4389).
+ * Retorna o CDI em % a.a. (ex: 14.65 = 14,65% a.a.)
+ * Em caso de falha, usa fallback baseado na SELIC (SELIC − 0,10%).
+ */
+export async function fetchCdiAnual(fallbackSelic?: number): Promise<number> {
+  const FALLBACK_CDI = fallbackSelic != null ? fallbackSelic - 0.10 : 14.55;
+  try {
+    const url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4389/dados/ultimos/1?formato=json";
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json() as { data: string; valor: string }[];
+    if (!data.length) throw new Error("Resposta vazia");
+    const cdi = parseFloat(data[0].valor);
+    if (!isFinite(cdi) || cdi <= 0) throw new Error(`Valor inválido: ${data[0].valor}`);
+    console.log(`[CriCraSync] CDI anualizado (BCB): ${cdi}% a.a. (${data[0].data})`);
+    return cdi;
+  } catch (err) {
+    console.warn(`[CriCraSync] Falha ao buscar CDI via BCB: ${err}. Usando fallback: ${FALLBACK_CDI}% a.a.`);
+    return FALLBACK_CDI;
+  }
+}
 
 // ── Estado global de sync CRI/CRA ──────────────────────────────────────────
 
@@ -92,20 +118,29 @@ function grossUpIR(taxaLiquida: number, diasAteVencimento: number): number {
 /**
  * Calcula o z-spread conforme o grupo analítico do indexador.
  *
- * Para CRI/CRA, a taxaIndicativa é ajustada pelo gross-up de IR antes do cálculo
- * (isenção fiscal → taxa de mercado menor → gross-up para base pré-IR).
+ * Para CRI/CRA, aplica gross-up de IR para colocar na mesma base pré-IR das debêntures.
  *
  * IPCA SPREAD:
- *   taxaGrossUp = taxaIndicativa / (1 − aliquotaIR(diasAteVencimento))
- *   z-spread = fórmula geométrica com taxaGrossUp no lugar de taxaIndicativa
+ *   taxaGrossUp = taxaIndicativa / (1 − aliquotaIR)
+ *   z-spread = fórmula geométrica com taxaGrossUp
  *
- * DI SPREAD (DI ADITIVO):
- *   taxaGrossUp = taxaIndicativa / (1 − aliquotaIR(diasAteVencimento))
- *   z-spread = taxaGrossUp (spread aditivo sobre CDI, base pré-IR)
+ * DI SPREAD (DI ADITIVO) — fórmula composta:
+ *   O título paga CDI + spread isento. Para encontrar o equivalente tributado:
+ *   fatorIsento = (1 + CDI/100) × (1 + spread/100)
+ *   fatorBruto  = fatorIsento / (1 − aliquotaIR)
+ *   taxaBruta   = (fatorBruto − 1) × 100  [% a.a. total]
+ *   z-spread    = taxaBruta − CDI  [spread equivalente sobre CDI, base pré-IR]
+ *   Onde spread = taxaCorrecao (spread contratado, % a.a.)
  *
- * DI PERCENTUAL (DI MULTIPLICATIVO):
- *   Não aplica gross-up (% do CDI não tem isenção de IR da mesma forma)
- *   z-spread = taxaIndicativa − 100
+ * DI PERCENTUAL (DI MULTIPLICATIVO) — fórmula composta:
+ *   O título paga (taxaIndicativa/100) × CDI isento. Para encontrar o equivalente tributado:
+ *   taxaIsenta  = (taxaIndicativa/100) × (CDI/100)  [retorno total isento, decimal]
+ *   fatorIsento = 1 + taxaIsenta
+ *   fatorBruto  = fatorIsento / (1 − aliquotaIR)
+ *   taxaBruta   = (fatorBruto − 1) × 100  [% a.a. total]
+ *   z-spread    = taxaBruta − CDI  [spread equivalente sobre CDI, base pré-IR]
+ *
+ * Quando cdiAnual não é fornecido (null), DI SPREAD e DI PERCENTUAL retornam null.
  */
 function calcZspread(
   grupo: string,
@@ -114,6 +149,7 @@ function calcZspread(
   durationAnos: number | null,
   ntnbVertices: NtnbVertex[],
   diasAteVencimento: number | null,
+  cdiAnual: number | null = null,
 ): { zspread: number | null; ntnbTaxa: number | null; taxaGrossUp: number | null } {
   if (grupo === "IPCA SPREAD") {
     if (taxaIndicativa == null || durationAnos == null || ntnbVertices.length === 0) {
@@ -121,28 +157,40 @@ function calcZspread(
     }
     const ntnbTaxa = interpolateNtnb(durationAnos, ntnbVertices);
     if (ntnbTaxa == null) return { zspread: null, ntnbTaxa: null, taxaGrossUp: null };
-    // Gross-up de IR: ajusta a taxa líquida (isenta) para base pré-IR
+    // Gross-up direto sobre a taxa total isenta
     const taxaGrossUp = diasAteVencimento != null
       ? grossUpIR(taxaIndicativa, diasAteVencimento)
       : taxaIndicativa;
-    // Fórmula geométrica com taxa gross-up: (1 + taxaGrossUp/100) / (1 + taxaNTNB/100) − 1
+    // Fórmula geométrica com taxa gross-up
     const zspread = ((1 + taxaGrossUp / 100) / (1 + ntnbTaxa / 100) - 1) * 100;
     return { zspread, ntnbTaxa, taxaGrossUp };
   }
 
   if (grupo === "DI SPREAD") {
-    // Gross-up de IR sobre taxaIndicativa (spread aditivo sobre CDI, base pré-IR)
+    // Usa taxaIndicativa = spread de mercado sobre CDI (% a.a.)
+    // A planilha ANBIMA reporta apenas o spread adicional sobre o CDI
+    // Gross-up simples: o spread isento deve ser ajustado para base pré-IR
+    // z-spread = taxaIndicativa / (1 − IR)
     if (taxaIndicativa == null) return { zspread: null, ntnbTaxa: null, taxaGrossUp: null };
-    const taxaGrossUp = diasAteVencimento != null
-      ? grossUpIR(taxaIndicativa, diasAteVencimento)
-      : taxaIndicativa;
-    return { zspread: taxaGrossUp, ntnbTaxa: null, taxaGrossUp };
+    const aliq = diasAteVencimento != null ? aliquotaIR(diasAteVencimento) : 0.150;
+    const zspread = taxaIndicativa / (1 - aliq);
+    return { zspread, ntnbTaxa: null, taxaGrossUp: zspread };
   }
 
   if (grupo === "DI PERCENTUAL") {
-    if (taxaIndicativa == null) return { zspread: null, ntnbTaxa: null, taxaGrossUp: null };
-    // DI PERCENTUAL: não aplica gross-up (% do CDI)
-    return { zspread: taxaIndicativa - 100, ntnbTaxa: null, taxaGrossUp: null };
+    // Usa taxaIndicativa = % do CDI (ex: 100.38 = 100,38% do CDI)
+    // Retorno total isento = (taxaIndicativa/100) × CDI
+    // Gross-up do retorno total: taxaBruta = taxaIsenta / (1 − IR)
+    // Z-spread = taxaBruta − CDI (spread equivalente sobre CDI, base pré-IR)
+    if (taxaIndicativa == null || cdiAnual == null) return { zspread: null, ntnbTaxa: null, taxaGrossUp: null };
+    const aliq = diasAteVencimento != null ? aliquotaIR(diasAteVencimento) : 0.150;
+    // Retorno total isento em % a.a.
+    const taxaIsenta = (taxaIndicativa / 100) * cdiAnual;
+    // Gross-up: taxa bruta equivalente
+    const taxaBruta = taxaIsenta / (1 - aliq);
+    // Z-spread = taxa bruta − CDI
+    const zspread = taxaBruta - cdiAnual;
+    return { zspread, ntnbTaxa: null, taxaGrossUp: taxaBruta };
   }
 
   return { zspread: null, ntnbTaxa: null, taxaGrossUp: null };
@@ -275,7 +323,11 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
     const totalEmissao = moodysNormalized.length;
     console.log(`[CriCraSync] ${totalEmissao} ratings de emissão/dívida carregados (de ${totalMoodys} total)`);
 
-    // ── 4. Processar cada ativo ───────────────────────────────────────────────
+    // ── 3b. Buscar CDI anualizado via API BCB (para gross-up DI+/DI%) ─────────────
+    criCraSyncProgress = { step: "Buscando CDI via API BCB", done: 0, total: rows.length };
+    const cdiAnual = await fetchCdiAnual();
+
+    // ── 4. Processar cada ativo ─────────────────────────────────────────────────────
     criCraSyncProgress = { step: "Calculando z-spreads e cruzando ratings", done: 0, total: rows.length };
 
     interface ProcessedResult {
@@ -322,6 +374,7 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
         row.durationAnos,
         ntnbVertices,
         diasAteVencimento,
+        cdiAnual,
       );
 
       // Cruzar devedor com Moody's
