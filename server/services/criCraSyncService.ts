@@ -93,16 +93,18 @@ function calcZspread(
     }
     const ntnbTaxa = interpolateNtnb(durationAnos, ntnbVertices);
     if (ntnbTaxa == null) return { zspread: null, ntnbTaxa: null };
-    // taxaIndicativa em % a.a., ntnbTaxa em % a.a. → diferença em % a.a. (mesma escala das debêntures)
-    const zspread = taxaIndicativa - ntnbTaxa;
+    // Fórmula geométrica: (1 + taxaCRI/100) / (1 + taxaNTNB/100) − 1
+    // Resultado em decimal (ex: 0.0159 = 1,59% a.a.)
+    // Multiplicamos por 100 para salvar em % a.a. (mesma escala das debêntures)
+    const zspread = ((1 + taxaIndicativa / 100) / (1 + ntnbTaxa / 100) - 1) * 100;
     return { zspread, ntnbTaxa };
   }
 
   if (grupo === "DI SPREAD") {
-    if (taxaCorrecao == null) return { zspread: null, ntnbTaxa: null };
-    // taxaCorrecao é o spread sobre CDI em % a.a. (ex: 1.5% a.a.)
-    // Mesma escala das debêntures: o frontend multiplica por 100 para exibir em bps
-    return { zspread: taxaCorrecao, ntnbTaxa: null };
+    // Usar taxaIndicativa diretamente (taxa de mercado do papel)
+    // Representa o spread aditivo sobre CDI em % a.a.
+    if (taxaIndicativa == null) return { zspread: null, ntnbTaxa: null };
+    return { zspread: taxaIndicativa, ntnbTaxa: null };
   }
 
   if (grupo === "DI PERCENTUAL") {

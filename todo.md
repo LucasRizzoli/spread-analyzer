@@ -482,3 +482,17 @@
 - [x] Remover aba CRI/CRA da navegação
 - [x] Aba Dados: backlog de planilhas CRI/CRA à direita
 - [x] 75 testes passando
+
+## Fix: CRI/CRA — Score 0.80 unificado + fórmulas corretas
+- [ ] Unificar SCORE_MIN_THRESHOLD e CRI_CRA_SCORE_MIN_THRESHOLD em 0.80 (uma constante só)
+- [ ] DI SPREAD: usar taxaIndicativa diretamente (não taxaCorrecao)
+- [ ] IPCA SPREAD: fórmula geométrica (1+taxa/100)/(1+NTN-B/100)−1
+- [ ] Atualizar testes
+- [ ] Re-sincronizar dados
+
+## Fix: Calculadora — Linha de tendência global (DEB+CRI+CRA)
+- [x] Calculadora sempre usa linha de tendência calculada sobre TODOS os dados (sem filtro de instrumento)
+- [x] Adicionar query global (sem tipos[]) para byRatingDataGlobal no SpreadDashboard
+- [x] Passar byRatingDataGlobal para AnaliseView como prop separado
+- [x] Calculadora usa byRatingDataGlobal para regressão, independente dos filtros
+- [x] Se o rating selecionado não existir nos dados globais, mostrar "N/A" no resultado

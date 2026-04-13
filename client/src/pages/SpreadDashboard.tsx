@@ -612,6 +612,15 @@ export default function SpreadDashboard() {
     return [universoIndexador];
   }, [filters.indexadores, universoIndexador]);
 
+  // Query global para a calculadora: sem filtro de instrumento (DEB+CRI+CRA),
+  // sem filtro de rating/setor, sem filtro de duration — apenas o universo (indexador) e outliers.
+  // Garante que a linha de tendência da calculadora sempre usa todos os dados disponíveis.
+  const globalAnalysisQuery = trpc.spread.getAnalysis.useQuery({
+    indexadores: indexadoresEfetivos,
+    excludeOutliers: true,
+    scoreMin: SCORE_MIN_THRESHOLD,
+  });
+
   const analysisQuery = trpc.spread.getAnalysis.useQuery({
     durationMin: filters.durationRange[0],
     durationMax: filters.durationRange[1],
@@ -730,6 +739,38 @@ export default function SpreadDashboard() {
 
   // Rótulo do eixo Y conforme universo
   const yAxisLabel = "Spread (bps)";
+
+  // byRatingDataGlobal: agregado a partir dos dados GLOBAIS (sem filtro de instrumento/rating/setor/duration)
+  // Usado exclusivamente pela calculadora para garantir linha de tendência consistente
+  const byRatingDataGlobal = useMemo(() => {
+    const data = globalAnalysisQuery.data || [];
+    const groups = new Map<string, number[]>();
+    for (const r of data) {
+      if (r.zspread == null || !r.rating) continue;
+      const zs = Number(r.zspread);
+      if (!isFinite(zs)) continue;
+      if (!groups.has(r.rating)) groups.set(r.rating, []);
+      groups.get(r.rating)!.push(zs);
+    }
+    const result: {
+      rating: string;
+      avgZspread: number;
+      medianZspread: number;
+      count: number;
+      minZspread: number;
+      maxZspread: number;
+    }[] = [];
+    for (const [rating, vals] of Array.from(groups.entries())) {
+      const sorted = [...vals].sort((a, b) => a - b);
+      const n = sorted.length;
+      const avg = sorted.reduce((s, v) => s + v, 0) / n;
+      const median = n % 2 === 0
+        ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
+        : sorted[Math.floor(n / 2)];
+      result.push({ rating, avgZspread: avg, medianZspread: median, count: n, minZspread: sorted[0], maxZspread: sorted[n - 1] });
+    }
+    return result;
+  }, [globalAnalysisQuery.data]);
 
   // byRating: agregado em memória a partir de analysisData (fonte única de verdade)
   // Isso garante que o gráfico de barras responde a TODOS os filtros (outliers, duration, setor, rating)
@@ -1093,6 +1134,7 @@ export default function SpreadDashboard() {
                 scatterData={scatterData}
                 ratingGroups={ratingGroups}
                 byRatingData={byRatingData}
+                byRatingDataGlobal={byRatingDataGlobal}
                 yAxisLabel={yAxisLabel}
                 metrica={metrica}
                 analysisData={analysisData}
@@ -1412,6 +1454,7 @@ function AnaliseView({
   scatterData,
   ratingGroups,
   byRatingData,
+  byRatingDataGlobal,
   yAxisLabel,
   metrica,
   analysisData,
@@ -1420,6 +1463,14 @@ function AnaliseView({
   scatterData: ScatterPoint[];
   ratingGroups: string[];
   byRatingData: {
+    rating: string;
+    avgZspread: number;
+    medianZspread: number;
+    count: number;
+    minZspread: number;
+    maxZspread: number;
+  }[];
+  byRatingDataGlobal: {
     rating: string;
     avgZspread: number;
     medianZspread: number;
@@ -1441,18 +1492,21 @@ function AnaliseView({
     ntnbInterpolado: boolean;
     ratingIdx: number;
     totalRatings: number;
+    isNa?: boolean;
   } | null>(null);
 
   const { data: ntnbCurveData } = trpc.spread.getNtnbCurve.useQuery();
 
+  // Ratings disponíveis no universo filtrado (para o dropdown da calculadora)
   const ratingsDisponiveis = useMemo(() => {
-    const set = new Set(analysisData.map((d) => d.rating).filter(Boolean) as string[]);
+    const set = new Set(byRatingDataGlobal.map((d) => d.rating).filter(Boolean) as string[]);
     return sortRatings(Array.from(set));
-  }, [analysisData]);
+  }, [byRatingDataGlobal]);
 
-  // Regressão sobre byRatingData (mesma lógica do BarView)
+  // Regressão GLOBAL: usa byRatingDataGlobal (DEB+CRI+CRA, sem filtro de instrumento)
+  // Garante linha de tendência consistente independente dos filtros aplicados
   const ratingRegression = useMemo(() => {
-    const sorted = [...byRatingData].sort((a, b) => {
+    const sorted = [...byRatingDataGlobal].sort((a, b) => {
       const order = sortRatings([a.rating, b.rating]);
       return order.indexOf(a.rating) - order.indexOf(b.rating);
     });
@@ -1470,19 +1524,25 @@ function AnaliseView({
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
     return { sorted, slope, intercept };
-  }, [byRatingData, metrica]);
+  }, [byRatingDataGlobal, metrica]);
 
-  const handleCalc = () => {
-    const dur = parseFloat(pricingDuration);
-    if (!isFinite(dur) || dur <= 0) return;
-
-    // 1. Spread esperado do rating via regressão
+  // Helper: calcula resultado da calculadora a partir da regressão global
+  const calcPricingResult = (dur: number, rating: string) => {
     const { sorted, slope, intercept } = ratingRegression;
-    const ratingIdx = sorted.findIndex((d) => d.rating === pricingRating);
-    if (ratingIdx === -1) return;
+    const ratingIdx = sorted.findIndex((d) => d.rating === rating);
+    // Se o rating não existe nos dados globais, retorna N/A
+    if (ratingIdx === -1) {
+      return {
+        spreadEsperadoBps: null as unknown as number,
+        taxaNtnbPct: null,
+        taxaTotalPct: null,
+        ntnbInterpolado: false,
+        ratingIdx: -1,
+        totalRatings: sorted.length,
+        isNa: true,
+      };
+    }
     const spreadEsperadoBps = Math.round(slope * ratingIdx + intercept);
-
-    // 2. Taxa NTN-B implícita via interpolação linear na curva
     let taxaNtnbPct: number | null = null;
     let ntnbInterpolado = false;
     if (ntnbCurveData && ntnbCurveData.length >= 2) {
@@ -1499,60 +1559,25 @@ function AnaliseView({
         ntnbInterpolado = true;
       }
     }
+    const taxaTotalPct = taxaNtnbPct !== null ? taxaNtnbPct + spreadEsperadoBps / 100 : null;
+    return { spreadEsperadoBps, taxaNtnbPct, taxaTotalPct, ntnbInterpolado, ratingIdx, totalRatings: sorted.length, isNa: false };
+  };
 
-    // 3. Taxa total
-    const taxaTotalPct = taxaNtnbPct !== null
-      ? taxaNtnbPct + spreadEsperadoBps / 100
-      : null;
-
-    setPricingResult({
-      spreadEsperadoBps,
-      taxaNtnbPct,
-      taxaTotalPct,
-      ntnbInterpolado,
-      ratingIdx,
-      totalRatings: sorted.length,
-    });
+  const handleCalc = () => {
+    const dur = parseFloat(pricingDuration);
+    if (!isFinite(dur) || dur <= 0) return;
+    setPricingResult(calcPricingResult(dur, pricingRating));
   };
 
   // Recalcular automaticamente quando os dados mudam
   // Lógica inline para evitar problema de closure em produção (stale closure)
   useEffect(() => {
-    if (analysisData.length === 0 || byRatingData.length === 0) return;
+    if (byRatingDataGlobal.length === 0) return;
     const dur = parseFloat(pricingDuration);
     if (!isFinite(dur) || dur <= 0) return;
-    const { sorted, slope, intercept } = ratingRegression;
-    const ratingIdx = sorted.findIndex((d) => d.rating === pricingRating);
-    if (ratingIdx === -1) return;
-    const spreadEsperadoBps = Math.round(slope * ratingIdx + intercept);
-    let taxaNtnbPct: number | null = null;
-    let ntnbInterpolado = false;
-    if (ntnbCurveData && ntnbCurveData.length >= 2) {
-      const pts = [...ntnbCurveData].sort((a, b) => a.durationAnos - b.durationAnos);
-      if (dur <= pts[0].durationAnos) {
-        taxaNtnbPct = pts[0].taxaNtnb * 100;
-      } else if (dur >= pts[pts.length - 1].durationAnos) {
-        taxaNtnbPct = pts[pts.length - 1].taxaNtnb * 100;
-      } else {
-        const lo = pts.findLast((p) => p.durationAnos <= dur)!;
-        const hi = pts.find((p) => p.durationAnos > dur)!;
-        const t = (dur - lo.durationAnos) / (hi.durationAnos - lo.durationAnos);
-        taxaNtnbPct = (lo.taxaNtnb + t * (hi.taxaNtnb - lo.taxaNtnb)) * 100;
-        ntnbInterpolado = true;
-      }
-    }
-    const taxaTotalPct = taxaNtnbPct !== null
-      ? taxaNtnbPct + spreadEsperadoBps / 100
-      : null;
-    setPricingResult({
-      spreadEsperadoBps,
-      taxaNtnbPct,
-      taxaTotalPct,
-      ntnbInterpolado,
-      ratingIdx,
-      totalRatings: sorted.length,
-    });
-  }, [pricingRating, pricingDuration, analysisData, byRatingData, ntnbCurveData, ratingRegression]);
+    setPricingResult(calcPricingResult(dur, pricingRating));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pricingRating, pricingDuration, byRatingDataGlobal, ntnbCurveData, ratingRegression]);
 
   return (
     <div className="h-full overflow-hidden flex flex-col gap-3">
@@ -1716,7 +1741,14 @@ function AnaliseView({
 
           {/* Resultado */}
           <div className="flex-1 min-w-0">
-            {pricingResult ? (
+            {pricingResult?.isNa ? (
+              <div className="flex flex-col items-start justify-center h-full gap-1">
+                <p className="text-lg font-bold font-mono text-muted-foreground">N/A</p>
+                <p className="text-[10px] text-muted-foreground/70">
+                  Rating <span className="font-semibold text-foreground">{pricingRating}</span> não possui dados suficientes no universo global (DEB+CRI+CRA) para calcular o spread esperado.
+                </p>
+              </div>
+            ) : pricingResult ? (
               <div className="flex items-start gap-8 flex-wrap">
                 {/* NTN-B / CDI */}
                 <div>
