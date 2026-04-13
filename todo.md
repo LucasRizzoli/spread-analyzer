@@ -423,3 +423,6 @@
 
 ## v4.16 — Sync unificado
 - [x] Botão "Atualizar dados" processa debêntures + CRI/CRA em sequência com um único clique
+
+## Bug: Histórico de Spreads
+- [x] Gráfico histórico mostrando 5 linhas "%DI" — filtrado para mostrar apenas indexadores de debêntures

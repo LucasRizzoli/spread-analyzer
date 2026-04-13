@@ -368,6 +368,9 @@ import { historicalSnapshots } from "../drizzle/schema";
  * Retorna os snapshots históricos agrupados por data de referência final.
  * Usado para o gráfico de linha temporal na aba Dados.
  */
+// Indexadores de debêntures — excluir CRI/CRA do histórico de debêntures
+const DEBENTURE_INDEXADORES = ['IPCA SPREAD', 'DI SPREAD', 'DI PERCENTUAL'];
+
 export async function getHistoricalSnapshots(limit = 90) {
   const db = await getDb();
   if (!db) return [];
@@ -375,6 +378,7 @@ export async function getHistoricalSnapshots(limit = 90) {
   const rows = await db
     .select()
     .from(historicalSnapshots)
+    .where(inArray(historicalSnapshots.indexador, DEBENTURE_INDEXADORES))
     .orderBy(desc(historicalSnapshots.snapshotAt))
     .limit(limit * 12); // até 12 ratings por snapshot
 
