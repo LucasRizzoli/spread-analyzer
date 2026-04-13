@@ -1475,12 +1475,43 @@ function AnaliseView({
   };
 
   // Recalcular automaticamente quando os dados mudam
+  // Lógica inline para evitar problema de closure em produção (stale closure)
   useEffect(() => {
-    if (analysisData.length > 0 && byRatingData.length > 0) {
-      handleCalc();
+    if (analysisData.length === 0 || byRatingData.length === 0) return;
+    const dur = parseFloat(pricingDuration);
+    if (!isFinite(dur) || dur <= 0) return;
+    const { sorted, slope, intercept } = ratingRegression;
+    const ratingIdx = sorted.findIndex((d) => d.rating === pricingRating);
+    if (ratingIdx === -1) return;
+    const spreadEsperadoBps = Math.round(slope * ratingIdx + intercept);
+    let taxaNtnbPct: number | null = null;
+    let ntnbInterpolado = false;
+    if (ntnbCurveData && ntnbCurveData.length >= 2) {
+      const pts = [...ntnbCurveData].sort((a, b) => a.durationAnos - b.durationAnos);
+      if (dur <= pts[0].durationAnos) {
+        taxaNtnbPct = pts[0].taxaNtnb * 100;
+      } else if (dur >= pts[pts.length - 1].durationAnos) {
+        taxaNtnbPct = pts[pts.length - 1].taxaNtnb * 100;
+      } else {
+        const lo = pts.findLast((p) => p.durationAnos <= dur)!;
+        const hi = pts.find((p) => p.durationAnos > dur)!;
+        const t = (dur - lo.durationAnos) / (hi.durationAnos - lo.durationAnos);
+        taxaNtnbPct = (lo.taxaNtnb + t * (hi.taxaNtnb - lo.taxaNtnb)) * 100;
+        ntnbInterpolado = true;
+      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pricingRating, pricingDuration, analysisData, byRatingData, ntnbCurveData]);
+    const taxaTotalPct = taxaNtnbPct !== null
+      ? taxaNtnbPct + spreadEsperadoBps / 100
+      : null;
+    setPricingResult({
+      spreadEsperadoBps,
+      taxaNtnbPct,
+      taxaTotalPct,
+      ntnbInterpolado,
+      ratingIdx,
+      totalRatings: sorted.length,
+    });
+  }, [pricingRating, pricingDuration, analysisData, byRatingData, ntnbCurveData, ratingRegression]);
 
   return (
     <div className="h-full overflow-hidden flex flex-col gap-3">
@@ -1882,20 +1913,28 @@ function BarView({
     label,
   }: {
     active?: boolean;
-    payload?: { value: number }[];
+    payload?: { name?: string; value: number }[];
     label?: string;
   }) => {
     if (!active || !payload?.length) return null;
     const d = sorted.find((r) => r.rating === label);
+    const trendEntry = trendData.find((t) => t.rating === label);
+    const barPayload = payload.find((p) => p.name !== "Tendência");
     return (
       <div className="bg-popover border border-border rounded-lg p-3 text-xs shadow-xl">
         <p className="font-semibold text-foreground mb-1">{label}</p>
         <p>
           {metrica === "mediana" ? "Mediana" : "Média"}:{" "}
           <span className="text-primary font-medium">
-            {Math.round(payload[0].value)} bps
+            {barPayload ? Math.round(barPayload.value) : "—"} bps
           </span>
         </p>
+        {trendEntry && (
+          <p className="text-amber-400">
+            Tendência:{" "}
+            <span className="font-medium">{trendEntry.trend} bps</span>
+          </p>
+        )}
         {d && (
           <>
             <p className="text-muted-foreground">
@@ -1954,10 +1993,18 @@ function BarView({
               dataKey="trend"
               stroke="oklch(0.75 0.15 60)"
               strokeWidth={2}
-              dot={false}
+              dot={{ r: 3, fill: "oklch(0.75 0.15 60)", strokeWidth: 0 }}
               strokeDasharray="5 3"
               name="Tendência"
-            />
+            >
+              <LabelList
+                dataKey="trend"
+                position="top"
+                formatter={(v: number) => `${v}`}
+                style={{ fontSize: 9, fill: "oklch(0.75 0.15 60)", fontWeight: 600 }}
+                offset={6}
+              />
+            </Line>
           </ComposedChart>
         </ResponsiveContainer>
       </div>

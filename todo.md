@@ -381,3 +381,21 @@
 - [x] Agente Sintetizador: consolida resultados, remove duplicatas, gera relatório com contexto de negócio
 - [x] Router tRPC: searchComparables (polling de status) + getSearchHistory
 - [x] Frontend: nova aba "Comparáveis" com campo de busca, progresso em tempo real e cards de resultado
+
+## Bugs: Comparáveis — Agentes retornando 0 resultados
+- [ ] Bug: Agente Web retorna 0 páginas — URLs não estão sendo extraídas/visitadas da busca
+- [ ] Bug: Agente Interno retorna 0 ativos — filtro de tipo não bate com valores reais do banco
+
+## Fix: Multi-Agentes — Tornar Funcional
+- [ ] Agente Interno: mapeamento correto setor genérico → valores reais do banco (DEB, Energia Elétrica, etc.)
+- [ ] Agente Web: integrar Serper.dev para busca real no Google (substituir Playwright no Google)
+- [ ] Agente Web: corrigir extração de conteúdo das páginas visitadas
+- [ ] Teste end-to-end do fluxo completo
+
+## Fix: Gráfico e Spread Esperado
+- [ ] Gráfico de barras: mostrar valor da linha de tendência no tooltip/label
+- [ ] Spread esperado: travado/igual na versão publicada (funciona no dev)
+
+## v4.14 — Correção spread esperado + valores tendência no gráfico
+- [x] Gráfico de barras: valor da linha de tendência exibido diretamente em cada ponto (LabelList) e no tooltip (hover)
+- [x] Spread esperado na versão publicada: corrigido stale closure no useEffect — lógica de cálculo movida inline com dependências explícitas
