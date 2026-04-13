@@ -94,7 +94,8 @@ export const criCraRouter = router({
       ];
 
       if (input?.excludeOutliers !== false) {
-        conditions.push(eq(spreadAnalysis.isOutlier, false));
+        // MySQL TINYINT: usar sql raw para evitar problema de boolean vs int
+        conditions.push(sql`${spreadAnalysis.isOutlier} = 0`);
       }
       if (input?.indexadores?.length) {
         conditions.push(inArray(spreadAnalysis.indexador, input.indexadores));

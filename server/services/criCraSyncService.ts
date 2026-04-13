@@ -321,15 +321,28 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
 
     const outlierSet = new Set<string>();
     for (const [, group] of Array.from(groups.entries())) {
-      const spreads = group.map((r: ProcessedResult) => r.zspread!).sort((a: number, b: number) => a - b);
-      if (spreads.length < 4) continue;
-      const q1 = spreads[Math.floor(spreads.length * 0.25)];
-      const q3 = spreads[Math.floor(spreads.length * 0.75)];
-      const iqr = q3 - q1;
-      const lo = q1 - 1.5 * iqr;
-      const hi = q3 + 1.5 * iqr;
+      const n = group.length;
+      const spreads = group.map((r: ProcessedResult) => r.zspread!);
+      // Mesmo algoritmo adaptativo das debêntures:
+      // n < 5: sem remoção | n >= 20: winsorização 10% | 5-19: ±2σ ou ±2.5σ
+      if (n < 5) continue;
+      let cutLow: number;
+      let cutHigh: number;
+      if (n >= 20) {
+        const sorted = [...spreads].sort((a, b) => a - b);
+        const k = Math.floor(n * 0.10);
+        cutLow  = sorted[k];
+        cutHigh = sorted[n - 1 - k];
+      } else {
+        const sigma = n >= 10 ? 2.5 : 2.0;
+        const mean = spreads.reduce((s, v) => s + v, 0) / n;
+        const variance = spreads.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (n - 1);
+        const stdDev = Math.sqrt(variance);
+        cutLow  = mean - sigma * stdDev;
+        cutHigh = mean + sigma * stdDev;
+      }
       for (const r of group) {
-        if (r.zspread! < lo || r.zspread! > hi) {
+        if (r.zspread! < cutLow || r.zspread! > cutHigh) {
           outlierSet.add(r.row.codigoCetip);
         }
       }

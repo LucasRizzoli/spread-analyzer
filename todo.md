@@ -452,3 +452,9 @@
 - [x] Corrigir getZspreadByRating: filtrar por MAX(dataReferencia)
 - [x] Re-marcar outliers apenas na data mais recente (IQR, 2 outliers identificados)
 - [x] 75 testes passando
+
+## Fix: CRI/CRA — Outliers corrigidos (CONCLUÍDO)
+- [x] Diagnosticar: eq(isOutlier, false) falha com MySQL TINYINT — corrigido para sql`isOutlier = 0`
+- [x] Substituir IQR simples pelo algoritmo adaptativo das debêntures (winsor 10% / ±2σ / ±2.5σ)
+- [x] Re-marcar outliers na data mais recente: 4 outliers em AAA.br IPCA SPREAD
+- [x] 75 testes passando
