@@ -426,3 +426,7 @@
 
 ## Bug: Histórico de Spreads
 - [x] Gráfico histórico mostrando 5 linhas "%DI" — filtrado para mostrar apenas indexadores de debêntures
+
+## Fix: CRI/CRA — Apenas com match Moody's
+- [x] criCraSyncService: descartar registros sem match de rating (igual às debêntures)
+- [x] Limpar banco: remover CRIs/CRAs sem rating já gravados (1.022 removidos, 534 com rating mantidos)

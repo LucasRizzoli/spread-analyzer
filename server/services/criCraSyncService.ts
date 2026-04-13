@@ -248,10 +248,11 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
       }
     }
 
-    // ── 6. Persistir em spread_analysis ──────────────────────────────────────
+    // ── 6. Persistir em spread_analysis — apenas com rating Moody's ───────────
     criCraSyncProgress = { step: "Salvando no banco", done: 0, total: results.length };
 
-    const toInsert = results.map(r => ({
+    // Descartar registros sem match de rating (igual às debêntures)
+    const toInsert = results.filter(r => r.rating != null).map(r => ({
       codigoCetip: r.row.codigoCetip,
       isin: null,
       tipo: r.row.tipo as "CRI" | "CRA",
