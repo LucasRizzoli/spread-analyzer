@@ -31,6 +31,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import ComparableSearch from "./ComparableSearch";
+import CriCraDashboard from "./CriCraDashboard";
 import {
   ScatterChart,
   Scatter,
@@ -558,7 +559,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
 
 export default function SpreadDashboard() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
-  const [activeView, setActiveView] = useState<"analise" | "table" | "dados" | "ntnb" | "comparaveis">("analise");
+  const [activeView, setActiveView] = useState<"analise" | "table" | "dados" | "ntnb" | "comparaveis" | "cricra">("analise");
   const [tableSearch, setTableSearch] = useState("");
   const [showOutliers, setShowOutliers] = useState(false);
   // Universo de análise: IPCA SPREAD (Z-spread sobre NTN-B), DI SPREAD (spread sobre CDI em bps) ou DI PERCENTUAL (% do CDI)
@@ -1013,6 +1014,7 @@ export default function SpreadDashboard() {
                     { key: "ntnb", icon: Activity, label: "Curva NTN-B" },
                     { key: "dados", icon: Database, label: "Dados" },
                     { key: "comparaveis", icon: Sparkles, label: "Comparáveis" },
+                    { key: "cricra", icon: BarChart3, label: "CRI/CRA" },
                   ] as const
                 ).map(({ key, icon: Icon, label }) => (
                   <button
@@ -1077,6 +1079,10 @@ export default function SpreadDashboard() {
             ) : activeView === "comparaveis" ? (
               <div className="h-full -m-6">
                 <ComparableSearch />
+              </div>
+            ) : activeView === "cricra" ? (
+              <div className="h-full -m-6">
+                <CriCraDashboard />
               </div>
             ) : (
               <TableView
@@ -2318,7 +2324,26 @@ function DadosView({
   onSync: () => void;
   lastSync: LastSyncRow | null;
 }) {
-  const [dragOver, setDragOver] = useState<"moodys" | "anbima" | null>(null);
+  const [dragOver, setDragOver] = useState<"moodys" | "anbima" | "cricra" | null>(null);
+  const [criCraFile, setCriCraFile] = useState<File | null>(null);
+  const criCraInputRef = useRef<HTMLInputElement>(null);
+  const uploadCriCra = trpc.criCra.uploadAndSync.useMutation({
+    onSuccess: () => {
+      toast.success("Planilha CRI/CRA enviada", { description: "Processamento iniciado em background." });
+      setCriCraFile(null);
+    },
+    onError: (err: { message: string }) => toast.error("Erro ao enviar CRI/CRA", { description: err.message }),
+  });
+  const criCraSyncState = trpc.criCra.getSyncStatus.useQuery(undefined, { refetchInterval: 3000 });
+  const handleCriCraSync = async () => {
+    if (!criCraFile) { toast.error("Selecione a planilha CRI/CRA"); return; }
+    const arrayBuffer = await criCraFile.arrayBuffer();
+    const uint8 = new Uint8Array(arrayBuffer);
+    let binary = "";
+    for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+    const base64 = btoa(binary);
+    uploadCriCra.mutate({ fileName: criCraFile.name, fileBase64: base64 });
+  };
   const [selectedIndexador, setSelectedIndexador] = useState<string>("IPCA SPREAD");
   const [selectedMetrica, setSelectedMetrica] = useState<"media" | "mediana">("media");
 
@@ -2358,15 +2383,15 @@ function DadosView({
     return sortRatings(Array.from(set));
   }, [snapshotsFiltrados]);
 
-  const handleDrop = (tipo: "moodys" | "anbima") => (e: React.DragEvent) => {
+  const handleDrop = (tipo: "moodys" | "anbima" | "cricra") => (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(null);
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
     if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) return;
-    // Usar o arquivo arrastado diretamente
     if (tipo === "moodys") onSetMoodysFile(file);
-    else onSetAnbimaFile(file);
+    else if (tipo === "anbima") onSetAnbimaFile(file);
+    else setCriCraFile(file);
   };
 
   return (
@@ -2431,7 +2456,8 @@ function DadosView({
           <Upload className="h-4 w-4 text-primary" />
           Atualizar Dados
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <input ref={criCraInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setCriCraFile(f); }} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           {/* Drop zone Moody's */}
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver("moodys"); }}
@@ -2511,9 +2537,67 @@ function DadosView({
               </>
             )}
           </div>
+
+          {/* Drop zone CRI/CRA */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver("cricra"); }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={handleDrop("cricra")}
+            onClick={() => criCraInputRef.current?.click()}
+            className={`relative flex flex-col items-center justify-center gap-2 p-5 rounded-lg border-2 border-dashed cursor-pointer transition-all ${
+              dragOver === "cricra"
+                ? "border-amber-400 bg-amber-400/10"
+                : criCraFile
+                ? "border-amber-500/60 bg-amber-500/5"
+                : "border-border hover:border-amber-400/50 hover:bg-muted/30"
+            }`}
+          >
+            {criCraFile ? (
+              <>
+                <CheckCircle2 className="h-6 w-6 text-amber-400" />
+                <p className="text-xs font-medium text-amber-400 text-center truncate max-w-full px-2">{criCraFile.name}</p>
+                <p className="text-[10px] text-muted-foreground">{(criCraFile.size / 1024).toFixed(0)} KB</p>
+              </>
+            ) : (
+              <>
+                <Upload className="h-6 w-6 text-muted-foreground" />
+                <p className="text-xs font-medium text-foreground">Planilha CRI/CRA</p>
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Arraste ou clique para selecionar<br />
+                  <a
+                    href="https://data.anbima.com.br/datasets/data-certificados-recebiveis-precificacao-anbima"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-amber-400 hover:underline"
+                  >
+                    data.anbima.com.br
+                  </a>
+                </p>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Botão de sync + progresso */}
+        {/* Botão CRI/CRA separado */}
+        {criCraFile && (
+          <button
+            onClick={handleCriCraSync}
+            disabled={uploadCriCra.isPending}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors disabled:opacity-50 mb-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${uploadCriCra.isPending ? "animate-spin" : ""}`} />
+            {uploadCriCra.isPending ? "Processando CRI/CRA..." : "Processar planilha CRI/CRA"}
+          </button>
+        )}
+        {criCraSyncState.data?.status === "running" && (
+          <div className="mb-2 flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+            <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
+            <span>{criCraSyncState.data.progress?.step ?? "Processando..."} ({criCraSyncState.data.progress?.done ?? 0}/{criCraSyncState.data.progress?.total ?? 0})</span>
+          </div>
+        )}
+
+        {/* Botão de sync + progresso (Debêntures) */}
         <button
           onClick={onSync}
           disabled={isSyncing}

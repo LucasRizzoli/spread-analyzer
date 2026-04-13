@@ -1,0 +1,1 @@
+ALTER TABLE `uploaded_files` MODIFY COLUMN `tipo` enum('moodys','anbima','cri_cra') NOT NULL;

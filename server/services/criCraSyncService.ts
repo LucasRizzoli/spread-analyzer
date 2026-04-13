@@ -1,0 +1,388 @@
+/**
+ * Serviço de sincronização para planilhas CRI/CRA da ANBIMA
+ *
+ * Fluxo:
+ * 1. Parsear planilha CRI/CRA → lista de CriCraRow com taxa indicativa e duration
+ * 2. Para cada ativo, calcular z-spread via interpolação linear da curva NTN-B
+ *    (apenas para indexador IPCA; DI usa spread sobre CDI = taxaCorrecao)
+ * 3. Cruzar o devedor com a planilha Moody's (Dice ≥ 0.80 no nome do devedor)
+ * 4. Marcar outliers por rating+indexador
+ * 5. Persistir em spread_analysis com tipo CRI ou CRA
+ * 6. Gravar snapshot histórico
+ */
+
+import { getDb } from "../db";
+import { moodysRatings, spreadAnalysis, ntnbCurve, historicalSnapshots } from "../../drizzle/schema";
+import { parseCriCraXlsx, CriCraRow } from "./criCraParser";
+import { normalizeEmissor } from "./moodysScraperService";
+import { eq, sql } from "drizzle-orm";
+import { SCORE_MIN_THRESHOLD } from "../../shared/const";
+
+// ── Estado global de sync CRI/CRA ──────────────────────────────────────────
+
+export type CriCraSyncStatus = "idle" | "running" | "success" | "error";
+
+let criCraSyncStatus: CriCraSyncStatus = "idle";
+let criCraSyncProgress = { step: "", done: 0, total: 0 };
+let criCraLastSyncAt: Date | null = null;
+let criCraLastSyncError: string | null = null;
+
+export function getCriCraSyncState() {
+  return {
+    status: criCraSyncStatus,
+    progress: criCraSyncProgress,
+    lastSyncAt: criCraLastSyncAt,
+    lastSyncError: criCraLastSyncError,
+  };
+}
+
+// ── Dice Coefficient ────────────────────────────────────────────────────────
+
+function diceCoefficient(a: string, b: string): number {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const bigrams = (s: string) => {
+    const set: string[] = [];
+    for (let i = 0; i < s.length - 1; i++) set.push(s.slice(i, i + 2));
+    return set;
+  };
+  const aB = bigrams(a);
+  const bB = bigrams(b);
+  const bSet = new Map<string, number>();
+  for (const bg of bB) bSet.set(bg, (bSet.get(bg) ?? 0) + 1);
+  let matches = 0;
+  for (const bg of aB) {
+    const cnt = bSet.get(bg) ?? 0;
+    if (cnt > 0) { matches++; bSet.set(bg, cnt - 1); }
+  }
+  return (2 * matches) / (aB.length + bB.length);
+}
+
+// ── Interpolação linear na curva NTN-B ──────────────────────────────────────
+
+interface NtnbVertex {
+  durationAnos: number;
+  taxaIndicativa: number;
+}
+
+/**
+ * Interpola linearmente a taxa NTN-B para uma duration específica.
+ * Usa os dois vértices mais próximos (um abaixo e um acima).
+ * Se a duration estiver fora do range, extrapola com o vértice mais próximo.
+ */
+function interpolateNtnb(durationAnos: number, vertices: NtnbVertex[]): number | null {
+  if (!vertices.length) return null;
+  const sorted = [...vertices].sort((a, b) => a.durationAnos - b.durationAnos);
+
+  // Abaixo do mínimo: usar o menor vértice
+  if (durationAnos <= sorted[0].durationAnos) return sorted[0].taxaIndicativa;
+  // Acima do máximo: usar o maior vértice
+  if (durationAnos >= sorted[sorted.length - 1].durationAnos) return sorted[sorted.length - 1].taxaIndicativa;
+
+  // Encontrar os dois vértices adjacentes
+  let lower = sorted[0];
+  let upper = sorted[sorted.length - 1];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (sorted[i].durationAnos <= durationAnos && sorted[i + 1].durationAnos >= durationAnos) {
+      lower = sorted[i];
+      upper = sorted[i + 1];
+      break;
+    }
+  }
+
+  if (upper.durationAnos === lower.durationAnos) return lower.taxaIndicativa;
+
+  // Interpolação linear
+  const t = (durationAnos - lower.durationAnos) / (upper.durationAnos - lower.durationAnos);
+  return lower.taxaIndicativa + t * (upper.taxaIndicativa - lower.taxaIndicativa);
+}
+
+// ── Função principal de sync ─────────────────────────────────────────────────
+
+export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: string): Promise<{
+  totalProcessados: number;
+  totalComRating: number;
+  totalSemRating: number;
+  dataReferencia: string | null;
+}> {
+  if (criCraSyncStatus === "running") {
+    throw new Error("Sync CRI/CRA já em execução");
+  }
+
+  criCraSyncStatus = "running";
+  criCraSyncProgress = { step: "Iniciando", done: 0, total: 0 };
+  criCraLastSyncError = null;
+
+  try {
+    const db = await getDb();
+    if (!db) throw new Error("Banco de dados não disponível");
+
+    // ── 1. Parsear planilha CRI/CRA ──────────────────────────────────────────
+    criCraSyncProgress = { step: "Parseando planilha CRI/CRA", done: 0, total: 0 };
+    const { rows, dataRefFim } = await parseCriCraXlsx(fileBuffer);
+    const dataRef = dataRefFimOverride ?? dataRefFim;
+
+    console.log(`[CriCraSync] ${rows.length} registros parseados, data ref: ${dataRef}`);
+
+    if (!rows.length) throw new Error("Nenhum registro válido encontrado na planilha");
+
+    // ── 2. Carregar curva NTN-B do banco ─────────────────────────────────────
+    criCraSyncProgress = { step: "Carregando curva NTN-B", done: 0, total: rows.length };
+    const ntnbRows = await db.select().from(ntnbCurve);
+    const ntnbVertices: NtnbVertex[] = ntnbRows
+      .filter((r: typeof ntnbRows[0]) => r.durationAnos != null && r.taxaIndicativa != null)
+      .map((r: typeof ntnbRows[0]) => ({
+        durationAnos: parseFloat(String(r.durationAnos)),
+        taxaIndicativa: parseFloat(String(r.taxaIndicativa)),
+      }));
+
+    console.log(`[CriCraSync] ${ntnbVertices.length} vértices NTN-B carregados`);
+
+    // ── 3. Carregar ratings Moody's ───────────────────────────────────────────
+    criCraSyncProgress = { step: "Carregando ratings Moody's", done: 0, total: rows.length };
+    const moodysRows = await db.select().from(moodysRatings);
+    const moodysNormalized = moodysRows.map((r: typeof moodysRows[0]) => ({
+      ...r,
+      emissorNorm: normalizeEmissor(r.emissor),
+    }));
+
+    console.log(`[CriCraSync] ${moodysNormalized.length} ratings Moody's carregados`);
+
+    // ── 4. Processar cada ativo ───────────────────────────────────────────────
+    criCraSyncProgress = { step: "Calculando z-spreads e cruzando ratings", done: 0, total: rows.length };
+
+    interface ProcessedResult {
+      row: CriCraRow;
+      zspread: number | null;
+      ntnbTaxa: number | null;
+      rating: string | null;
+      setor: string | null;
+      scoreMatch: number | null;
+      moodysRatingId: number | null;
+      emissorMoodys: string | null;
+    }
+
+    const results: ProcessedResult[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      criCraSyncProgress = { step: "Calculando z-spreads e cruzando ratings", done: i + 1, total: rows.length };
+
+      // Calcular z-spread apenas para IPCA (spread sobre NTN-B)
+      let zspread: number | null = null;
+      let ntnbTaxa: number | null = null;
+
+      const isIpca = row.tipoRemuneracao.includes("IPCA");
+      if (isIpca && row.durationAnos != null && row.taxaIndicativa != null && ntnbVertices.length > 0) {
+        ntnbTaxa = interpolateNtnb(row.durationAnos, ntnbVertices);
+        if (ntnbTaxa != null) {
+          // z-spread = taxa indicativa - taxa NTN-B interpolada (em pontos percentuais)
+          zspread = row.taxaIndicativa - ntnbTaxa;
+        }
+      } else if (!isIpca && row.taxaCorrecao != null) {
+        // Para DI: usar taxaCorrecao como spread (já é o spread sobre CDI)
+        zspread = row.taxaCorrecao;
+      }
+
+      // Cruzar devedor com Moody's
+      let rating: string | null = null;
+      let setor: string | null = null;
+      let scoreMatch: number | null = null;
+      let moodysRatingId: number | null = null;
+      let emissorMoodys: string | null = null;
+
+      const devedorNorm = row.devedor ? normalizeEmissor(row.devedor) : null;
+      if (devedorNorm) {
+        let bestScore = 0;
+        let bestMatch: typeof moodysNormalized[0] | null = null;
+
+        for (const m of moodysNormalized) {
+          const score = diceCoefficient(devedorNorm, m.emissorNorm);
+          if (score > bestScore && score >= SCORE_MIN_THRESHOLD) {
+            bestScore = score;
+            bestMatch = m;
+          }
+        }
+
+        if (bestMatch) {
+          rating = bestMatch.rating;
+          setor = bestMatch.setor ?? null;
+          scoreMatch = bestScore;
+          moodysRatingId = bestMatch.id;
+          emissorMoodys = bestMatch.emissor;
+        }
+      }
+
+      results.push({ row, zspread, ntnbTaxa, rating, setor, scoreMatch, moodysRatingId, emissorMoodys });
+    }
+
+    const comRating = results.filter(r => r.rating != null);
+    const semRating = results.filter(r => r.rating == null);
+    console.log(`[CriCraSync] ${comRating.length} com rating, ${semRating.length} sem rating`);
+
+    // ── 5. Marcar outliers por rating+indexador ───────────────────────────────
+    criCraSyncProgress = { step: "Marcando outliers", done: 0, total: results.length };
+
+    // Agrupar por rating + indexador
+    const groups = new Map<string, ProcessedResult[]>();
+    for (const r of results) {
+      if (!r.rating || r.zspread == null) continue;
+      const key = `${r.rating}|${r.row.tipoRemuneracao}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(r);
+    }
+
+    const outlierSet = new Set<string>();
+    for (const [, group] of Array.from(groups.entries())) {
+      const spreads = group.map((r: ProcessedResult) => r.zspread!).sort((a: number, b: number) => a - b);
+      if (spreads.length < 4) continue;
+      const q1 = spreads[Math.floor(spreads.length * 0.25)];
+      const q3 = spreads[Math.floor(spreads.length * 0.75)];
+      const iqr = q3 - q1;
+      const lo = q1 - 1.5 * iqr;
+      const hi = q3 + 1.5 * iqr;
+      for (const r of group) {
+        if (r.zspread! < lo || r.zspread! > hi) {
+          outlierSet.add(r.row.codigoCetip);
+        }
+      }
+    }
+
+    // ── 6. Persistir em spread_analysis ──────────────────────────────────────
+    criCraSyncProgress = { step: "Salvando no banco", done: 0, total: results.length };
+
+    const toInsert = results.map(r => ({
+      codigoCetip: r.row.codigoCetip,
+      isin: null,
+      tipo: r.row.tipo as "CRI" | "CRA",
+      emissorNome: r.row.devedor ?? r.row.emissor,
+      setor: r.setor ?? null,
+      indexador: r.row.tipoRemuneracao,
+      incentivado: false,
+      rating: r.rating ?? null,
+      tipoMatch: (r.rating ? "emissor" : "sem_match") as "emissor" | "sem_match",
+      moodysRatingId: r.moodysRatingId ?? null,
+      taxaIndicativa: r.row.taxaIndicativa != null ? String(r.row.taxaIndicativa) : null,
+      durationAnos: r.row.durationAnos != null ? String(r.row.durationAnos) : null,
+      dataReferencia: r.row.dataReferencia || dataRef || null,
+      ntnbReferencia: r.row.refNtnb ?? null,
+      ntnbTaxa: r.ntnbTaxa != null ? String(r.ntnbTaxa) : null,
+      ntnbDuration: null,
+      dataVencimento: r.row.dataVencimento ?? null,
+      zspread: r.zspread != null ? String(r.zspread) : null,
+      spreadIncentivadoSemGrossUp: null,
+      scoreMatch: r.scoreMatch != null ? String(r.scoreMatch) : null,
+      isOutlier: outlierSet.has(r.row.codigoCetip),
+      emissorMoodys: r.emissorMoodys ?? null,
+      numeroEmissaoSnd: null,
+      numeroEmissaoMoodys: r.row.numeroEmissao ?? null,
+      instrumentoMoodys: null,
+    }));
+
+    // UPSERT em lotes de 100
+    const BATCH = 100;
+    for (let i = 0; i < toInsert.length; i += BATCH) {
+      const batch = toInsert.slice(i, i + BATCH);
+      await db.insert(spreadAnalysis).values(batch).onDuplicateKeyUpdate({
+        set: {
+          tipo: sql`VALUES(tipo)`,
+          emissorNome: sql`VALUES(emissorNome)`,
+          setor: sql`VALUES(setor)`,
+          indexador: sql`VALUES(indexador)`,
+          rating: sql`VALUES(rating)`,
+          tipoMatch: sql`VALUES(tipoMatch)`,
+          moodysRatingId: sql`VALUES(moodysRatingId)`,
+          taxaIndicativa: sql`VALUES(taxaIndicativa)`,
+          durationAnos: sql`VALUES(durationAnos)`,
+          ntnbReferencia: sql`VALUES(ntnbReferencia)`,
+          ntnbTaxa: sql`VALUES(ntnbTaxa)`,
+          zspread: sql`VALUES(zspread)`,
+          scoreMatch: sql`VALUES(scoreMatch)`,
+          isOutlier: sql`VALUES(isOutlier)`,
+          emissorMoodys: sql`VALUES(emissorMoodys)`,
+          updatedAt: sql`NOW()`,
+        },
+      });
+      criCraSyncProgress = { step: "Salvando no banco", done: Math.min(i + BATCH, toInsert.length), total: toInsert.length };
+    }
+
+    // ── 7. Gravar snapshots históricos ────────────────────────────────────────
+    criCraSyncProgress = { step: "Gravando snapshots históricos", done: 0, total: 1 };
+    const finalDataRef = dataRef ?? new Date().toISOString().slice(0, 10);
+
+    // Buscar dados para snapshot apenas desta data
+    const [snapshotRows] = await db.execute(sql`
+      SELECT rating, zspread, dataReferencia, indexador
+      FROM spread_analysis
+      WHERE dataReferencia = ${finalDataRef}
+        AND tipo IN ('CRI', 'CRA')
+        AND isOutlier = 0
+        AND zspread IS NOT NULL
+        AND rating IS NOT NULL
+    `) as unknown as { rating: string; zspread: string; indexador: string | null }[][];
+
+    const snapshotData = (snapshotRows || []) as { rating: string; zspread: string; indexador: string | null }[];
+
+    // Agrupar por indexador + rating
+    const snapGroups = new Map<string, number[]>();
+    for (const row of snapshotData) {
+      const key = `${row.indexador ?? "IPCA"}|${row.rating}`;
+      if (!snapGroups.has(key)) snapGroups.set(key, []);
+      snapGroups.get(key)!.push(parseFloat(row.zspread));
+    }
+
+    for (const [key, vals] of Array.from(snapGroups.entries())) {
+      const [indexador, rating] = key.split("|");
+      if (!vals.length) continue;
+      const sorted = [...vals].sort((a: number, b: number) => a - b);
+      const mean = vals.reduce((s: number, v: number) => s + v, 0) / vals.length;
+      const median = sorted.length % 2 === 0
+        ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+        : sorted[Math.floor(sorted.length / 2)];
+      const p25 = sorted[Math.floor(sorted.length * 0.25)];
+      const p75 = sorted[Math.floor(sorted.length * 0.75)];
+      const std = Math.sqrt(vals.reduce((s: number, v: number) => s + (v - mean) ** 2, 0) / vals.length);
+
+      await db.insert(historicalSnapshots).values({
+        snapshotAt: new Date(),
+        dataRefIni: finalDataRef,
+        dataRefFim: finalDataRef,
+        indexador: `${indexador} (CRI/CRA)`,
+        rating,
+        nPapeis: vals.length,
+        mediaSpread: String(mean),
+        medianaSpread: String(median),
+        p25Spread: String(p25),
+        p75Spread: String(p75),
+        stdSpread: String(std),
+      }).onDuplicateKeyUpdate({
+        set: {
+          nPapeis: sql`VALUES(nPapeis)`,
+          mediaSpread: sql`VALUES(mediaSpread)`,
+          medianaSpread: sql`VALUES(medianaSpread)`,
+          p25Spread: sql`VALUES(p25Spread)`,
+          p75Spread: sql`VALUES(p75Spread)`,
+          stdSpread: sql`VALUES(stdSpread)`,
+          snapshotAt: sql`VALUES(snapshotAt)`,
+        },
+      });
+    }
+
+    criCraSyncStatus = "success";
+    criCraLastSyncAt = new Date();
+    criCraSyncProgress = { step: "Concluído", done: toInsert.length, total: toInsert.length };
+
+    return {
+      totalProcessados: toInsert.length,
+      totalComRating: comRating.length,
+      totalSemRating: semRating.length,
+      dataReferencia: dataRef,
+    };
+
+  } catch (err) {
+    criCraSyncStatus = "error";
+    criCraLastSyncError = err instanceof Error ? err.message : String(err);
+    console.error("[CriCraSync] Erro:", criCraLastSyncError);
+    throw err;
+  }
+}

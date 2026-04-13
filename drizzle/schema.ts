@@ -225,7 +225,7 @@ export const uploadedFiles = mysqlTable(
   "uploaded_files",
   {
     id: int("id").autoincrement().primaryKey(),
-    tipo: mysqlEnum("tipo", ["moodys", "anbima"]).notNull(),
+    tipo: mysqlEnum("tipo", ["moodys", "anbima", "cri_cra"]).notNull(),
     nomeArquivo: varchar("nomeArquivo", { length: 256 }).notNull(),
     dataReferencia: varchar("dataReferencia", { length: 16 }),
     s3Key: varchar("s3Key", { length: 512 }).notNull(),

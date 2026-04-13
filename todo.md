@@ -399,3 +399,24 @@
 ## v4.14 — Correção spread esperado + valores tendência no gráfico
 - [x] Gráfico de barras: valor da linha de tendência exibido diretamente em cada ponto (LabelList) e no tooltip (hover)
 - [x] Spread esperado na versão publicada: corrigido stale closure no useEffect — lógica de cálculo movida inline com dependências explícitas
+
+## Feature: CRI/CRA — Análise de Spread
+- [ ] Schema: campo `tipo` (DEB/CRI/CRA) em spread_analysis + tabela uploaded_files_cri_cra
+- [ ] Migração SQL aplicada
+- [ ] Parser planilha CRI/CRA: código, devedor, indexador, taxa indicativa, duration (÷252), ref NTN-B
+- [ ] Matching com Moody's pelo campo devedor (mesmo algoritmo Dice)
+- [ ] Cálculo z-spread: duration em anos → interpolação NTN-B → taxa indicativa − NTN-B interpolada
+- [ ] syncService: fluxo separado para CRI/CRA (criCraSync)
+- [ ] Router tRPC: uploadCriCra, getCriCraAnalysis, getCriCraByRating, getCriCraFilterOptions
+- [ ] Aba Dados: dividida em 3 seções (Moody's / Debêntures / CRI-CRA)
+- [ ] Frontend: nova aba CRI/CRA com scatter, barras por rating, tabela, calculadora
+- [ ] Navegação: item CRI/CRA no sidebar
+
+## v4.15 — Feature CRI/CRA (CONCLUÍDO)
+- [x] Schema: enum uploaded_files atualizado com tipo cri_cra
+- [x] Parser criCraParser.ts: lê planilha ANBIMA CRI/CRA (ExcelJS), extrai devedor, tipo, indexador, taxa indicativa, duration (÷252)
+- [x] criCraSyncService.ts: matching Moody's pelo devedor (Dice ≥ 0.80), interpolação NTN-B, cálculo z-spread, outliers ±3σ
+- [x] Router criCra.ts: uploadAndSync, getAnalysis, getFilterOptions, getSyncStatus
+- [x] Aba Dados: dividida em 3 slots (Moody's / Debêntures / CRI-CRA)
+- [x] CriCraDashboard.tsx: scatter z-spread×duration, barras por rating, tabela, calculadora
+- [x] Navegação: aba CRI/CRA adicionada no header do SpreadDashboard
