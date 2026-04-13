@@ -3,19 +3,28 @@
  *
  * Fluxo:
  * 1. Parsear planilha CRI/CRA → lista de CriCraRow com taxa indicativa e duration
- * 2. Para cada ativo, calcular z-spread via interpolação linear da curva NTN-B
- *    (apenas para indexador IPCA; DI usa spread sobre CDI = taxaCorrecao)
- * 3. Cruzar o devedor com a planilha Moody's (Dice ≥ 0.80 no nome do devedor)
- * 4. Marcar outliers por rating+indexador
- * 5. Persistir em spread_analysis com tipo CRI ou CRA
- * 6. Gravar snapshot histórico
+ * 2. Para cada ativo, calcular z-spread conforme o indexador:
+ *    - IPCA: z-spread = (taxaIndicativa − NTN-B interpolada) × 100 bps
+ *    - DI ADITIVO: z-spread = taxaCorrecao × 100 bps (spread contratado sobre CDI)
+ *    - DI MULTIPLICATIVO: z-spread = taxaIndicativa − 100 (% do CDI acima de 100%)
+ *    - PRE FIXADO: descartado
+ * 3. Cruzar o devedor com a planilha Moody's (Dice ≥ SCORE_MIN_THRESHOLD no nome do devedor)
+ * 4. Descartar registros sem match de rating (igual às debêntures)
+ * 5. Marcar outliers por rating+grupo analítico
+ * 6. Persistir em spread_analysis com tipo CRI ou CRA e indexador = grupo analítico
+ * 7. Gravar snapshot histórico
+ *
+ * Grupos analíticos:
+ *   IPCA → "IPCA SPREAD"
+ *   DI ADITIVO → "DI SPREAD"
+ *   DI MULTIPLICATIVO → "DI PERCENTUAL"
  */
 
 import { getDb } from "../db";
 import { moodysRatings, spreadAnalysis, ntnbCurve, historicalSnapshots } from "../../drizzle/schema";
 import { parseCriCraXlsx, CriCraRow } from "./criCraParser";
 import { normalizeEmissor } from "./moodysScraperService";
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { SCORE_MIN_THRESHOLD } from "../../shared/const";
 
 // ── Estado global de sync CRI/CRA ──────────────────────────────────────────
@@ -34,6 +43,73 @@ export function getCriCraSyncState() {
     lastSyncAt: criCraLastSyncAt,
     lastSyncError: criCraLastSyncError,
   };
+}
+
+// ── Mapeamento de indexador para grupo analítico ─────────────────────────────
+
+/**
+ * Mapeia o tipoRemuneracao da planilha para o grupo analítico padronizado.
+ * Retorna null para indexadores não suportados (ex: PRE FIXADO).
+ */
+function mapIndexadorToGrupo(tipoRemuneracao: string): string | null {
+  const t = tipoRemuneracao.toUpperCase().trim();
+  if (t.includes("IPCA")) return "IPCA SPREAD";
+  if (t.includes("DI") && t.includes("ADITIVO")) return "DI SPREAD";
+  if (t.includes("DI") && t.includes("MULTIPLICATIVO")) return "DI PERCENTUAL";
+  // PRE FIXADO e outros: descartar
+  return null;
+}
+
+// ── Cálculo de z-spread por indexador ────────────────────────────────────────
+
+/**
+ * Calcula o z-spread conforme o grupo analítico do indexador.
+ *
+ * IPCA SPREAD:
+ *   z-spread (bps) = (taxaIndicativa − NTN-B interpolada) × 100
+ *   taxaIndicativa e NTN-B estão em % a.a. → diferença em % a.a. → × 100 = bps
+ *
+ * DI SPREAD (DI ADITIVO):
+ *   z-spread (bps) = taxaCorrecao × 100
+ *   taxaCorrecao é o spread contratado sobre CDI em % a.a. → × 100 = bps
+ *   NÃO usar taxaIndicativa (inclui o CDI do dia, que não temos para extrair o spread)
+ *
+ * DI PERCENTUAL (DI MULTIPLICATIVO):
+ *   z-spread (%) = taxaIndicativa − 100
+ *   taxaIndicativa é o % do CDI praticado (ex: 108% do CDI → zspread = 8)
+ *   Mantido como percentual (não bps) para separação clara dos grupos
+ */
+function calcZspread(
+  grupo: string,
+  taxaIndicativa: number | null,
+  taxaCorrecao: number | null,
+  durationAnos: number | null,
+  ntnbVertices: NtnbVertex[],
+): { zspread: number | null; ntnbTaxa: number | null } {
+  if (grupo === "IPCA SPREAD") {
+    if (taxaIndicativa == null || durationAnos == null || ntnbVertices.length === 0) {
+      return { zspread: null, ntnbTaxa: null };
+    }
+    const ntnbTaxa = interpolateNtnb(durationAnos, ntnbVertices);
+    if (ntnbTaxa == null) return { zspread: null, ntnbTaxa: null };
+    // Diferença em % a.a. → converter para bps
+    const zspread = (taxaIndicativa - ntnbTaxa) * 100;
+    return { zspread, ntnbTaxa };
+  }
+
+  if (grupo === "DI SPREAD") {
+    if (taxaCorrecao == null) return { zspread: null, ntnbTaxa: null };
+    // taxaCorrecao já é o spread sobre CDI em % a.a. → × 100 = bps
+    return { zspread: taxaCorrecao * 100, ntnbTaxa: null };
+  }
+
+  if (grupo === "DI PERCENTUAL") {
+    if (taxaIndicativa == null) return { zspread: null, ntnbTaxa: null };
+    // taxaIndicativa é % do CDI (ex: 108) → spread = 108 − 100 = 8%
+    return { zspread: taxaIndicativa - 100, ntnbTaxa: null };
+  }
+
+  return { zspread: null, ntnbTaxa: null };
 }
 
 // ── Dice Coefficient ────────────────────────────────────────────────────────
@@ -137,6 +213,9 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
       }));
 
     console.log(`[CriCraSync] ${ntnbVertices.length} vértices NTN-B carregados`);
+    if (ntnbVertices.length === 0) {
+      console.warn("[CriCraSync] ATENÇÃO: curva NTN-B vazia — z-spreads IPCA não serão calculados. Faça o sync de debêntures primeiro.");
+    }
 
     // ── 3. Carregar ratings Moody's ───────────────────────────────────────────
     criCraSyncProgress = { step: "Carregando ratings Moody's", done: 0, total: rows.length };
@@ -153,6 +232,7 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
 
     interface ProcessedResult {
       row: CriCraRow;
+      grupo: string;           // Grupo analítico: "IPCA SPREAD" | "DI SPREAD" | "DI PERCENTUAL"
       zspread: number | null;
       ntnbTaxa: number | null;
       rating: string | null;
@@ -168,21 +248,21 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
       const row = rows[i];
       criCraSyncProgress = { step: "Calculando z-spreads e cruzando ratings", done: i + 1, total: rows.length };
 
-      // Calcular z-spread apenas para IPCA (spread sobre NTN-B)
-      let zspread: number | null = null;
-      let ntnbTaxa: number | null = null;
-
-      const isIpca = row.tipoRemuneracao.includes("IPCA");
-      if (isIpca && row.durationAnos != null && row.taxaIndicativa != null && ntnbVertices.length > 0) {
-        ntnbTaxa = interpolateNtnb(row.durationAnos, ntnbVertices);
-        if (ntnbTaxa != null) {
-          // z-spread = taxa indicativa - taxa NTN-B interpolada (em pontos percentuais)
-          zspread = row.taxaIndicativa - ntnbTaxa;
-        }
-      } else if (!isIpca && row.taxaCorrecao != null) {
-        // Para DI: usar taxaCorrecao como spread (já é o spread sobre CDI)
-        zspread = row.taxaCorrecao;
+      // Mapear indexador para grupo analítico; descartar PRE FIXADO e outros
+      const grupo = mapIndexadorToGrupo(row.tipoRemuneracao);
+      if (!grupo) {
+        // PRE FIXADO e indexadores não suportados: pular
+        continue;
       }
+
+      // Calcular z-spread conforme o grupo analítico
+      const { zspread, ntnbTaxa } = calcZspread(
+        grupo,
+        row.taxaIndicativa,
+        row.taxaCorrecao,
+        row.durationAnos,
+        ntnbVertices,
+      );
 
       // Cruzar devedor com Moody's
       let rating: string | null = null;
@@ -213,7 +293,7 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
         }
       }
 
-      results.push({ row, zspread, ntnbTaxa, rating, setor, scoreMatch, moodysRatingId, emissorMoodys });
+      results.push({ row, grupo, zspread, ntnbTaxa, rating, setor, scoreMatch, moodysRatingId, emissorMoodys });
     }
 
     const comRating = results.filter(r => r.rating != null);
@@ -223,11 +303,11 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
     // ── 5. Marcar outliers por rating+indexador ───────────────────────────────
     criCraSyncProgress = { step: "Marcando outliers", done: 0, total: results.length };
 
-    // Agrupar por rating + indexador
+    // Agrupar por rating + grupo analítico (apenas registros com rating e z-spread)
     const groups = new Map<string, ProcessedResult[]>();
     for (const r of results) {
       if (!r.rating || r.zspread == null) continue;
-      const key = `${r.rating}|${r.row.tipoRemuneracao}`;
+      const key = `${r.rating}|${r.grupo}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(r);
     }
@@ -258,7 +338,8 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
       tipo: r.row.tipo as "CRI" | "CRA",
       emissorNome: r.row.devedor ?? r.row.emissor,
       setor: r.setor ?? null,
-      indexador: r.row.tipoRemuneracao,
+      // Salvar o grupo analítico como indexador (padronizado)
+      indexador: r.grupo,
       incentivado: false,
       rating: r.rating ?? null,
       tipoMatch: (r.rating ? "emissor" : "sem_match") as "emissor" | "sem_match",
@@ -327,7 +408,7 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
     // Agrupar por indexador + rating
     const snapGroups = new Map<string, number[]>();
     for (const row of snapshotData) {
-      const key = `${row.indexador ?? "IPCA"}|${row.rating}`;
+      const key = `${row.indexador ?? "IPCA SPREAD"}|${row.rating}`;
       if (!snapGroups.has(key)) snapGroups.set(key, []);
       snapGroups.get(key)!.push(parseFloat(row.zspread));
     }

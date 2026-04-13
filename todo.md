@@ -430,3 +430,10 @@
 ## Fix: CRI/CRA — Apenas com match Moody's
 - [x] criCraSyncService: descartar registros sem match de rating (igual às debêntures)
 - [x] Limpar banco: remover CRIs/CRAs sem rating já gravados (1.022 removidos, 534 com rating mantidos)
+
+## Fix: CRI/CRA — Z-spread e Frontend (CONCLUÍDO)
+- [x] criCraSyncService: IPCA→interpolação NTN-B, DI ADITIVO→taxaCorrecao×100bps, DI MULT→taxaIndicativa−100
+- [x] criCraSyncService: mapear indexadores para grupos (IPCA SPREAD / DI SPREAD / DI PERCENTUAL)
+- [x] CriCraDashboard: mesma dinâmica scatter/barras/calculadora das debêntures (toggle IPCA+/DI+/% DI, scatter, barras, calculadora, tabela)
+- [x] Testes unitários: 24 testes de z-spread por grupo analítico (todos passando)
+- [ ] Regravar dados CRI/CRA no banco com z-spreads corretos (requer re-sync manual da planilha)
