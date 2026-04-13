@@ -466,3 +466,6 @@
 - [x] Criar CRI_CRA_SCORE_MIN_THRESHOLD = 0.85 em shared/const.ts (sem afetar debêntures)
 - [x] Re-sincronizar: 456 com rating (vs 500 antes), matchs ruins removidos
 - [x] Re-marcar outliers: 4 em AAA.br IPCA SPREAD | 75 testes passando
+
+## Fix: CRI/CRA — Threshold 0.90 (CONCLUÍDO)
+- [x] Alterar CRI_CRA_SCORE_MIN_THRESHOLD para 0.90: 412 papéis com rating, todos score ≥0.90
