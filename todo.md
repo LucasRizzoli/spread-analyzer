@@ -458,3 +458,6 @@
 - [x] Substituir IQR simples pelo algoritmo adaptativo das debêntures (winsor 10% / ±2σ / ±2.5σ)
 - [x] Re-marcar outliers na data mais recente: 4 outliers em AAA.br IPCA SPREAD
 - [x] 75 testes passando
+
+## Feature: CRI/CRA — Coluna score na tabela
+- [x] Adicionar coluna scoreMatch na tabela da aba CRI/CRA (com cor por qualidade do match)

@@ -402,7 +402,7 @@ function BarView({ data, indexador }: { data: CriCraRow[]; indexador: Indexador 
 
 function TableView({ data }: { data: CriCraRow[] }) {
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<"zspread" | "durationAnos" | "taxaIndicativa">("zspread");
+  const [sortField, setSortField] = useState<"zspread" | "durationAnos" | "taxaIndicativa" | "scoreMatch">("zspread");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const filtered = useMemo(() => {
@@ -471,6 +471,10 @@ function TableView({ data }: { data: CriCraRow[] }) {
               <th className="px-3 py-2 text-right font-semibold text-primary cursor-pointer hover:text-primary/80" onClick={() => toggleSort("zspread")}>
                 Z-spread {sortField === "zspread" ? (sortDir === "asc" ? "↑" : "↓") : ""}
               </th>
+              <th className="px-3 py-2 text-right font-semibold text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => toggleSort("scoreMatch")}>
+                Score {sortField === "scoreMatch" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+              </th>
+              <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Match Moody's</th>
               <th className="px-3 py-2 text-center font-semibold text-muted-foreground">Outlier</th>
             </tr>
           </thead>
@@ -498,6 +502,20 @@ function TableView({ data }: { data: CriCraRow[] }) {
                   </td>
                   <td className="px-3 py-2 text-right font-semibold text-primary">
                     {r.zspread != null ? formatZspread(r.zspread, unit) : "—"}
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono">
+                    {r.scoreMatch != null ? (
+                      <span className={`text-xs font-semibold ${
+                        r.scoreMatch >= 0.95 ? "text-green-400" :
+                        r.scoreMatch >= 0.85 ? "text-yellow-400" :
+                        "text-red-400"
+                      }`}>
+                        {(r.scoreMatch * 100).toFixed(0)}%
+                      </span>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground max-w-[140px] truncate text-[10px]" title={r.emissorMoodys || ""}>
+                    {r.emissorMoodys || "—"}
                   </td>
                   <td className="px-3 py-2 text-center">
                     {r.isOutlier ? <span className="text-yellow-400 text-[10px]">⚠</span> : null}
