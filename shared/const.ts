@@ -10,7 +10,7 @@ export const SCORE_MIN_THRESHOLD = 0.80;
  * Score mínimo para CRI/CRA — mais restritivo que debêntures porque
  * os nomes de devedores em CRI/CRA têm mais ambiguidade (cooperativas, SPEs).
  */
-export const CRI_CRA_SCORE_MIN_THRESHOLD = 0.90;
+export const CRI_CRA_SCORE_MIN_THRESHOLD = 0.85;
 export const ONE_YEAR_MS = 1000 * 60 * 60 * 24 * 365;
 export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = 'Please login (10001)';
