@@ -2324,6 +2324,8 @@ function DadosView({
   onSync: () => void;
   lastSync: LastSyncRow | null;
 }) {
+  // Flag para controlar se o CRI/CRA deve ser processado após o sync de debêntures
+  const [pendingCriCraAfterSync, setPendingCriCraAfterSync] = useState(false);
   const [dragOver, setDragOver] = useState<"moodys" | "anbima" | "cricra" | null>(null);
   const [criCraFile, setCriCraFile] = useState<File | null>(null);
   const criCraInputRef = useRef<HTMLInputElement>(null);
@@ -2335,14 +2337,37 @@ function DadosView({
     onError: (err: { message: string }) => toast.error("Erro ao enviar CRI/CRA", { description: err.message }),
   });
   const criCraSyncState = trpc.criCra.getSyncStatus.useQuery(undefined, { refetchInterval: 3000 });
-  const handleCriCraSync = async () => {
-    if (!criCraFile) { toast.error("Selecione a planilha CRI/CRA"); return; }
-    const arrayBuffer = await criCraFile.arrayBuffer();
+  const handleCriCraSync = async (file?: File) => {
+    const target = file ?? criCraFile;
+    if (!target) { toast.error("Selecione a planilha CRI/CRA"); return; }
+    const arrayBuffer = await target.arrayBuffer();
     const uint8 = new Uint8Array(arrayBuffer);
     let binary = "";
     for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
     const base64 = btoa(binary);
-    uploadCriCra.mutate({ fileName: criCraFile.name, fileBase64: base64 });
+    uploadCriCra.mutate({ fileName: target.name, fileBase64: base64 });
+  };
+
+  // Quando o sync de debêntures terminar e havia CRI/CRA pendente, dispara o CRI/CRA
+  useEffect(() => {
+    if (pendingCriCraAfterSync && !isSyncing && criCraFile) {
+      setPendingCriCraAfterSync(false);
+      handleCriCraSync(criCraFile);
+    }
+  }, [isSyncing, pendingCriCraAfterSync]);
+
+  const handleUnifiedSync = () => {
+    if (criCraFile && (moodysFile || anbimaFile)) {
+      // Tem debêntures + CRI/CRA: processa debêntures primeiro, CRI/CRA depois
+      setPendingCriCraAfterSync(true);
+      onSync();
+    } else if (criCraFile && !moodysFile && !anbimaFile) {
+      // Só tem CRI/CRA
+      handleCriCraSync();
+    } else {
+      // Só tem debêntures (ou nada)
+      onSync();
+    }
   };
   const [selectedIndexador, setSelectedIndexador] = useState<string>("IPCA SPREAD");
   const [selectedMetrica, setSelectedMetrica] = useState<"media" | "mediana">("media");
@@ -2579,37 +2604,33 @@ function DadosView({
           </div>
         </div>
 
-        {/* Botão CRI/CRA separado */}
-        {criCraFile && (
-          <button
-            onClick={handleCriCraSync}
-            disabled={uploadCriCra.isPending}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors disabled:opacity-50 mb-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${uploadCriCra.isPending ? "animate-spin" : ""}`} />
-            {uploadCriCra.isPending ? "Processando CRI/CRA..." : "Processar planilha CRI/CRA"}
-          </button>
-        )}
-        {criCraSyncState.data?.status === "running" && (
-          <div className="mb-2 flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-            <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
-            <span>{criCraSyncState.data.progress?.step ?? "Processando..."} ({criCraSyncState.data.progress?.done ?? 0}/{criCraSyncState.data.progress?.total ?? 0})</span>
-          </div>
-        )}
-
-        {/* Botão de sync + progresso (Debêntures) */}
+        {/* Botão unificado de sync */}
         <button
-          onClick={onSync}
-          disabled={isSyncing}
+          onClick={handleUnifiedSync}
+          disabled={isSyncing || uploadCriCra.isPending}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
-          {isSyncing ? "Sincronizando..." : "Atualizar dados"}
+          <RefreshCw className={`h-4 w-4 ${(isSyncing || uploadCriCra.isPending) ? "animate-spin" : ""}`} />
+          {isSyncing
+            ? "Sincronizando debêntures..."
+            : uploadCriCra.isPending
+            ? "Processando CRI/CRA..."
+            : criCraFile && (moodysFile || anbimaFile)
+            ? "Atualizar dados (Deb + CRI/CRA)"
+            : "Atualizar dados"}
         </button>
+        {/* Progresso debêntures */}
         {isSyncing && syncProgress && (
           <div className="mt-2 flex items-center gap-2 text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
             <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
             <span>{syncProgress}</span>
+          </div>
+        )}
+        {/* Progresso CRI/CRA */}
+        {criCraSyncState.data?.status === "running" && (
+          <div className="mt-2 flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+            <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
+            <span>CRI/CRA: {criCraSyncState.data.progress?.step ?? "Processando..."} ({criCraSyncState.data.progress?.done ?? 0}/{criCraSyncState.data.progress?.total ?? 0})</span>
           </div>
         )}
       </section>

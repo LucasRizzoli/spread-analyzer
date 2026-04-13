@@ -420,3 +420,6 @@
 - [x] Aba Dados: dividida em 3 slots (Moody's / Debêntures / CRI-CRA)
 - [x] CriCraDashboard.tsx: scatter z-spread×duration, barras por rating, tabela, calculadora
 - [x] Navegação: aba CRI/CRA adicionada no header do SpreadDashboard
+
+## v4.16 — Sync unificado
+- [x] Botão "Atualizar dados" processa debêntures + CRI/CRA em sequência com um único clique
