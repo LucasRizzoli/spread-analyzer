@@ -461,3 +461,8 @@
 
 ## Feature: CRI/CRA — Coluna score na tabela
 - [x] Adicionar coluna scoreMatch na tabela da aba CRI/CRA (com cor por qualidade do match)
+
+## Fix: CRI/CRA — Threshold de score mínimo 0.85 (CONCLUÍDO)
+- [x] Criar CRI_CRA_SCORE_MIN_THRESHOLD = 0.85 em shared/const.ts (sem afetar debêntures)
+- [x] Re-sincronizar: 456 com rating (vs 500 antes), matchs ruins removidos
+- [x] Re-marcar outliers: 4 em AAA.br IPCA SPREAD | 75 testes passando

@@ -25,7 +25,7 @@ import { moodysRatings, spreadAnalysis, historicalSnapshots } from "../../drizzl
 import { parseCriCraXlsx, CriCraRow } from "./criCraParser";
 import { normalizeEmissor } from "./moodysScraperService";
 import { sql } from "drizzle-orm";
-import { SCORE_MIN_THRESHOLD } from "../../shared/const";
+import { CRI_CRA_SCORE_MIN_THRESHOLD } from "../../shared/const";
 
 // ── Estado global de sync CRI/CRA ──────────────────────────────────────────
 
@@ -285,7 +285,7 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
 
         for (const m of moodysNormalized) {
           const score = diceCoefficient(devedorNorm, m.emissorNorm);
-          if (score > bestScore && score >= SCORE_MIN_THRESHOLD) {
+          if (score > bestScore && score >= CRI_CRA_SCORE_MIN_THRESHOLD) {
             bestScore = score;
             bestMatch = m;
           }
