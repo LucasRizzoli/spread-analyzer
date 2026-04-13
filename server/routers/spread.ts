@@ -25,6 +25,7 @@ const SpreadFiltersSchema = z.object({
   indexadores: z.array(z.string()).optional(),
   ratings: z.array(z.string()).optional(),
   setores: z.array(z.string()).optional(),
+  tipos: z.array(z.enum(["DEB", "CRI", "CRA"])).optional(),
   excludeOutliers: z.boolean().optional(),
   scoreMin: z.number().min(0).max(1).optional(),
 });

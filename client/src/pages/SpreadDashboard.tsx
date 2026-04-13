@@ -31,7 +31,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import ComparableSearch from "./ComparableSearch";
-import CriCraDashboard from "./CriCraDashboard";
+
 import {
   ScatterChart,
   Scatter,
@@ -98,6 +98,7 @@ interface FiltersState {
   indexadores: string[];
   ratings: string[];
   setores: string[];
+  tipos: ("DEB" | "CRI" | "CRA")[];
 }
 
 const DEFAULT_FILTERS: FiltersState = {
@@ -105,6 +106,7 @@ const DEFAULT_FILTERS: FiltersState = {
   indexadores: [],
   ratings: [],
   setores: [],
+  tipos: [],
 };
 
 function FilterSection({
@@ -357,7 +359,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
               <thead className="sticky top-0 z-10">
                 {/* Linha de agrupamento de colunas */}
                 <tr className="bg-muted/30 border-b border-border/60">
-                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap" colSpan={1}>
+                  <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-muted-foreground/70 whitespace-nowrap" colSpan={2}>
                     IDENTIFICAÇÃO
                   </th>
                   <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-blue-400/70 whitespace-nowrap border-l border-blue-500/20" colSpan={2}>
@@ -373,6 +375,7 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                 {/* Linha de nomes das colunas */}
                 <tr className="bg-card border-b border-border">
                   {/* Identificação */}
+                  <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Tipo</th>
                   <th className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">Código CETIP</th>
                   {/* ANBIMA */}
                   <th className="px-3 py-2 text-left font-semibold text-blue-400 whitespace-nowrap border-l border-blue-500/20">Emissor (ANBIMA)</th>
@@ -424,6 +427,16 @@ function MatchReportModal({ onClose }: { onClose: () => void }) {
                         row.isOutlier ? "bg-yellow-500/5" : i % 2 === 0 ? "" : "bg-white/[0.02]"
                       }`}
                     >
+                      {/* Tipo */}
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          row.tipo === 'CRI' ? 'bg-violet-500/20 text-violet-300' :
+                          row.tipo === 'CRA' ? 'bg-amber-500/20 text-amber-300' :
+                          'bg-blue-500/20 text-blue-300'
+                        }`}>
+                          {row.tipo || 'DEB'}
+                        </span>
+                      </td>
                       {/* Identificação */}
                       <td className="px-3 py-2.5 font-mono text-foreground whitespace-nowrap font-semibold">
                         <a
@@ -605,6 +618,7 @@ export default function SpreadDashboard() {
     indexadores: indexadoresEfetivos,
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
+    tipos: filters.tipos.length ? filters.tipos : undefined,
     excludeOutliers: !showOutliers,
     scoreMin: SCORE_MIN_THRESHOLD,
   });
@@ -617,6 +631,7 @@ export default function SpreadDashboard() {
     indexadores: indexadoresEfetivos,
     ratings: filters.ratings.length ? filters.ratings : undefined,
     setores: filters.setores.length ? filters.setores : undefined,
+    tipos: filters.tipos.length ? filters.tipos : undefined,
     excludeOutliers: false,
     scoreMin: SCORE_MIN_THRESHOLD,
   });
@@ -803,6 +818,7 @@ export default function SpreadDashboard() {
   const hasActiveFilters =
     filters.ratings.length > 0 ||
     filters.setores.length > 0 ||
+    filters.tipos.length > 0 ||
     filters.durationRange[0] > 0 ||
     filters.durationRange[1] < 20;
 
@@ -889,6 +905,30 @@ export default function SpreadDashboard() {
                   <span>{filters.durationRange[1]}a</span>
                 </div>
               </div>
+            </FilterSection>
+
+            <Separator className="my-3 bg-sidebar-border" />
+
+            {/* Instrumento */}
+            <FilterSection title="Instrumento">
+              {([
+                { key: "DEB" as const, label: "Debênture" },
+                { key: "CRI" as const, label: "CRI" },
+                { key: "CRA" as const, label: "CRA" },
+              ]).map(({ key, label }) => (
+                <CheckItem
+                  key={key}
+                  id={`tipo-${key}`}
+                  label={label}
+                  checked={filters.tipos.includes(key)}
+                  onToggle={() => {
+                    const next = filters.tipos.includes(key)
+                      ? filters.tipos.filter((t) => t !== key)
+                      : [...filters.tipos, key];
+                    setFilters((f) => ({ ...f, tipos: next }));
+                  }}
+                />
+              ))}
             </FilterSection>
 
             <Separator className="my-3 bg-sidebar-border" />
@@ -1014,7 +1054,6 @@ export default function SpreadDashboard() {
                     { key: "ntnb", icon: Activity, label: "Curva NTN-B" },
                     { key: "dados", icon: Database, label: "Dados" },
                     { key: "comparaveis", icon: Sparkles, label: "Comparáveis" },
-                    { key: "cricra", icon: BarChart3, label: "CRI/CRA" },
                   ] as const
                 ).map(({ key, icon: Icon, label }) => (
                   <button
@@ -1079,10 +1118,6 @@ export default function SpreadDashboard() {
             ) : activeView === "comparaveis" ? (
               <div className="h-full -m-6">
                 <ComparableSearch />
-              </div>
-            ) : activeView === "cricra" ? (
-              <div className="h-full -m-6">
-                <CriCraDashboard />
               </div>
             ) : (
               <TableView
@@ -2752,6 +2787,7 @@ function BacklogSection() {
 
   const moodysFiles = files?.filter((f) => f.tipo === "moodys") ?? [];
   const anbimaFiles = files?.filter((f) => f.tipo === "anbima") ?? [];
+  const criCraFiles = files?.filter((f) => f.tipo === "cri_cra") ?? [];
 
   const formatBytes = (bytes: number | null) => {
     if (!bytes) return "";
@@ -2812,6 +2848,8 @@ function BacklogSection() {
         <FileList items={moodysFiles} label="Planilhas Moody's" />
         <div className="w-px bg-border" />
         <FileList items={anbimaFiles} label="Planilhas ANBIMA" />
+        <div className="w-px bg-border" />
+        <FileList items={criCraFiles} label="Planilhas CRI/CRA" />
       </div>
     </section>
   );

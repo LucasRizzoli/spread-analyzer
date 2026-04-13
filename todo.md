@@ -474,3 +474,11 @@
 - [x] Investigar: planilha CRI/CRA não tem número de emissão — match por devedor vs emissor Moody's
 - [x] Filtrar apenas produto IN ('Rating de Dívida', 'Rating de Emissão') no criCraSyncService
 - [x] Re-sincronizar: 355 papéis com rating de emissão, todos score=100% | 75 testes passando
+
+## Feature: Unificação CRI/CRA na aba Análise (CONCLUÍDO)
+- [x] Backend: filtro tipos[] em getSpreadAnalysis, getZspreadByRating e getSpreadFiltersOptions
+- [x] Frontend sidebar: seção "Instrumento" com checkboxes DEB/CRI/CRA
+- [x] Frontend tabela: coluna "Tipo" (DEB/CRI/CRA) com cores
+- [x] Remover aba CRI/CRA da navegação
+- [x] Aba Dados: backlog de planilhas CRI/CRA à direita
+- [x] 75 testes passando

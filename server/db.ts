@@ -109,6 +109,7 @@ export interface SpreadFilters {
   indexadores?: string[];
   ratings?: string[];
   setores?: string[];
+  tipos?: string[];        // 'DEB' | 'CRI' | 'CRA'
   excludeOutliers?: boolean;
   scoreMin?: number;
 }
@@ -169,6 +170,9 @@ export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
 
   if (filters.setores?.length) {
     conditions.push(inArray(spreadAnalysis.setor, filters.setores));
+  }
+  if (filters.tipos?.length) {
+    conditions.push(inArray(spreadAnalysis.tipo, filters.tipos as ("DEB" | "CRI" | "CRA")[]));
   }
   if (filters.excludeOutliers) {
     conditions.push(sql`${spreadAnalysis.isOutlier} = 0`);
@@ -233,6 +237,9 @@ export async function getZspreadByRating(filters: SpreadFilters = {}) {
   }
   if (filters.setores?.length) {
     conditions.push(inArray(spreadAnalysis.setor, filters.setores));
+  }
+  if (filters.tipos?.length) {
+    conditions.push(inArray(spreadAnalysis.tipo, filters.tipos as ("DEB" | "CRI" | "CRA")[]));
   }
   if (filters.excludeOutliers) {
     conditions.push(sql`${spreadAnalysis.isOutlier} = 0`);
@@ -552,7 +559,7 @@ export async function registerUploadedFile(params: {
 
 export async function getUploadedFiles(): Promise<{
   id: number;
-  tipo: "moodys" | "anbima";
+  tipo: "moodys" | "anbima" | "cri_cra";
   nomeArquivo: string;
   dataReferencia: string | null;
   s3Url: string;
@@ -577,7 +584,7 @@ export async function getUploadedFiles(): Promise<{
     .orderBy(desc(uploadedFiles.uploadadoEm));
   return rows as {
     id: number;
-    tipo: "moodys" | "anbima";
+    tipo: "moodys" | "anbima" | "cri_cra";
     nomeArquivo: string;
     dataReferencia: string | null;
     s3Url: string;
