@@ -437,3 +437,11 @@
 - [x] CriCraDashboard: mesma dinâmica scatter/barras/calculadora das debêntures (toggle IPCA+/DI+/% DI, scatter, barras, calculadora, tabela)
 - [x] Testes unitários: 24 testes de z-spread por grupo analítico (todos passando)
 - [ ] Regravar dados CRI/CRA no banco com z-spreads corretos (requer re-sync manual da planilha)
+
+## Fix: CRI/CRA — Z-spread IPCA+ correto (CONCLUÍDO)
+- [x] criCraSyncService: IPCA+ usa taxaIndicativa − NTN-B interpolada (getNtnbImplicitaCurve do banco, mesma fonte das debêntures)
+- [x] Corrigir escala: ntnbVertices em % a.a. (taxaNtnb × 100), resultado em % a.a. (sem ×100 extra)
+- [x] Corrigir frontend: converter zspread × 100 ao carregar (% a.a. → bps para IPCA SPREAD e DI SPREAD)
+- [x] Corrigir calculadora: usar taxaNtnb (decimal) e converter bps → decimal corretamente
+- [x] Re-sincronizar dados CRI/CRA: 500 registros com z-spreads corretos (231 IPCA+, 197 DI+, 72 % DI)
+- [x] Atualizar testes: 75 passando (10 novos testes com escala % a.a.)

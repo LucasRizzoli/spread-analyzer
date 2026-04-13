@@ -20,8 +20,8 @@
  *   DI MULTIPLICATIVO → "DI PERCENTUAL"
  */
 
-import { getDb } from "../db";
-import { moodysRatings, spreadAnalysis, ntnbCurve, historicalSnapshots } from "../../drizzle/schema";
+import { getDb, getNtnbImplicitaCurve } from "../db";
+import { moodysRatings, spreadAnalysis, historicalSnapshots } from "../../drizzle/schema";
 import { parseCriCraXlsx, CriCraRow } from "./criCraParser";
 import { normalizeEmissor } from "./moodysScraperService";
 import { sql } from "drizzle-orm";
@@ -66,18 +66,19 @@ function mapIndexadorToGrupo(tipoRemuneracao: string): string | null {
  * Calcula o z-spread conforme o grupo analítico do indexador.
  *
  * IPCA SPREAD:
- *   z-spread (bps) = (taxaIndicativa − NTN-B interpolada) × 100
- *   taxaIndicativa e NTN-B estão em % a.a. → diferença em % a.a. → × 100 = bps
+ *   z-spread (% a.a.) = taxaIndicativa − NTN-B interpolada
+ *   Ambos em % a.a. (ex: 7.9946 − 6.40 = 1.5946% a.a.)
+ *   Mesma escala das debêntures: o frontend multiplica por 100 para exibir em bps.
+ *   ntnbVertices.taxaIndicativa está em % a.a. (já convertido de decimal ao popular).
  *
  * DI SPREAD (DI ADITIVO):
- *   z-spread (bps) = taxaCorrecao × 100
- *   taxaCorrecao é o spread contratado sobre CDI em % a.a. → × 100 = bps
- *   NÃO usar taxaIndicativa (inclui o CDI do dia, que não temos para extrair o spread)
+ *   z-spread (% a.a.) = taxaCorrecao
+ *   taxaCorrecao é o spread contratado sobre CDI em % a.a. (ex: 1.5% a.a.)
+ *   O frontend multiplica por 100 para exibir em bps (150 bps).
  *
  * DI PERCENTUAL (DI MULTIPLICATIVO):
  *   z-spread (%) = taxaIndicativa − 100
- *   taxaIndicativa é o % do CDI praticado (ex: 108% do CDI → zspread = 8)
- *   Mantido como percentual (não bps) para separação clara dos grupos
+ *   taxaIndicativa é o % do CDI praticado (ex: 108% do CDI → zspread = 8%)
  */
 function calcZspread(
   grupo: string,
@@ -92,15 +93,16 @@ function calcZspread(
     }
     const ntnbTaxa = interpolateNtnb(durationAnos, ntnbVertices);
     if (ntnbTaxa == null) return { zspread: null, ntnbTaxa: null };
-    // Diferença em % a.a. → converter para bps
-    const zspread = (taxaIndicativa - ntnbTaxa) * 100;
+    // taxaIndicativa em % a.a., ntnbTaxa em % a.a. → diferença em % a.a. (mesma escala das debêntures)
+    const zspread = taxaIndicativa - ntnbTaxa;
     return { zspread, ntnbTaxa };
   }
 
   if (grupo === "DI SPREAD") {
     if (taxaCorrecao == null) return { zspread: null, ntnbTaxa: null };
-    // taxaCorrecao já é o spread sobre CDI em % a.a. → × 100 = bps
-    return { zspread: taxaCorrecao * 100, ntnbTaxa: null };
+    // taxaCorrecao é o spread sobre CDI em % a.a. (ex: 1.5% a.a.)
+    // Mesma escala das debêntures: o frontend multiplica por 100 para exibir em bps
+    return { zspread: taxaCorrecao, ntnbTaxa: null };
   }
 
   if (grupo === "DI PERCENTUAL") {
@@ -202,19 +204,24 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
 
     if (!rows.length) throw new Error("Nenhum registro válido encontrado na planilha");
 
-    // ── 2. Carregar curva NTN-B do banco ─────────────────────────────────────
+    // ── 2. Carregar curva NTN-B (calculada a partir das debêntures IPCA SPREAD) ─
     criCraSyncProgress = { step: "Carregando curva NTN-B", done: 0, total: rows.length };
-    const ntnbRows = await db.select().from(ntnbCurve);
-    const ntnbVertices: NtnbVertex[] = ntnbRows
-      .filter((r: typeof ntnbRows[0]) => r.durationAnos != null && r.taxaIndicativa != null)
-      .map((r: typeof ntnbRows[0]) => ({
-        durationAnos: parseFloat(String(r.durationAnos)),
-        taxaIndicativa: parseFloat(String(r.taxaIndicativa)),
+    // Usa engenharia reversa sobre as debêntures IPCA SPREAD já no banco:
+    //   taxaNtnb = (1 + taxaIndicativa/100) / (1 + zspread/100) - 1
+    // Retorna taxaNtnb em decimal (ex: 0.0680 = 6,80% a.a.)
+    const ntnbImplicitaPoints = await getNtnbImplicitaCurve();
+    // getNtnbImplicitaCurve() retorna taxaNtnb em decimal (ex: 0.0640 = 6.40% a.a.)
+    // Converter para % a.a. para que a interpolação e o cálculo de z-spread usem a mesma escala
+    const ntnbVertices: NtnbVertex[] = ntnbImplicitaPoints
+      .filter(p => p.durationAnos > 0 && p.taxaNtnb > 0)
+      .map(p => ({
+        durationAnos: p.durationAnos,
+        taxaIndicativa: p.taxaNtnb * 100, // decimal → % a.a. (ex: 0.0640 → 6.40)
       }));
 
-    console.log(`[CriCraSync] ${ntnbVertices.length} vértices NTN-B carregados`);
+    console.log(`[CriCraSync] ${ntnbVertices.length} vértices NTN-B implícita carregados`);
     if (ntnbVertices.length === 0) {
-      console.warn("[CriCraSync] ATENÇÃO: curva NTN-B vazia — z-spreads IPCA não serão calculados. Faça o sync de debêntures primeiro.");
+      console.warn("[CriCraSync] ATENÇÃO: curva NTN-B implícita vazia — z-spreads IPCA não serão calculados. Faça o sync de debêntures primeiro.");
     }
 
     // ── 3. Carregar ratings Moody's ───────────────────────────────────────────

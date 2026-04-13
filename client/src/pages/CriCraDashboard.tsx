@@ -527,7 +527,8 @@ function CalculadoraView({ data, indexador }: { data: CriCraRow[]; indexador: In
     nPapeis: number;
   } | null>(null);
 
-  const ntnbQuery = trpc.criCra.getNtnbCurve.useQuery();
+  // Usa a curva NTN-B implícita das debêntures (mesma fonte do SpreadDashboard)
+  const ntnbQuery = trpc.spread.getNtnbCurve.useQuery();
 
   const ratingsDisponiveis = useMemo(() => {
     const set = new Set(
@@ -553,25 +554,26 @@ function CalculadoraView({ data, indexador }: { data: CriCraRow[]; indexador: In
 
     if (indexador === "IPCA SPREAD") {
       // Interpolar NTN-B para a duration
+      // spread.getNtnbCurve retorna taxaNtnb em decimal (ex: 0.0630 = 6.30% a.a.)
       const curva = [...(ntnbQuery.data ?? [])].sort((a, b) => a.durationAnos - b.durationAnos);
       if (!curva.length) { setResultado(null); return; }
-      let ntnb = 0;
+      let ntnbDecimal = 0;
       if (calcDuration <= curva[0].durationAnos) {
-        ntnb = curva[0].taxaIndicativa;
+        ntnbDecimal = curva[0].taxaNtnb;
       } else if (calcDuration >= curva[curva.length - 1].durationAnos) {
-        ntnb = curva[curva.length - 1].taxaIndicativa;
+        ntnbDecimal = curva[curva.length - 1].taxaNtnb;
       } else {
         const lower = curva.filter((p) => p.durationAnos <= calcDuration).pop()!;
         const upper = curva.find((p) => p.durationAnos > calcDuration)!;
         const t = (calcDuration - lower.durationAnos) / (upper.durationAnos - lower.durationAnos);
-        ntnb = lower.taxaIndicativa + t * (upper.taxaIndicativa - lower.taxaIndicativa);
+        ntnbDecimal = lower.taxaNtnb + t * (upper.taxaNtnb - lower.taxaNtnb);
       }
-      // mediaSpread está em bps → converter para % a.a. para somar com NTN-B
-      const spreadPct = mediaSpread / 100;
+      // mediaSpread está em bps → converter para decimal para somar com NTN-B (decimal)
+      const spreadDecimal = mediaSpread / 10000; // bps → decimal (ex: 193 bps → 0.0193)
       setResultado({
         spreadEsperado: Math.round(mediaSpread),  // bps
-        ntnb: ntnb * 100,                          // % a.a.
-        taxaTotal: (ntnb + spreadPct) * 100,       // % a.a.
+        ntnb: ntnbDecimal * 100,                   // % a.a. (ex: 0.0630 → 6.30%)
+        taxaTotal: (ntnbDecimal + spreadDecimal) * 100, // % a.a.
         nPapeis: papeis.length,
       });
     } else if (indexador === "DI SPREAD") {
@@ -712,9 +714,15 @@ export default function CriCraDashboard() {
 
   const filterOptionsQuery = trpc.criCra.getFilterOptions.useQuery();
 
+  // O banco armazena zspread em % a.a. para todos os grupos.
+  // Para exibição: IPCA SPREAD e DI SPREAD → bps (× 100); DI PERCENTUAL → % (direto).
   const data: CriCraRow[] = (analysisQuery.data ?? []).map(r => ({
     ...r,
     emissorNome: r.emissorNome ?? null,
+    zspread: r.zspread == null ? null
+      : (r.indexador === "DI PERCENTUAL")
+        ? Number(r.zspread)           // % do CDI acima de 100% — usar direto
+        : Number(r.zspread) * 100,    // % a.a. → bps (IPCA SPREAD e DI SPREAD)
   }));
 
   // Contagem por indexador
