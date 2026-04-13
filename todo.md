@@ -496,3 +496,12 @@
 - [x] Passar byRatingDataGlobal para AnaliseView como prop separado
 - [x] Calculadora usa byRatingDataGlobal para regressão, independente dos filtros
 - [x] Se o rating selecionado não existir nos dados globais, mostrar "N/A" no resultado
+
+## Fix: CRI/CRA — Gross-up de IR (ajuste para base pré-IR)
+- [x] Ler campo vencimento da planilha CRI/CRA no parser
+- [x] Calcular dias corridos até vencimento a partir de hoje no criCraSyncService
+- [x] Aplicar tabela regressiva IR: ≤18 0d→22,5%, ≤360d→20%, ≤720d→17,5%, >720d→15%
+- [x] taxaGrossUp = taxaIndicativa / (1 - aliquotaIR) — apenas para CRI/CRA
+- [x] Usar taxaGrossUp no cálculo do z-spread (IPCA SPREAD e DI SPREAD)
+- [x] Re-sincronizar dados CRI/CRA com gross-up aplicado
+- [x] Atualizar testes unitários (83 testes passando)

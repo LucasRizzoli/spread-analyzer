@@ -60,25 +60,52 @@ function mapIndexadorToGrupo(tipoRemuneracao: string): string | null {
   return null;
 }
 
+// ── Tabela regressiva de IR ─────────────────────────────────────────────────
+
+/**
+ * Retorna a alíquota de IR aplicável conforme o prazo restante até o vencimento.
+ * Tabela regressiva brasileira (renda fixa, pessoa física):
+ *   ≤ 180 dias  → 22,5%
+ *   ≤ 360 dias  → 20,0%
+ *   ≤ 720 dias  → 17,5%
+ *   > 720 dias  → 15,0%
+ */
+function aliquotaIR(diasAteVencimento: number): number {
+  if (diasAteVencimento <= 180) return 0.225;
+  if (diasAteVencimento <= 360) return 0.200;
+  if (diasAteVencimento <= 720) return 0.175;
+  return 0.150;
+}
+
+/**
+ * Calcula o gross-up da taxa para base pré-IR.
+ * taxaGrossUp = taxaLiquida / (1 − aliquotaIR)
+ * Aplicado APENAS para CRI/CRA (não para debêntures).
+ */
+function grossUpIR(taxaLiquida: number, diasAteVencimento: number): number {
+  const aliq = aliquotaIR(diasAteVencimento);
+  return taxaLiquida / (1 - aliq);
+}
+
 // ── Cálculo de z-spread por indexador ────────────────────────────────────────
 
 /**
  * Calcula o z-spread conforme o grupo analítico do indexador.
  *
+ * Para CRI/CRA, a taxaIndicativa é ajustada pelo gross-up de IR antes do cálculo
+ * (isenção fiscal → taxa de mercado menor → gross-up para base pré-IR).
+ *
  * IPCA SPREAD:
- *   z-spread (% a.a.) = taxaIndicativa − NTN-B interpolada
- *   Ambos em % a.a. (ex: 7.9946 − 6.40 = 1.5946% a.a.)
- *   Mesma escala das debêntures: o frontend multiplica por 100 para exibir em bps.
- *   ntnbVertices.taxaIndicativa está em % a.a. (já convertido de decimal ao popular).
+ *   taxaGrossUp = taxaIndicativa / (1 − aliquotaIR(diasAteVencimento))
+ *   z-spread = fórmula geométrica com taxaGrossUp no lugar de taxaIndicativa
  *
  * DI SPREAD (DI ADITIVO):
- *   z-spread (% a.a.) = taxaCorrecao
- *   taxaCorrecao é o spread contratado sobre CDI em % a.a. (ex: 1.5% a.a.)
- *   O frontend multiplica por 100 para exibir em bps (150 bps).
+ *   taxaGrossUp = taxaIndicativa / (1 − aliquotaIR(diasAteVencimento))
+ *   z-spread = taxaGrossUp (spread aditivo sobre CDI, base pré-IR)
  *
  * DI PERCENTUAL (DI MULTIPLICATIVO):
- *   z-spread (%) = taxaIndicativa − 100
- *   taxaIndicativa é o % do CDI praticado (ex: 108% do CDI → zspread = 8%)
+ *   Não aplica gross-up (% do CDI não tem isenção de IR da mesma forma)
+ *   z-spread = taxaIndicativa − 100
  */
 function calcZspread(
   grupo: string,
@@ -86,34 +113,39 @@ function calcZspread(
   taxaCorrecao: number | null,
   durationAnos: number | null,
   ntnbVertices: NtnbVertex[],
-): { zspread: number | null; ntnbTaxa: number | null } {
+  diasAteVencimento: number | null,
+): { zspread: number | null; ntnbTaxa: number | null; taxaGrossUp: number | null } {
   if (grupo === "IPCA SPREAD") {
     if (taxaIndicativa == null || durationAnos == null || ntnbVertices.length === 0) {
-      return { zspread: null, ntnbTaxa: null };
+      return { zspread: null, ntnbTaxa: null, taxaGrossUp: null };
     }
     const ntnbTaxa = interpolateNtnb(durationAnos, ntnbVertices);
-    if (ntnbTaxa == null) return { zspread: null, ntnbTaxa: null };
-    // Fórmula geométrica: (1 + taxaCRI/100) / (1 + taxaNTNB/100) − 1
-    // Resultado em decimal (ex: 0.0159 = 1,59% a.a.)
-    // Multiplicamos por 100 para salvar em % a.a. (mesma escala das debêntures)
-    const zspread = ((1 + taxaIndicativa / 100) / (1 + ntnbTaxa / 100) - 1) * 100;
-    return { zspread, ntnbTaxa };
+    if (ntnbTaxa == null) return { zspread: null, ntnbTaxa: null, taxaGrossUp: null };
+    // Gross-up de IR: ajusta a taxa líquida (isenta) para base pré-IR
+    const taxaGrossUp = diasAteVencimento != null
+      ? grossUpIR(taxaIndicativa, diasAteVencimento)
+      : taxaIndicativa;
+    // Fórmula geométrica com taxa gross-up: (1 + taxaGrossUp/100) / (1 + taxaNTNB/100) − 1
+    const zspread = ((1 + taxaGrossUp / 100) / (1 + ntnbTaxa / 100) - 1) * 100;
+    return { zspread, ntnbTaxa, taxaGrossUp };
   }
 
   if (grupo === "DI SPREAD") {
-    // Usar taxaIndicativa diretamente (taxa de mercado do papel)
-    // Representa o spread aditivo sobre CDI em % a.a.
-    if (taxaIndicativa == null) return { zspread: null, ntnbTaxa: null };
-    return { zspread: taxaIndicativa, ntnbTaxa: null };
+    // Gross-up de IR sobre taxaIndicativa (spread aditivo sobre CDI, base pré-IR)
+    if (taxaIndicativa == null) return { zspread: null, ntnbTaxa: null, taxaGrossUp: null };
+    const taxaGrossUp = diasAteVencimento != null
+      ? grossUpIR(taxaIndicativa, diasAteVencimento)
+      : taxaIndicativa;
+    return { zspread: taxaGrossUp, ntnbTaxa: null, taxaGrossUp };
   }
 
   if (grupo === "DI PERCENTUAL") {
-    if (taxaIndicativa == null) return { zspread: null, ntnbTaxa: null };
-    // taxaIndicativa é % do CDI (ex: 108) → spread = 108 − 100 = 8%
-    return { zspread: taxaIndicativa - 100, ntnbTaxa: null };
+    if (taxaIndicativa == null) return { zspread: null, ntnbTaxa: null, taxaGrossUp: null };
+    // DI PERCENTUAL: não aplica gross-up (% do CDI)
+    return { zspread: taxaIndicativa - 100, ntnbTaxa: null, taxaGrossUp: null };
   }
 
-  return { zspread: null, ntnbTaxa: null };
+  return { zspread: null, ntnbTaxa: null, taxaGrossUp: null };
 }
 
 // ── Dice Coefficient ────────────────────────────────────────────────────────
@@ -250,6 +282,7 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
       row: CriCraRow;
       grupo: string;           // Grupo analítico: "IPCA SPREAD" | "DI SPREAD" | "DI PERCENTUAL"
       zspread: number | null;
+      taxaGrossUp: number | null;  // Taxa gross-up de IR (apenas CRI/CRA IPCA/DI SPREAD)
       ntnbTaxa: number | null;
       rating: string | null;
       setor: string | null;
@@ -271,13 +304,24 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
         continue;
       }
 
-      // Calcular z-spread conforme o grupo analítico
-      const { zspread, ntnbTaxa } = calcZspread(
+      // Calcular dias corridos até o vencimento (para gross-up de IR)
+      let diasAteVencimento: number | null = null;
+      if (row.dataVencimento) {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const venc = new Date(row.dataVencimento + "T00:00:00");
+        const diffMs = venc.getTime() - hoje.getTime();
+        diasAteVencimento = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+      }
+
+      // Calcular z-spread conforme o grupo analítico (com gross-up de IR para CRI/CRA)
+      const { zspread, ntnbTaxa, taxaGrossUp } = calcZspread(
         grupo,
         row.taxaIndicativa,
         row.taxaCorrecao,
         row.durationAnos,
         ntnbVertices,
+        diasAteVencimento,
       );
 
       // Cruzar devedor com Moody's
@@ -309,7 +353,7 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
         }
       }
 
-      results.push({ row, grupo, zspread, ntnbTaxa, rating, setor, scoreMatch, moodysRatingId, emissorMoodys });
+      results.push({ row, grupo, zspread, taxaGrossUp, ntnbTaxa, rating, setor, scoreMatch, moodysRatingId, emissorMoodys });
     }
 
     const comRating = results.filter(r => r.rating != null);
@@ -381,7 +425,8 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
       ntnbDuration: null,
       dataVencimento: r.row.dataVencimento ?? null,
       zspread: r.zspread != null ? String(r.zspread) : null,
-      spreadIncentivadoSemGrossUp: null,
+      // Preservar taxa original (sem gross-up) em spreadIncentivadoSemGrossUp
+      spreadIncentivadoSemGrossUp: r.row.taxaIndicativa != null ? String(r.row.taxaIndicativa) : null,
       scoreMatch: r.scoreMatch != null ? String(r.scoreMatch) : null,
       isOutlier: outlierSet.has(r.row.codigoCetip),
       emissorMoodys: r.emissorMoodys ?? null,
