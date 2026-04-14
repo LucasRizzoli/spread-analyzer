@@ -528,3 +528,8 @@
 - [x] Sem filtro de instrumento: calculadora usa regressão de DEB+CRI+CRA (base completa)
 - [x] Com filtro ativo (ex: apenas CRI): calculadora usa regressão apenas do conjunto selecionado
 - [x] globalAnalysisQuery passa filters.tipos para a query quando há filtro ativo
+
+## v3.3 — Outliers unificados quando nenhum instrumento selecionado
+- [x] Sem filtro de instrumento: outliers calculados sobre DEB+CRI+CRA como um único saco (applyUnifiedOutliers on-the-fly)
+- [x] Com filtro ativo: cada instrumento mantém sua lógica individual de outliers (isOutlier do banco)
+- [x] Backend: applyUnifiedOutliers em db.ts — mesmo algoritmo adaptativo do syncService (winsor 10% / ±2σ / ±2,5σ)

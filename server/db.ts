@@ -174,17 +174,93 @@ export async function getSpreadAnalysis(filters: SpreadFilters = {}) {
   if (filters.tipos?.length) {
     conditions.push(inArray(spreadAnalysis.tipo, filters.tipos as ("DEB" | "CRI" | "CRA")[]));
   }
-  if (filters.excludeOutliers) {
+  // Modo unificado: quando nenhum instrumento está selecionado E excludeOutliers=true,
+  // busca todos os dados sem filtro de outlier do banco e recalcula on-the-fly
+  // sobre o conjunto completo (DEB+CRI+CRA como um único saco).
+  const unifiedOutlierMode = filters.excludeOutliers && !filters.tipos?.length;
+
+  if (filters.excludeOutliers && !unifiedOutlierMode) {
+    // Modo individual: usa o isOutlier persistido por instrumento
     conditions.push(sql`${spreadAnalysis.isOutlier} = 0`);
   }
   // Aplica o threshold mínimo de score — usa o valor do filtro ou o padrão global SCORE_MIN_THRESHOLD
   const scoreMin = filters.scoreMin !== undefined ? filters.scoreMin : SCORE_MIN_THRESHOLD;
   conditions.push(sql`CAST(${spreadAnalysis.scoreMatch} AS DECIMAL(5,4)) >= ${scoreMin}`);
-  return db
+
+  const rows = await db
     .select()
     .from(spreadAnalysis)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(sql`CAST(${spreadAnalysis.durationAnos} AS DECIMAL(10,4)) ASC`);
+
+  // Modo unificado: recalcular outliers sobre o saco completo
+  if (unifiedOutlierMode) {
+    return applyUnifiedOutliers(rows);
+  }
+
+  return rows;
+}
+
+/**
+ * Recalcula outliers on-the-fly sobre um conjunto unificado de registros.
+ * Usa o mesmo algoritmo adaptativo do syncService:
+ *   n < 5  → sem remoção
+ *   5–9    → ±2σ
+ *   10–19  → ±2,5σ
+ *   ≥ 20   → winsorização 10%
+ * Agrupa por rating + universo (IPCA / DI_SPREAD / DI_PCT).
+ * Retorna o subconjunto de registros que NÃO são outliers.
+ */
+function applyUnifiedOutliers<T extends { rating: string | null; indexador: string | null; zspread: string | number | null }>(rows: T[]): T[] {
+  const getUniverso = (indexador: string | null): string => {
+    const t = (indexador ?? "").toUpperCase();
+    if (t.includes("IPCA")) return "IPCA";
+    if (t.includes("DI SPREAD") || t === "DI SPREAD") return "DI_SPREAD";
+    if (t.includes("DI PERCENTUAL") || t === "DI PERCENTUAL") return "DI_PCT";
+    if (t.includes("DI")) return "DI_SPREAD";
+    return "OUTRO";
+  };
+
+  // Agrupar por rating + universo
+  const byGroup = new Map<string, T[]>();
+  for (const r of rows) {
+    const key = `${r.rating ?? "?"}|${getUniverso(r.indexador)}`;
+    if (!byGroup.has(key)) byGroup.set(key, []);
+    byGroup.get(key)!.push(r);
+  }
+
+  const outlierSet = new Set<T>();
+
+  for (const group of Array.from(byGroup.values())) {
+    const n = group.length;
+    if (n < 5) continue; // amostra insuficiente — sem remoção
+
+    const spreads = group.map((r) => Number(r.zspread ?? 0));
+    let cutLow: number;
+    let cutHigh: number;
+
+    if (n >= 20) {
+      const sorted = [...spreads].sort((a, b) => a - b);
+      const k = Math.floor(n * 0.10);
+      cutLow  = sorted[k];
+      cutHigh = sorted[n - 1 - k];
+    } else {
+      const sigma = n >= 10 ? 2.5 : 2.0;
+      const mean = spreads.reduce((s, v) => s + v, 0) / n;
+      const variance = spreads.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / (n - 1);
+      const stdDev = Math.sqrt(variance);
+      cutLow  = mean - sigma * stdDev;
+      cutHigh = mean + sigma * stdDev;
+    }
+
+    for (let i = 0; i < group.length; i++) {
+      if (spreads[i] < cutLow || spreads[i] > cutHigh) {
+        outlierSet.add(group[i]);
+      }
+    }
+  }
+
+  return rows.filter((r) => !outlierSet.has(r));
 }
 
 export async function getSpreadFiltersOptions() {
