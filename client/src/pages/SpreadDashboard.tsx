@@ -66,29 +66,85 @@ function formatDuration(v: number | null | undefined): string {
   return `${v.toFixed(2)}a`;
 }
 
-// Escala semântica: verde escuro (AAA) → verde claro → amarelo → laranja → vermelho → vinho (B)
-// Quanto pior o crédito, mais "quente" a cor — intuitivo para análise de risco
-const RATING_COLORS: Record<string, string> = {
-  "AAA.br":  "#16a34a", // verde escuro — melhor qualidade
-  "AA+.br":  "#22c55e", // verde médio
-  "AA.br":   "#86efac", // verde claro
-  "AA-.br":  "#bef264", // verde-amarelado
-  "A+.br":   "#facc15", // amarelo
-  "A.br":    "#fb923c", // laranja
-  "A-.br":   "#f97316", // laranja escuro
-  "BBB+.br": "#ef4444", // vermelho — grau especulativo começa aqui
-  "BBB.br":  "#dc2626", // vermelho escuro
-  "BBB-.br": "#b91c1c", // vinho claro
-  "BB+.br":  "#991b1b", // vinho
-  "BB.br":   "#7f1d1d", // vinho escuro
-  "BB-.br":  "#6b0f0f", // vinho muito escuro
-  "B+.br":   "#450a0a", // quase preto-vinho
-  "B.br":    "#3b0000", // preto-vinho — pior qualidade
+// ─── Paletas de cores por instrumento ───────────────────────────────────────
+// Debêntures: azul escuro (AAA) → vermelho claro (ratings mais baixos)
+// CRI:        verde escuro (AAA) → laranja claro (ratings mais baixos)
+// CRA:        verde-azulado escuro (AAA) → amarelo-laranja claro (ratings mais baixos)
+
+const RATING_ORDER = [
+  "AAA.br", "AA+.br", "AA.br", "AA-.br",
+  "A+.br",  "A.br",  "A-.br",
+  "BBB+.br","BBB.br","BBB-.br",
+  "BB+.br", "BB.br", "BB-.br",
+  "B+.br",  "B.br",
+];
+
+// Debêntures: azul marinho → azul médio → roxo → rosa → vermelho claro
+const DEB_COLORS: Record<string, string> = {
+  "AAA.br":  "#1e3a8a", // azul marinho escuro
+  "AA+.br":  "#1d4ed8", // azul royal
+  "AA.br":   "#2563eb", // azul médio
+  "AA-.br":  "#3b82f6", // azul
+  "A+.br":   "#60a5fa", // azul claro
+  "A.br":    "#818cf8", // azul-roxo
+  "A-.br":   "#a78bfa", // roxo claro
+  "BBB+.br": "#c084fc", // lilás
+  "BBB.br":  "#e879f9", // rosa-roxo
+  "BBB-.br": "#f472b6", // rosa
+  "BB+.br":  "#fb7185", // rosa-avermelhado
+  "BB.br":   "#f87171", // vermelho claro
+  "BB-.br":  "#ef4444", // vermelho
+  "B+.br":   "#dc2626", // vermelho escuro
+  "B.br":    "#b91c1c", // vermelho muito escuro
 };
 
-function getRatingColor(rating: string | null | undefined): string {
+// CRI: verde escuro → verde → amarelo-esverdeado → laranja
+const CRI_COLORS: Record<string, string> = {
+  "AAA.br":  "#14532d", // verde muito escuro
+  "AA+.br":  "#166534", // verde escuro
+  "AA.br":   "#15803d", // verde
+  "AA-.br":  "#16a34a", // verde médio
+  "A+.br":   "#22c55e", // verde claro
+  "A.br":    "#86efac", // verde bem claro
+  "A-.br":   "#bbf7d0", // verde muito claro
+  "BBB+.br": "#fde68a", // amarelo claro
+  "BBB.br":  "#fcd34d", // amarelo
+  "BBB-.br": "#fb923c", // laranja claro
+  "BB+.br":  "#f97316", // laranja
+  "BB.br":   "#ea580c", // laranja escuro
+  "BB-.br":  "#c2410c", // laranja-vermelho
+  "B+.br":   "#9a3412", // laranja-marrom
+  "B.br":    "#7c2d12", // marrom escuro
+};
+
+// CRA: verde-teal escuro → teal → amarelo-esverdeado → laranja-amarelo
+const CRA_COLORS: Record<string, string> = {
+  "AAA.br":  "#134e4a", // teal muito escuro
+  "AA+.br":  "#115e59", // teal escuro
+  "AA.br":   "#0f766e", // teal
+  "AA-.br":  "#0d9488", // teal médio
+  "A+.br":   "#14b8a6", // teal claro
+  "A.br":    "#5eead4", // teal bem claro
+  "A-.br":   "#99f6e4", // teal muito claro
+  "BBB+.br": "#fef08a", // amarelo muito claro
+  "BBB.br":  "#fde047", // amarelo
+  "BBB-.br": "#facc15", // amarelo-ouro
+  "BB+.br":  "#fb923c", // laranja claro
+  "BB.br":   "#f97316", // laranja
+  "BB-.br":  "#ea580c", // laranja escuro
+  "B+.br":   "#c2410c", // laranja-vermelho
+  "B.br":    "#9a3412", // marrom-laranja
+};
+
+// Fallback: paleta original (para compatibilidade com legenda por rating)
+const RATING_COLORS: Record<string, string> = DEB_COLORS;
+
+function getRatingColor(rating: string | null | undefined, tipo?: string | null): string {
   if (!rating) return "#6b7280";
-  return RATING_COLORS[rating] || "#6b7280";
+  if (tipo === "CRI") return CRI_COLORS[rating] || "#22c55e";
+  if (tipo === "CRA") return CRA_COLORS[rating] || "#0d9488";
+  // Debêntures (padrão)
+  return DEB_COLORS[rating] || "#3b82f6";
 }
 
 // ─── Componente de filtros ────────────────────────────────────────────────────
@@ -833,9 +889,10 @@ export default function SpreadDashboard() {
         x: Number(r.durationAnos),
         y: Math.round(Number(r.zspread) * 100), // em bps
         rating: r.rating,
+        tipo: r.tipo ?? "DEB",
         emissor: r.emissorNome,
         cetip: r.codigoCetip,
-        color: getRatingColor(r.rating),
+        color: getRatingColor(r.rating, r.tipo),
       }));
   }, [analysisData]);
 
@@ -1826,6 +1883,7 @@ interface ScatterPoint {
   x: number;
   y: number;
   rating: string | null | undefined;
+  tipo: string;
   emissor: string | null | undefined;
   cetip: string;
   color: string;
@@ -1840,6 +1898,13 @@ function ScatterView({
   ratingGroups: string[];
   yAxisLabel?: string;
 }) {
+  // Detectar quais instrumentos estão presentes nos dados
+  const tiposPresentes = useMemo(() => {
+    const s = new Set(data.map((d) => d.tipo));
+    const order = ["DEB", "CRI", "CRA"];
+    return order.filter((t) => s.has(t));
+  }, [data]);
+
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: ScatterPoint }[] }) => {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
@@ -1847,6 +1912,10 @@ function ScatterView({
       <div className="bg-popover border border-border rounded-lg p-3 text-xs shadow-xl">
         <p className="font-semibold text-foreground mb-1">{d.emissor || d.cetip}</p>
         <p className="text-muted-foreground">Código: {d.cetip}</p>
+        <p>
+          Instrumento:{" "}
+          <span className="font-medium text-foreground">{d.tipo || "DEB"}</span>
+        </p>
         <p>
           Rating:{" "}
           <span className="font-medium" style={{ color: d.color }}>
@@ -1864,17 +1933,27 @@ function ScatterView({
     );
   };
 
+  // Legenda: agrupa por instrumento, mostra gradiente de cores por rating
+  const TIPO_LABELS: Record<string, string> = { DEB: "Debênture", CRI: "CRI", CRA: "CRA" };
+
   return (
     <div className="h-full flex flex-col gap-4">
-      <div className="flex items-center gap-2 flex-wrap">
-        {ratingGroups.map((r) => (
-          <span key={r} className="flex items-center gap-1 text-xs text-muted-foreground">
-            <span
-              className="inline-block w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: getRatingColor(r) }}
-            />
-            {r}
-          </span>
+      <div className="flex items-start gap-4 flex-wrap">
+        {tiposPresentes.map((tipo) => (
+          <div key={tipo} className="flex flex-col gap-1">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{TIPO_LABELS[tipo] || tipo}</span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {ratingGroups.map((r) => (
+                <span key={r} className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span
+                    className="inline-block w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: getRatingColor(r, tipo) }}
+                  />
+                  {r}
+                </span>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
       <ResponsiveContainer width="100%" height="100%">

@@ -513,3 +513,11 @@
 - [x] Passar cdiAnual para calcZspread como parâmetro opcional
 - [x] Atualizar testes unitários com CDI = 14.65% (77 testes passando)
 - [x] Re-sincronizar dados CRI/CRA (DI SPREAD AAA.br ~49bps, DI% AA+.br ~272bps)
+
+## v3.1 — Cores por instrumento+rating no gráfico de dispersão
+- [x] Debêntures: azul marinho (AAA.br) → azul → roxo → rosa → vermelho (ratings mais baixos)
+- [x] CRI: verde muito escuro (AAA.br) → verde → amarelo → laranja (ratings mais baixos)
+- [x] CRA: teal escuro (AAA.br) → teal → amarelo-ouro → laranja (tom distinto do CRI)
+- [x] Transição perceptível entre ratings consecutivos
+- [x] Legenda agrupada por instrumento (DEB/CRI/CRA) com gradiente de cores
+- [x] Tooltip mostra instrumento + rating com cor correta
