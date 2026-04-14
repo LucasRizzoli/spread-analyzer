@@ -533,3 +533,11 @@
 - [x] Sem filtro de instrumento: outliers calculados sobre DEB+CRI+CRA como um único saco (applyUnifiedOutliers on-the-fly)
 - [x] Com filtro ativo: cada instrumento mantém sua lógica individual de outliers (isOutlier do banco)
 - [x] Backend: applyUnifiedOutliers em db.ts — mesmo algoritmo adaptativo do syncService (winsor 10% / ±2σ / ±2,5σ)
+
+## Fix: Outliers unificados — resultado não muda (bug)
+- [x] Investigado: outlierCount usava isOutlier do banco (modo individual) mesmo no modo unificado
+- [x] Corrigido: modo unificado conta diferença entre total sem exclusão e total com exclusão (22 vs 29 outliers)
+
+## Fix: Cores dos ratings — paleta distinta e inconfundível
+- [x] Substituir gradiente verde→vermelho por paleta com cores de famílias distintas
+- [x] AAA=turquesa, AA+=azul, AA=roxo, AA-=âmbar, A+=esmeralda, A=laranja, A-=rosa, BBB+=vermelho, etc.

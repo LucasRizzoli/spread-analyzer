@@ -66,24 +66,25 @@ function formatDuration(v: number | null | undefined): string {
   return `${v.toFixed(2)}a`;
 }
 
-// Escala semântica: verde escuro (AAA) → verde claro → amarelo → laranja → vermelho → vinho (B)
-// Quanto pior o crédito, mais "quente" a cor — intuitivo para análise de risco
+// Paleta de cores distintas por rating: cada rating tem uma cor de família diferente
+// para garantir que sejam inconfundíveis no scatter e na legenda.
 const RATING_COLORS: Record<string, string> = {
-  "AAA.br":  "#16a34a", // verde escuro — melhor qualidade
-  "AA+.br":  "#22c55e", // verde médio
-  "AA.br":   "#86efac", // verde claro
-  "AA-.br":  "#bef264", // verde-amarelado
-  "A+.br":   "#facc15", // amarelo
-  "A.br":    "#fb923c", // laranja
-  "A-.br":   "#f97316", // laranja escuro
-  "BBB+.br": "#ef4444", // vermelho — grau especulativo começa aqui
-  "BBB.br":  "#dc2626", // vermelho escuro
-  "BBB-.br": "#b91c1c", // vinho claro
-  "BB+.br":  "#991b1b", // vinho
-  "BB.br":   "#7f1d1d", // vinho escuro
-  "BB-.br":  "#6b0f0f", // vinho muito escuro
-  "B+.br":   "#450a0a", // quase preto-vinho
-  "B.br":    "#3b0000", // preto-vinho — pior qualidade
+  // Paleta de cores claramente distintas por rating (sem gradiente contínuo)
+  "AAA.br":  "#00d4aa", // turquesa vivo — melhor qualidade
+  "AA+.br":  "#3b82f6", // azul royal
+  "AA.br":   "#a855f7", // roxo vibrante
+  "AA-.br":  "#f59e0b", // âmbar dourado
+  "A+.br":   "#10b981", // verde esmeralda
+  "A.br":    "#f97316", // laranja queimado
+  "A-.br":   "#ec4899", // rosa choque
+  "BBB+.br": "#ef4444", // vermelho vivo
+  "BBB.br":  "#06b6d4", // ciano elétrico
+  "BBB-.br": "#84cc16", // verde-lima
+  "BB+.br":  "#8b5cf6", // violeta
+  "BB.br":   "#f43f5e", // rosa-vermelho
+  "BB-.br":  "#0ea5e9", // azul céu
+  "B+.br":   "#d97706", // marrom-dourado
+  "B.br":    "#6366f1", // índigo — pior qualidade
 };
 
 function getRatingColor(rating: string | null | undefined): string {
@@ -728,15 +729,27 @@ export default function SpreadDashboard() {
   const analysisData = analysisQuery.data || [];
   const isSyncing = syncState.data?.status === "running";
 
-  // Contagem de outliers: outlierCountQuery sempre retorna com excludeOutliers=false,
-  // mas já filtrada pelo universo correto via indexadoresEfetivos.
+  // Contagem de outliers:
+  // - Modo unificado (nenhum instrumento selecionado): conta a diferença entre
+  //   o total de registros (sem exclusão) e os que passaram pelo applyUnifiedOutliers.
+  //   O backend aplica o recalculo on-the-fly quando excludeOutliers=true e tipos=[],
+  //   então a diferença entre os dois conjuntos é exatamente os outliers unificados.
+  // - Modo individual (instrumento selecionado): conta isOutlier do banco.
   const isOutlierTrue = (r: unknown) => {
     const val = (r as { isOutlier?: boolean | number | null }).isOutlier;
     return val === true || val === 1;
   };
+  const isUnifiedMode = !filters.tipos.length;
   const outlierCount = useMemo(() => {
+    if (isUnifiedMode) {
+      // Modo unificado: total sem exclusão - total com exclusão
+      const totalSemExclusao = (outlierCountQuery.data || []).length;
+      const totalComExclusao = (analysisQuery.data || []).length;
+      return Math.max(0, totalSemExclusao - totalComExclusao);
+    }
+    // Modo individual: usa isOutlier do banco
     return (outlierCountQuery.data || []).filter(isOutlierTrue).length;
-  }, [outlierCountQuery.data]);
+  }, [outlierCountQuery.data, analysisQuery.data, isUnifiedMode]);
 
   // Rótulo do eixo Y conforme universo
   const yAxisLabel = "Spread (bps)";
