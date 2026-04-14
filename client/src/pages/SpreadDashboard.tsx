@@ -612,11 +612,12 @@ export default function SpreadDashboard() {
     return [universoIndexador];
   }, [filters.indexadores, universoIndexador]);
 
-  // Query global para a calculadora: sem filtro de instrumento (DEB+CRI+CRA),
-  // sem filtro de rating/setor, sem filtro de duration — apenas o universo (indexador) e outliers.
-  // Garante que a linha de tendência da calculadora sempre usa todos os dados disponíveis.
+  // Query para a calculadora: sem filtro de rating/setor/duration.
+  // Se nenhum instrumento estiver selecionado → usa base completa (DEB+CRI+CRA).
+  // Se algum instrumento estiver selecionado → usa apenas o conjunto selecionado.
   const globalAnalysisQuery = trpc.spread.getAnalysis.useQuery({
     indexadores: indexadoresEfetivos,
+    tipos: filters.tipos.length ? filters.tipos : undefined,
     excludeOutliers: true,
     scoreMin: SCORE_MIN_THRESHOLD,
   });

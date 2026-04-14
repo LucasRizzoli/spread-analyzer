@@ -523,3 +523,8 @@
 ## Fix: Rolling e query — isolamento por universo (DEB vs CRI/CRA)
 - [x] Rolling DEB: filtrar MAX por tipo='DEB' no DELETE para não ser afetado por CRI/CRA
 - [x] Query CRI/CRA: simplificar para MAX(dataReferencia) WHERE tipo IN ('CRI','CRA') — igual padrão DEB
+
+## v3.2 — Calculadora responde ao filtro de instrumento
+- [x] Sem filtro de instrumento: calculadora usa regressão de DEB+CRI+CRA (base completa)
+- [x] Com filtro ativo (ex: apenas CRI): calculadora usa regressão apenas do conjunto selecionado
+- [x] globalAnalysisQuery passa filters.tipos para a query quando há filtro ativo
