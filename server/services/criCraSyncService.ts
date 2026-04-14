@@ -515,11 +515,47 @@ export async function runCriCraSync(fileBuffer: Buffer, dataRefFimOverride?: str
       criCraSyncProgress = { step: "Salvando no banco", done: Math.min(i + BATCH, toInsert.length), total: toInsert.length };
     }
 
-    // ── 7. Gravar snapshots históricos ────────────────────────────────────────
+    // ── 7. Deduplicar + janela rolling 28 dias (igual syncService de debêntures) ─────────
+    criCraSyncProgress = { step: "Deduplicando e aplicando janela rolling de 28 dias...", done: 0, total: 1 };
+
+    // Passo A: Remover duplicatas exatas (mesmo codigoCetip + mesma dataReferencia)
+    // Para cada par, manter apenas o registro com maior id
+    await db.execute(sql`
+      DELETE sa FROM spread_analysis sa
+      INNER JOIN (
+        SELECT codigoCetip, dataReferencia, MAX(id) AS maxId
+        FROM spread_analysis
+        WHERE tipo IN ('CRI', 'CRA')
+        GROUP BY codigoCetip, dataReferencia
+      ) latest ON sa.codigoCetip = latest.codigoCetip
+        AND sa.dataReferencia = latest.dataReferencia
+      WHERE sa.id < latest.maxId
+        AND sa.tipo IN ('CRI', 'CRA')
+    `);
+
+    // Passo B: Janela rolling de 28 dias — remover registros com dataReferencia
+    // anterior a MAX(dataReferencia) - 28 dias (apenas CRI/CRA)
+    await db.execute(sql`
+      DELETE FROM spread_analysis
+      WHERE tipo IN ('CRI', 'CRA')
+        AND dataReferencia < (
+          SELECT data_ref FROM (
+            SELECT DATE_FORMAT(
+              DATE_SUB(MAX(dataReferencia), INTERVAL 28 DAY),
+              '%Y-%m-%d'
+            ) AS data_ref
+            FROM spread_analysis
+            WHERE tipo IN ('CRI', 'CRA')
+          ) AS tmp
+        )
+    `);
+
+    console.log("[CriCraSync] Deduplicação e janela rolling de 28 dias aplicadas");
+    criCraSyncProgress = { step: "Deduplicando e aplicando janela rolling de 28 dias...", done: 1, total: 1 };
+
+    // ── 8. Gravar snapshots históricos ────────────────────────────────────────────────────────────────────────────────────
     criCraSyncProgress = { step: "Gravando snapshots históricos", done: 0, total: 1 };
     const finalDataRef = dataRef ?? new Date().toISOString().slice(0, 10);
-
-    // Buscar dados para snapshot apenas desta data
     const [snapshotRows] = await db.execute(sql`
       SELECT rating, zspread, dataReferencia, indexador
       FROM spread_analysis

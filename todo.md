@@ -513,3 +513,13 @@
 - [x] Passar cdiAnual para calcZspread como parâmetro opcional
 - [x] Atualizar testes unitários com CDI = 14.65% (77 testes passando)
 - [x] Re-sincronizar dados CRI/CRA (DI SPREAD AAA.br ~49bps, DI% AA+.br ~272bps)
+
+## Fix: CRI/CRA — Deduplicação e janela rolling 28 dias
+- [x] Adicionar passo de deduplicação por (codigoCetip, dataReferencia) no criCraSyncService
+- [x] Adicionar janela rolling de 28 dias no criCraSyncService (filtrado por tipo IN CRI/CRA)
+- [x] Atualizar query do router CRI/CRA para usar MAX(dataReferencia) por codigoCetip via INNER JOIN
+- [x] Re-sincronizar dados: 80 CETIPs únicos, 61 sem outliers
+
+## Fix: Rolling e query — isolamento por universo (DEB vs CRI/CRA)
+- [x] Rolling DEB: filtrar MAX por tipo='DEB' no DELETE para não ser afetado por CRI/CRA
+- [x] Query CRI/CRA: simplificar para MAX(dataReferencia) WHERE tipo IN ('CRI','CRA') — igual padrão DEB

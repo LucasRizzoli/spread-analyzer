@@ -700,15 +700,17 @@ export async function runFullSync(
     `);
     await db.execute(sql`
       DELETE FROM spread_analysis
-      WHERE dataReferencia < (
-        SELECT data_ref FROM (
-          SELECT DATE_FORMAT(
-            DATE_SUB(MAX(dataReferencia), INTERVAL 28 DAY),
-            '%Y-%m-%d'
-          ) AS data_ref
-          FROM spread_analysis
-        ) AS tmp
-      )
+      WHERE tipo = 'DEB'
+        AND dataReferencia < (
+          SELECT data_ref FROM (
+            SELECT DATE_FORMAT(
+              DATE_SUB(MAX(dataReferencia), INTERVAL 28 DAY),
+              '%Y-%m-%d'
+            ) AS data_ref
+            FROM spread_analysis
+            WHERE tipo = 'DEB'
+          ) AS tmp
+        )
     `);
     report("Janela rolling de 28 dias aplicada", 1, 1);
 

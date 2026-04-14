@@ -80,7 +80,7 @@ export const criCraRouter = router({
       const db = await getDb();
       if (!db) return [];
 
-      // Buscar apenas a data de referência mais recente de CRI/CRA
+      // Buscar apenas a data de referência mais recente de CRI/CRA (mesmo padrão das debêntures)
       const [dateRows] = await db.execute(sql`
         SELECT MAX(dataReferencia) AS maxData FROM spread_analysis WHERE tipo IN ('CRI','CRA')
       `) as unknown as { maxData: string }[][];
@@ -94,7 +94,6 @@ export const criCraRouter = router({
       ];
 
       if (input?.excludeOutliers !== false) {
-        // MySQL TINYINT: usar sql raw para evitar problema de boolean vs int
         conditions.push(sql`${spreadAnalysis.isOutlier} = 0`);
       }
       if (input?.indexadores?.length) {
