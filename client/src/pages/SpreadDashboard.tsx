@@ -66,23 +66,23 @@ function formatDuration(v: number | null | undefined): string {
   return `${v.toFixed(2)}a`;
 }
 
-// Paleta pastel profissional: tons suaves e dessaturados, cada rating com cor distinta.
+// Paleta com saturação moderada — cores reconhecíveis e distintas, visíveis sobre fundo escuro.
 const RATING_COLORS: Record<string, string> = {
-  "AAA.br":  "#7ec8c8", // teal pastel
-  "AA+.br":  "#7bafd4", // azul acinzentado
-  "AA.br":   "#9b8ec4", // lavênda acinzentada
-  "AA-.br":  "#c4a882", // bege dourado
-  "A+.br":   "#85b89a", // verde sálvia
-  "A.br":    "#d4956a", // terracota suave
-  "A-.br":   "#c47e8e", // rosa antigo
-  "BBB+.br": "#c47878", // vermelho acinzentado
-  "BBB.br":  "#7ab5c4", // ciano pastel
-  "BBB-.br": "#a8c47a", // verde oliva claro
-  "BB+.br":  "#a48ec4", // violeta pastel
-  "BB.br":   "#c48a7a", // salmao acinzentado
-  "BB-.br":  "#7aaec4", // azul céu pastel
-  "B+.br":   "#c4b07a", // ocre pastel
-  "B.br":    "#8a8ec4", // índigo pastel
+  "AAA.br":  "#4dd9ac", // verde-água
+  "AA+.br":  "#60a5fa", // azul céu
+  "AA.br":   "#a78bfa", // lavênda
+  "AA-.br":  "#fbbf24", // amarelo dourado
+  "A+.br":   "#34d399", // verde menta
+  "A.br":    "#fb923c", // laranja suave
+  "A-.br":   "#f472b6", // rosa suave
+  "BBB+.br": "#f87171", // vermelho suave
+  "BBB.br":  "#38bdf8", // ciano
+  "BBB-.br": "#a3e635", // verde lima
+  "BB+.br":  "#c084fc", // violeta
+  "BB.br":   "#fb7185", // coral
+  "BB-.br":  "#67e8f9", // ciano claro
+  "B+.br":   "#fde68a", // amarelo pálido
+  "B.br":    "#818cf8", // índigo
 };
 
 function getRatingColor(rating: string | null | undefined): string {
