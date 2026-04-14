@@ -66,25 +66,23 @@ function formatDuration(v: number | null | undefined): string {
   return `${v.toFixed(2)}a`;
 }
 
-// Paleta de cores distintas por rating: cada rating tem uma cor de família diferente
-// para garantir que sejam inconfundíveis no scatter e na legenda.
+// Paleta pastel profissional: tons suaves e dessaturados, cada rating com cor distinta.
 const RATING_COLORS: Record<string, string> = {
-  // Paleta de cores claramente distintas por rating (sem gradiente contínuo)
-  "AAA.br":  "#00d4aa", // turquesa vivo — melhor qualidade
-  "AA+.br":  "#3b82f6", // azul royal
-  "AA.br":   "#a855f7", // roxo vibrante
-  "AA-.br":  "#f59e0b", // âmbar dourado
-  "A+.br":   "#10b981", // verde esmeralda
-  "A.br":    "#f97316", // laranja queimado
-  "A-.br":   "#ec4899", // rosa choque
-  "BBB+.br": "#ef4444", // vermelho vivo
-  "BBB.br":  "#06b6d4", // ciano elétrico
-  "BBB-.br": "#84cc16", // verde-lima
-  "BB+.br":  "#8b5cf6", // violeta
-  "BB.br":   "#f43f5e", // rosa-vermelho
-  "BB-.br":  "#0ea5e9", // azul céu
-  "B+.br":   "#d97706", // marrom-dourado
-  "B.br":    "#6366f1", // índigo — pior qualidade
+  "AAA.br":  "#7ec8c8", // teal pastel
+  "AA+.br":  "#7bafd4", // azul acinzentado
+  "AA.br":   "#9b8ec4", // lavênda acinzentada
+  "AA-.br":  "#c4a882", // bege dourado
+  "A+.br":   "#85b89a", // verde sálvia
+  "A.br":    "#d4956a", // terracota suave
+  "A-.br":   "#c47e8e", // rosa antigo
+  "BBB+.br": "#c47878", // vermelho acinzentado
+  "BBB.br":  "#7ab5c4", // ciano pastel
+  "BBB-.br": "#a8c47a", // verde oliva claro
+  "BB+.br":  "#a48ec4", // violeta pastel
+  "BB.br":   "#c48a7a", // salmao acinzentado
+  "BB-.br":  "#7aaec4", // azul céu pastel
+  "B+.br":   "#c4b07a", // ocre pastel
+  "B.br":    "#8a8ec4", // índigo pastel
 };
 
 function getRatingColor(rating: string | null | undefined): string {
